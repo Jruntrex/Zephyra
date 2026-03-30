@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load math_filters %}
+{% load journal_filters %}
+
+{% block title %}Налаштування типів оцінювання{% endblock %}
+
+{% block header_title %}Налаштування типів оцінювання{% endblock %}
+
+{% block content %}
+<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Налаштування типів оцінювання">
+
+    <div class="glass-panel shadow-sm rounded-3xl p-6 mb-8 bg-white/80 border border-gray-100">
+        <form method="GET" action="{% url 'manage_evaluation_types' %}" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Оберіть предмет і групу</label>
+                <div class="flex gap-4">
+                    <select name="assignment" onchange="this.form.submit()"
+                        class="flex-grow px-4 py-3 border border-gray-300 rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer">
+                        <option value="">— Оберіть предмет та групу —</option>
+                        {% for a in assignments %}
+                        {% with a_id=a.id|stringformat:"s" %}
+                        <option value="{{ a.id }}" {% if request.GET.assignment|is_equal:a_id %}selected{% endif %}>
+                            {{ a.subject.name }} - {{ a.group.name }}
+                        </option>
+                        {% endwith %}
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if selected_assignment %}
+    <!-- Індикатор суми ваг -->
+    {% if total_weight == 100 %}
+    <div class="mb-8 p-6 rounded-2xl bg-green-50 border-2 border-green-500">
+        {% elif total_weight > 100 %}
+        <div class="mb-8 p-6 rounded-2xl bg-red-50 border-2 border-red-500">
+            {% else %}
+            <div class="mb-8 p-6 rounded-2xl bg-yellow-50 border-2 border-yellow-500">
+                {% endif %}
+                <div class="flex items-center justify-between mb-4">
+                    {% if total_weight == 100 %}
+                    <h4 class="text-lg font-bold text-green-700">Загальна вага: {{ total_weight }}%</h4>
+                    <div class="text-sm font-medium text-green-600">✓ Готово до використання</div>
+                    {% elif total_weight > 100 %}
+                    <h4 class="text-lg font-bold text-red-700">Загальна вага: {{ total_weight }}%</h4>
+                    <div class="text-sm font-medium text-red-600">✗ Перевищує 100%!</div>
+                    {% else %}
+                    <h4 class="text-lg font-bold text-yellow-700">Загальна вага: {{ total_weight }}%</h4>
+                    <div class="text-sm font-medium text-yellow-600">⚠ Залишилось: {{ 100|sub:total_weight }}%</div>
+                    {% endif %}
+                </div>
+
+                <!-- Прогрес-бар -->
+                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                    {% if total_weight == 100 %}
+                    <div class="h-full transition-all duration-500 bg-green-500" style="width: 100%"></div>
+                    {% elif total_weight > 100 %}
+                    <div class="h-full transition-all duration-500 bg-red-50" style="width: 100%"></div>
+                    {% else %}
+                    <div class="h-full transition-all duration-500 bg-yellow-500" style="width: {{ total_weight }}%">
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Список існуючих типів оцінювання -->
+            {% if evaluation_types %}
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-dark mb-4">Налаштовані типи оцінювання</h3>
+                <div class="overflow-x-auto rounded-xl border border-tableBorder bg-white shadow-glass">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-primary text-white">
+                                <th class="p-4 text-left text-xs font-bold uppercase tracking-wider">Назва</th>
+                                <th class="p-4 text-left text-xs font-bold uppercase tracking-wider">Вага (%)</th>
+                                <th class="p-4 text-center text-xs font-bold uppercase tracking-wider">Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for eval_type in evaluation_types %}
+                            <tr class="{% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} hover:bg-primary/10 transition-colors duration-200"
+                                id="type-row-{{ eval_type.id }}">
+                                <td class="p-4 font-medium text-dark">
+                                    <span class="display-mode">{{ eval_type.name }}</span>
+                                    <input type="text"
+                                        class="edit-mode hidden w-full px-3 py-2 border border-tableBorder rounded-lg"
+                                        value="{{ eval_type.name }}" data-field="name">
+                                </td>
+                                <td class="p-4 text-dark">
+                                    <span class="display-mode">{{ eval_type.weight_percent }}%</span>
+                                    <input type="number"
+                                        class="edit-mode hidden w-24 px-3 py-2 border border-tableBorder rounded-lg"
+                                        value="{{ eval_type.weight_percent }}" min="0" max="100" step="0.01"
+                                        data-field="weight">
+                                </td>
+                                <td class="p-4 text-center">
+                                    <div class="flex justify-center gap-2">
+                                        <button onclick="editType({{ eval_type.id }})"
+                                            class="display-mode px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm font-medium">Редагувати</button>
+                                        <button onclick="saveType({{ eval_type.id }})"
+                                            class="edit-mode hidden px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 text-sm font-medium">Зберегти</button>
+                                        <button onclick="cancelEdit({{ eval_type.id }})"
+                                            class="edit-mode hidden px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 text-sm font-medium">Скасувати</button>
+                                        <form method="POST" action="{% url 'delete_evaluation_type' eval_type.id %}"
+                                            onsubmit="return confirm('Ви впевнені?');" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 text-sm font-medium">Видалити</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Форма додавання нового типу -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="text-2xl font-bold text-dark mb-4">Додати новий тип оцінювання</h3>
+                <form method="POST" action="{% url 'manage_evaluation_types' %}?assignment={{ selected_assignment.id }}"
+                    class="flex flex-col gap-4">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            {{ form.name.label_tag }}
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {{ form.weight_percent.label_tag }}
+                            {{ form.weight_percent }}
+                            {% if form.weight_percent.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.weight_percent.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-4 mt-4">
+                        <a href="{% url 'teacher_journal' %}"
+                            class="px-6 py-3 bg-primary text-white rounded-xl hover:bg-blue-600 transition-all duration-200 font-medium">Назад
+                            до журналу</a>
+                        <button type="submit"
+                            class="px-6 py-3 bg-primary text-white rounded-xl hover:bg-blue-600 transition-all duration-200 font-medium shadow-button hover:shadow-button-hover">Додати
+                            тип</button>
+                    </div>
+                </form>
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <p class="text-neutral text-lg">Оберіть предмет та групу для налаштування типів оцінювання</p>
+            </div>
+            {% endif %}
+
+        </div>
+        {% endblock %}
+
+        {% block extra_js %}
+        {{ block.super }}
+        <script>
+            function editType(typeId) {
+                const row = document.querySelector(`#type-row-${typeId}`);
+                row.querySelectorAll('.display-mode').forEach(el => el.classList.add('hidden'));
+                row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden'));
+            }
+
+            function cancelEdit(typeId) {
+                const row = document.querySelector(`#type-row-${typeId}`);
+                row.querySelectorAll('.display-mode').forEach(el => el.classList.remove('hidden'));
+                row.querySelectorAll('.edit-mode').forEach(el => el.classList.add('hidden'));
+                row.querySelectorAll('input').forEach(input => {
+                    input.value = input.defaultValue;
+                });
+            }
+
+            function saveType(typeId) {
+                const row = document.querySelector(`#type-row-${typeId}`);
+                const name = row.querySelector('input[data-field="name"]').value;
+                const weight = row.querySelector('input[data-field="weight"]').value;
+
+                fetch(`/teacher/evaluation-type/edit/${typeId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: `name=${encodeURIComponent(name)}&weight_percent=${encodeURIComponent(weight)}`
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            alert('Помилка при збереженні.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Помилка при збереженні');
+                    });
+            }
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+        </script>
+        {% endblock %}

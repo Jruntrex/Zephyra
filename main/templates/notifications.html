@@ -1,0 +1,633 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Сповіщення — {{ institution.name|default:"MyBosco" }}{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ── Entry animation ── */
+    @keyframes notifSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.98);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes pulseRing {
+        0% {
+            box-shadow: 0 0 0 0 rgba(91, 132, 255, 0.5);
+        }
+
+        70% {
+            box-shadow: 0 0 0 8px rgba(91, 132, 255, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(91, 132, 255, 0);
+        }
+    }
+
+    @keyframes shimmer {
+        0% {
+            background-position: -400px 0;
+        }
+
+        100% {
+            background-position: 400px 0;
+        }
+    }
+
+    @keyframes heroFloat {
+
+        0%,
+        100% {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-6px);
+        }
+    }
+
+    .notif-card {
+        animation: notifSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+        transition: box-shadow 0.25s, transform 0.25s, background 0.2s;
+        will-change: transform, opacity;
+    }
+
+    .notif-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10), 0 0 0 1px rgba(91, 132, 255, 0.08) !important;
+    }
+
+    .notif-card.is-unread {
+        background: rgba(91, 132, 255, 0.04) !important;
+    }
+
+    html.dark .notif-card.is-unread {
+        background: rgba(91, 132, 255, 0.09) !important;
+    }
+
+    /* unread dot pulse */
+    .unread-dot {
+        animation: pulseRing 2.2s ease infinite;
+        flex-shrink: 0;
+    }
+
+    /* icon circle */
+    .notif-icon-wrap {
+        transition: transform 0.2s;
+        flex-shrink: 0;
+    }
+
+    .notif-card:hover .notif-icon-wrap {
+        transform: scale(1.12) rotate(-4deg);
+    }
+
+    /* type badge */
+    .type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    /* filter tab */
+    .filter-tab {
+        padding: 5px 14px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        transition: all 0.2s;
+        cursor: pointer;
+        text-decoration: none;
+        border: 1.5px solid transparent;
+    }
+
+    .filter-tab:not(.active):hover {
+        background: rgba(91, 132, 255, 0.08);
+        color: #5B84FF !important;
+        border-color: rgba(91, 132, 255, 0.15);
+    }
+
+    .filter-tab.active {
+        border-color: transparent;
+    }
+
+    /* action buttons */
+    .notif-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1.5px solid transparent;
+        text-decoration: none;
+    }
+
+    /* footer row */
+    .notif-footer-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        padding: 8px 24px 12px 48px;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        background: rgba(248, 250, 252, 0.6);
+        backdrop-filter: blur(4px);
+    }
+
+    html.dark .notif-footer-row {
+        background: rgba(15, 23, 42, 0.4);
+        border-top-color: rgba(255, 255, 255, 0.06);
+    }
+
+    /* hero wave decoration */
+    .hero-wave {
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        overflow: hidden;
+        line-height: 0;
+        opacity: 0.12;
+    }
+
+    /* stagger delays */
+    .notif-card:nth-child(1) {
+        animation-delay: 0.04s;
+    }
+
+    .notif-card:nth-child(2) {
+        animation-delay: 0.08s;
+    }
+
+    .notif-card:nth-child(3) {
+        animation-delay: 0.12s;
+    }
+
+    .notif-card:nth-child(4) {
+        animation-delay: 0.16s;
+    }
+
+    .notif-card:nth-child(5) {
+        animation-delay: 0.20s;
+    }
+
+    .notif-card:nth-child(6) {
+        animation-delay: 0.24s;
+    }
+
+    .notif-card:nth-child(7) {
+        animation-delay: 0.28s;
+    }
+
+    .notif-card:nth-child(8) {
+        animation-delay: 0.32s;
+    }
+
+    .notif-card:nth-child(9) {
+        animation-delay: 0.36s;
+    }
+
+    .notif-card:nth-child(10) {
+        animation-delay: 0.40s;
+    }
+
+    /* card shimmer on hover (unread) */
+    .notif-card.is-unread::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(91, 132, 255, 0.04), transparent);
+        background-size: 400px 100%;
+        animation: shimmer 2.5s infinite;
+        pointer-events: none;
+        border-radius: inherit;
+    }
+
+    .notif-card {
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Dark mode card */
+    html.dark .notif-card {
+        background: rgba(15, 23, 42, 0.6) !important;
+        border-color: rgba(255, 255, 255, 0.07) !important;
+    }
+
+    /* left accent bar */
+    .accent-bar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 0 4px 4px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════════════
+     HERO BANNER
+══════════════════════════════════════════ -->
+<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+    <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+    <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+    <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+    <div class="relative px-6 py-5 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{
+                    institution.name|default:"MyBosco" }}</span>
+            </div>
+            <h1 class="text-4xl font-black text-white leading-tight">Сповіщення</h1>
+            <p class="text-white/65 text-sm mt-0.5">
+                {% if unread_total > 0 %}{{ unread_total }} непрочитан{% if unread_total == 1 %}е{% else %}их{% endif %}
+                сповіщень{% else %}Усі сповіщення прочитано{% endif %}
+            </p>
+        </div>
+        <div
+            class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center hidden sm:flex">
+            <span class="text-xl font-black text-white">{{ total_count }}</span>
+            <span class="text-[10px] text-white/65 font-semibold">всього</span>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN CARD
+══════════════════════════════════════════ -->
+<div class="card-bento !p-0 !overflow-hidden">
+
+    <!-- ── TOOLBAR ── -->
+    <div class="flex flex-wrap items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-border">
+        <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-mutedText" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 10h16M4 14h10" />
+            </svg>
+            <span class="text-xs font-black text-mutedText uppercase tracking-widest">
+                {% if total_count %}{{ total_count }} сповіщень{% else %}Порожньо{% endif %}
+            </span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            {% if unread_total > 0 %}
+            <button onclick="bulkMarkAllRead()" class="notif-action-btn"
+                style="background:rgba(91,132,255,0.1); color:#5B84FF; border-color:rgba(91,132,255,0.2);"
+                onmouseenter="this.style.background='rgba(91,132,255,0.18)'"
+                onmouseleave="this.style.background='rgba(91,132,255,0.1)'">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Прочитати всі
+            </button>
+            {% endif %}
+            <button onclick="bulkDeleteRead()" class="notif-action-btn"
+                style="background:rgba(100,116,139,0.07); color:#64748b; border-color:rgba(100,116,139,0.15);"
+                onmouseenter="this.style.background='rgba(100,116,139,0.15)'"
+                onmouseleave="this.style.background='rgba(100,116,139,0.07)'">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Видалити прочитані
+            </button>
+            <button onclick="bulkDeleteAll()" class="notif-action-btn"
+                style="background:rgba(239,68,68,0.07); color:#ef4444; border-color:rgba(239,68,68,0.15);"
+                onmouseenter="this.style.background='rgba(239,68,68,0.14)'"
+                onmouseleave="this.style.background='rgba(239,68,68,0.07)'">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Видалити всі
+            </button>
+        </div>
+    </div>
+
+    <!-- ── FILTER TABS ── -->
+    <div class="px-6 py-4 border-b border-border bg-background/30">
+        <!-- Status row -->
+        <div class="flex items-center gap-3 flex-wrap mb-3">
+            <span
+                class="text-[10px] font-black text-mutedText uppercase tracking-widest w-12 flex-shrink-0">Статус</span>
+            <div class="flex gap-1.5 flex-wrap">
+                <a href="?type={{ filter_type }}&status="
+                    class="filter-tab {% if filter_status == '' %}active{% endif %}"
+                    style="{% if filter_status == '' %}background:#1e293b; color:#fff;{% else %}color:#64748b;{% endif %}">
+                    Всі
+                </a>
+                <a href="?type={{ filter_type }}&status=unread"
+                    class="filter-tab {% if filter_status == 'unread' %}active{% endif %}"
+                    style="{% if filter_status == 'unread' %}background:linear-gradient(135deg,#5B84FF,#7c3aed); color:#fff; box-shadow:0 4px 12px rgba(91,132,255,0.35);{% else %}color:#64748b;{% endif %}">
+                    ● Нові
+                </a>
+                <a href="?type={{ filter_type }}&status=read"
+                    class="filter-tab {% if filter_status == 'read' %}active{% endif %}"
+                    style="{% if filter_status == 'read' %}background:#1e293b; color:#fff;{% else %}color:#64748b;{% endif %}">
+                    Прочитані
+                </a>
+            </div>
+        </div>
+        <!-- Type row -->
+        <div class="flex items-center gap-3 flex-wrap">
+            <span class="text-[10px] font-black text-mutedText uppercase tracking-widest w-12 flex-shrink-0">Тип</span>
+            <div class="flex gap-1.5 flex-wrap">
+                {% for val, label in type_choices %}
+                <a href="?type={{ val }}&status={{ filter_status }}"
+                    class="filter-tab {% if filter_type == val %}active{% endif %}" style="{% if filter_type == val %}
+                       {% if val == '' %}background:#1e293b; color:#fff;
+                       {% elif val == 'grade' %}background:linear-gradient(135deg,#2563eb,#3b82f6); color:#fff; box-shadow:0 4px 10px rgba(37,99,235,0.3);
+                       {% elif val == 'absence' %}background:linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 4px 10px rgba(220,38,38,0.3);
+                       {% elif val == 'homework' %}background:linear-gradient(135deg,#ea580c,#f97316); color:#fff; box-shadow:0 4px 10px rgba(234,88,12,0.3);
+                       {% elif val == 'private_chat' %}background:linear-gradient(135deg,#7c3aed,#8b5cf6); color:#fff; box-shadow:0 4px 10px rgba(124,58,237,0.3);
+                       {% elif val == 'comment' %}background:linear-gradient(135deg,#9333ea,#a855f7); color:#fff; box-shadow:0 4px 10px rgba(147,51,234,0.3);
+                       {% elif val == 'news' %}background:linear-gradient(135deg,#059669,#10b981); color:#fff; box-shadow:0 4px 10px rgba(5,150,105,0.3);
+                       {% else %}background:linear-gradient(135deg,#5B84FF,#7c3aed); color:#fff;{% endif %}
+                   {% else %}color:#64748b;{% endif %}">
+                    {{ label }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── NOTIFICATION LIST ── -->
+    <div class="p-6" id="notif-page-list">
+        {% if page_obj.object_list %}
+        <div class="space-y-4" id="notif-cards-container">
+            {% for n in page_obj %}
+            <div class="notif-card rounded-2xl border shadow-sm {% if not n.is_read %}is-unread{% endif %}"
+                style="border-color:{% if n.notif_type == 'grade' %}rgba(37,99,235,0.2){% elif n.notif_type == 'absence' %}rgba(220,38,38,0.2){% elif n.notif_type == 'homework' %}rgba(234,88,12,0.2){% elif n.notif_type == 'private_chat' %}rgba(124,58,237,0.2){% elif n.notif_type == 'comment' %}rgba(147,51,234,0.2){% elif n.notif_type == 'news' %}rgba(5,150,105,0.2){% else %}rgba(100,116,139,0.15){% endif %};"
+                id="notif-row-{{ n.id }}">
+
+                <!-- Accent left bar -->
+                <div class="accent-bar"
+                    style="background:{% if n.notif_type == 'grade' %}linear-gradient(135deg,#2563eb,#3b82f6){% elif n.notif_type == 'absence' %}linear-gradient(135deg,#dc2626,#ef4444){% elif n.notif_type == 'homework' %}linear-gradient(135deg,#ea580c,#f97316){% elif n.notif_type == 'private_chat' %}linear-gradient(135deg,#7c3aed,#8b5cf6){% elif n.notif_type == 'comment' %}linear-gradient(135deg,#9333ea,#a855f7){% elif n.notif_type == 'news' %}linear-gradient(135deg,#059669,#10b981){% else %}linear-gradient(135deg,#64748b,#94a3b8){% endif %};">
+                </div>
+
+                <!-- Card Body -->
+                <div class="pr-6 pt-4 pb-3" style="padding-left: 3.5rem;">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <!-- type badge -->
+                            <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                                <span class="type-badge"
+                                    style="background:{% if n.notif_type == 'grade' %}rgba(37,99,235,0.1){% elif n.notif_type == 'absence' %}rgba(220,38,38,0.1){% elif n.notif_type == 'homework' %}rgba(234,88,12,0.1){% elif n.notif_type == 'private_chat' %}rgba(124,58,237,0.1){% elif n.notif_type == 'comment' %}rgba(147,51,234,0.1){% elif n.notif_type == 'news' %}rgba(5,150,105,0.1){% else %}rgba(100,116,139,0.1){% endif %};
+                                         color:{% if n.notif_type == 'grade' %}#2563eb{% elif n.notif_type == 'absence' %}#dc2626{% elif n.notif_type == 'homework' %}#ea580c{% elif n.notif_type == 'private_chat' %}#7c3aed{% elif n.notif_type == 'comment' %}#9333ea{% elif n.notif_type == 'news' %}#059669{% else %}#64748b{% endif %};">
+                                    <span class="w-1.5 h-1.5 rounded-full"
+                                        style="background:{% if n.notif_type == 'grade' %}#2563eb{% elif n.notif_type == 'absence' %}#dc2626{% elif n.notif_type == 'homework' %}#ea580c{% elif n.notif_type == 'private_chat' %}#7c3aed{% elif n.notif_type == 'comment' %}#9333ea{% elif n.notif_type == 'news' %}#059669{% else %}#64748b{% endif %};"></span>
+                                    {{ n.get_notif_type_display }}
+                                </span>
+                                {% if not n.is_read %}
+                                <span class="unread-dot w-2 h-2 rounded-full" style="background:#5B84FF;" title="Непрочитане"></span>
+                                {% endif %}
+                            </div>
+                            <p class="font-bold text-mainText text-sm leading-snug">{{ n.title }}</p>
+                        </div>
+                        <!-- time -->
+                        <div class="flex-shrink-0 flex items-center gap-1 text-xs text-mutedText whitespace-nowrap">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {{ n.created_at|date:"d.m H:i" }}
+                        </div>
+                    </div>
+                    {% if n.message %}
+                    <p class="mt-1.5 text-sm leading-relaxed" style="color:rgba(0,0,0,0.55);">{{ n.message }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Footer actions -->
+                <div class="notif-footer-row">
+                    {% if n.computed_link %}
+                    <a href="{{ n.computed_link }}" onclick="markReadById({{ n.id }})"
+                        class="notif-action-btn text-white shadow-sm"
+                        style="background:{% if n.notif_type == 'grade' %}linear-gradient(135deg,#2563eb,#3b82f6){% elif n.notif_type == 'absence' %}linear-gradient(135deg,#dc2626,#ef4444){% elif n.notif_type == 'homework' %}linear-gradient(135deg,#ea580c,#f97316){% elif n.notif_type == 'private_chat' %}linear-gradient(135deg,#7c3aed,#8b5cf6){% elif n.notif_type == 'comment' %}linear-gradient(135deg,#9333ea,#a855f7){% elif n.notif_type == 'news' %}linear-gradient(135deg,#059669,#10b981){% else %}linear-gradient(135deg,#64748b,#94a3b8){% endif %};">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                        Перейти
+                    </a>
+                    {% endif %}
+
+                    {% if n.is_read %}
+                    <button onclick="markUnreadById({{ n.id }}, this)" class="notif-action-btn"
+                        style="color:#64748b; background:rgba(100,116,139,0.07); border-color:rgba(100,116,139,0.12);"
+                        onmouseenter="this.style.background='rgba(100,116,139,0.15)'"
+                        onmouseleave="this.style.background='rgba(100,116,139,0.07)'">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        Непрочитане
+                    </button>
+                    {% else %}
+                    <button onclick="markReadById({{ n.id }}, this)" class="notif-action-btn"
+                        style="color:#5B84FF; background:rgba(91,132,255,0.08); border-color:rgba(91,132,255,0.18);"
+                        onmouseenter="this.style.background='rgba(91,132,255,0.16)'"
+                        onmouseleave="this.style.background='rgba(91,132,255,0.08)'">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Прочитати
+                    </button>
+                    {% endif %}
+
+                    <button onclick="deleteNotif({{ n.id }})" class="notif-action-btn ml-auto"
+                        style="color:#ef4444; background:rgba(239,68,68,0.06); border-color:rgba(239,68,68,0.12);"
+                        onmouseenter="this.style.background='rgba(239,68,68,0.14)'"
+                        onmouseleave="this.style.background='rgba(239,68,68,0.06)'">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Видалити
+                    </button>
+                </div>
+
+            </div>
+            {% endfor %}
+
+        </div><!-- /notif-cards-container -->
+
+        <!-- ── PAGINATION ── -->
+        {% if page_obj.has_other_pages %}
+        <div class="flex items-center justify-center gap-2 pt-6 pb-2">
+            {% if page_obj.has_previous %}
+            <a href="?type={{ filter_type }}&status={{ filter_status }}&page={{ page_obj.previous_page_number }}"
+                class="notif-action-btn"
+                style="color:#5B84FF; background:rgba(91,132,255,0.08); border-color:rgba(91,132,255,0.18);"
+                onmouseenter="this.style.background='rgba(91,132,255,0.16)'"
+                onmouseleave="this.style.background='rgba(91,132,255,0.08)'">
+                ← Попередня
+            </a>
+            {% endif %}
+            <span class="notif-action-btn text-white font-black"
+                style="background:linear-gradient(135deg,#5B84FF,#7c3aed); border-color:transparent; box-shadow:0 4px 12px rgba(91,132,255,0.35);">
+                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
+            {% if page_obj.has_next %}
+            <a href="?type={{ filter_type }}&status={{ filter_status }}&page={{ page_obj.next_page_number }}"
+                class="notif-action-btn"
+                style="color:#5B84FF; background:rgba(91,132,255,0.08); border-color:rgba(91,132,255,0.18);"
+                onmouseenter="this.style.background='rgba(91,132,255,0.16)'"
+                onmouseleave="this.style.background='rgba(91,132,255,0.08)'">
+                Наступна →
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- ── EMPTY STATE ── -->
+        <div class="flex flex-col items-center justify-center py-24 text-center px-4"
+            style="animation: notifSlideIn 0.5s cubic-bezier(0.16,1,0.3,1) both;">
+            <div class="relative mb-6">
+                <div class="w-24 h-24 rounded-3xl flex items-center justify-center"
+                    style="background:rgba(91,132,255,0.1); border:2px solid rgba(91,132,255,0.15);">
+                    <svg class="w-11 h-11" style="color:#5B84FF;" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                </div>
+                <div
+                    class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-green-400 flex items-center justify-center shadow-md">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+            </div>
+            <h3 class="text-xl font-black text-mainText mb-2">
+                {% if filter_type or filter_status %}Нічого не знайдено{% else %}Усе чисто!{% endif %}
+            </h3>
+            <p class="text-sm text-mutedText max-w-xs leading-relaxed">
+                {% if filter_type or filter_status %}
+                Немає сповіщень за обраними фільтрами. Спробуйте змінити параметри.
+                {% else %}
+                Коли вчителі виставлятимуть оцінки або надсилатимуть повідомлення — ви побачите їх тут.
+                {% endif %}
+            </p>
+            {% if filter_type or filter_status %}
+            <a href="{% url 'notifications_page' %}" class="mt-6 notif-action-btn text-white font-black"
+                style="background:linear-gradient(135deg,#5B84FF,#7c3aed); border-color:transparent; box-shadow:0 6px 20px rgba(91,132,255,0.35); padding:10px 22px; font-size:13px;"
+                onmouseenter="this.style.opacity='0.88'" onmouseleave="this.style.opacity='1'">
+                Показати всі
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+</div><!-- /card -->
+
+<script>
+    const CSRF_TOKEN = (document.cookie.match('(^|;) ?csrftoken=([^;]*)(;|$)') || [])[2] || '';
+
+    function apiPost(url) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN, 'X-Requested-With': 'XMLHttpRequest' }
+        });
+    }
+
+    function markReadById(id, btn) {
+        apiPost(`/api/notifications/mark-read/${id}/`).then(() => {
+            const row = document.getElementById('notif-row-' + id);
+            if (!row) return;
+            row.classList.remove('is-unread');
+            // remove unread dot
+            row.querySelectorAll('.unread-dot').forEach(el => el.remove());
+            // swap button
+            if (btn && btn.tagName === 'BUTTON') {
+                btn.outerHTML = `<button onclick="markUnreadById(${id}, this)"
+                class="notif-action-btn" style="color:#64748b; background:rgba(100,116,139,0.07); border-color:rgba(100,116,139,0.12);"
+                onmouseenter="this.style.background='rgba(100,116,139,0.15)'"
+                onmouseleave="this.style.background='rgba(100,116,139,0.07)'">
+                <svg class='w-3.5 h-3.5' fill='none' stroke='currentColor' viewBox='0 0 24 24' stroke-width='2'>
+                    <path stroke-linecap='round' stroke-linejoin='round' d='M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6'/>
+                </svg>Непрочитане</button>`;
+            }
+        });
+    }
+
+    function markUnreadById(id, btn) {
+        apiPost(`/api/notifications/mark-unread/${id}/`).then(() => {
+            const row = document.getElementById('notif-row-' + id);
+            if (!row) row && row.classList.add('is-unread');
+            if (row) row.classList.add('is-unread');
+            if (btn && btn.tagName === 'BUTTON') {
+                btn.outerHTML = `<button onclick="markReadById(${id}, this)"
+                class="notif-action-btn" style="color:#5B84FF; background:rgba(91,132,255,0.08); border-color:rgba(91,132,255,0.18);"
+                onmouseenter="this.style.background='rgba(91,132,255,0.16)'"
+                onmouseleave="this.style.background='rgba(91,132,255,0.08)'">
+                <svg class='w-3.5 h-3.5' fill='none' stroke='currentColor' viewBox='0 0 24 24' stroke-width='2.5'>
+                    <path stroke-linecap='round' stroke-linejoin='round' d='M5 13l4 4L19 7'/>
+                </svg>Прочитати</button>`;
+            }
+        });
+    }
+
+    function deleteNotif(id) {
+        apiPost(`/api/notifications/delete/${id}/`).then(() => {
+            const row = document.getElementById('notif-row-' + id);
+            if (row) {
+                row.style.transition = 'opacity 0.28s ease, transform 0.28s ease, max-height 0.35s ease, margin 0.35s ease, padding 0.35s ease';
+                row.style.opacity = '0';
+                row.style.transform = 'scale(0.96) translateX(12px)';
+                row.style.maxHeight = row.offsetHeight + 'px';
+                row.style.overflow = 'hidden';
+                setTimeout(() => {
+                    row.style.maxHeight = '0';
+                    row.style.marginBottom = '0';
+                    row.style.padding = '0';
+                }, 280);
+                setTimeout(() => row.remove(), 620);
+            }
+        });
+    }
+
+    function bulkMarkAllRead() {
+        if (!confirm('Позначити всі сповіщення як прочитані?')) return;
+        apiPost('/api/notifications/mark-all-read/').then(() => location.reload());
+    }
+
+    function bulkDeleteRead() {
+        if (!confirm('Видалити всі прочитані сповіщення?')) return;
+        apiPost('/api/notifications/delete-all-read/').then(() => location.reload());
+    }
+
+    function bulkDeleteAll() {
+        if (!confirm('Видалити ВСІ сповіщення? Це незворотна дія.')) return;
+        apiPost('/api/notifications/delete-all/').then(() => location.reload());
+    }
+</script>
+
+{% endblock %}

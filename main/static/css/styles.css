@@ -1,0 +1,2190 @@
+/* ========================================= */
+/* НОВА ГАМА: E-Track: Elegant Glass (Low Transparency) */
+/* ========================================= */
+:root {
+    /* Основні кольори */
+    --primary: #5B84FF;
+    /* Яскравий, але м'який Блакитний (Акцент) */
+    --secondary: #FF6B6B;
+    /* Теплий Коралово-Червоний (CTA/Другорядний) */
+    --accent: #4CAF50;
+    /* Успіх: Зелений */
+    --error: #E74C3C;
+    /* Помилка: Червоний */
+
+    /* Фони та Скло */
+    --bgMain: linear-gradient(135deg, #D9E0EE 0%, #F3E8EE 100%);
+    /* Фон за склом */
+    --bgGlass: rgba(255, 255, 255, 0.7);
+    /* Фон скляних елементів (0.7 замість 0.2) */
+    --bgGlassHover: rgba(255, 255, 255, 0.9);
+    --blur-intensity: 8px;
+    /* Менш агресивний блюр */
+
+    /* Текст та Контраст */
+    --dark: #2F3640;
+    /* Текст Заголовків: Дуже Темно-Сірий */
+    --bodyText: #5E6C84;
+    /* Основний Текст: Сіро-Синій */
+    --neutral: #A9A9A9;
+    /* Нейтральний/Другорядний Сірий */
+    --white: #FFFFFF;
+
+    /* Таблиці та Межі */
+    --tableBorder: rgba(0, 0, 0, 0.1);
+    /* Слабкий роздільник */
+    --tableBgLight: rgba(255, 255, 255, 0.5);
+    /* Легкий фон рядка */
+    --tableBgDark: rgba(91, 132, 255, 0.05);
+    /* Легкий акцентний фон рядка */
+
+    /* Тіні */
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    /* Тінь для скляного ефекту */
+    --shadow-button: 0 4px 15px rgba(91, 132, 255, 0.3);
+
+    /* Журнал Викладача (Коди кольорів) */
+    --grade-excellent: var(--accent);
+    /* 10-12 */
+    --grade-good: var(--primary);
+    /* 7-9 */
+    --grade-satisfactory: #FFB142;
+    /* 6 (Теплий Помаранчевий) */
+    --grade-fail: var(--error);
+    /* 1-5, Н */
+    --attendance-dark: #A9A9A9;
+    /* — */
+
+    --sidebar-width: 16rem;
+
+    /* Додано змінні для повідомлень */
+    --text-red: var(--error);
+    --text-red-light-bg: rgba(231, 76, 60, 0.1);
+    /* Легкий фон для помилок */
+}
+
+/* Скидання стилів */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Базові стилі */
+body,
+.app-font {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    background: var(--bgMain);
+    color: var(--bodyText);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+    line-height: 1.2;
+    color: var(--dark);
+    font-weight: 700;
+}
+
+/* Покращення доступності: Глобальний фокусний стан */
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* ДОДАНО: Гарантуємо, що клас hidden дійсно приховує елемент */
+.hidden {
+    display: none !important;
+}
+
+/* ========================================= */
+/* 0. АНІМАЦІЇ */
+/* ========================================= */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulseSlow {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 15px rgba(91, 132, 255, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 6px 20px rgba(91, 132, 255, 0.6);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+    opacity: 0;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.6s ease-out forwards;
+    opacity: 0;
+}
+
+.animate-slide-down {
+    animation: slideDown 0.6s ease-out forwards;
+    opacity: 0;
+}
+
+.animate-pulse-slow {
+    animation: pulseSlow 3s infinite ease-in-out;
+}
+
+/* Додаткові утиліти для затримок анімації */
+.delay-100 {
+    animation-delay: 0.1s;
+}
+
+.delay-200 {
+    animation-delay: 0.2s;
+}
+
+.delay-300 {
+    animation-delay: 0.3s;
+}
+
+/* Це загальний клас, який може бути застосований до <tr> */
+.journal-table tbody tr.journal-row-animation {
+    animation-delay: calc(var(--row-index, 0) * 50ms);
+}
+
+/* ========================================= */
+/* 1. АДАПТИВНІСТЬ ТА ОСНОВНИЙ КОНТЕЙНЕР */
+/* ========================================= */
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Скляна Бічна Панель (Glass Sidebar) */
+.sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+
+    /* GLASSMORPHISM СТИЛІ */
+    background: var(--bgGlass);
+    backdrop-filter: blur(var(--blur-intensity));
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: var(--shadow-glass);
+
+    color: var(--dark);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+    position: fixed;
+    height: 100%;
+    z-index: 50;
+    transition: transform 0.3s ease-in-out;
+}
+
+.main-content {
+    flex-grow: 1;
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    padding: 2rem 2.5rem;
+    transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out;
+}
+
+.main-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--tableBorder);
+}
+
+.main-header h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--dark);
+    margin: 0;
+}
+
+.main-body {
+    padding: 0;
+}
+
+/* Мобільні стилі (до 1023px) */
+@media (max-width: 1023px) {
+    .sidebar {
+        transform: translateX(-100%);
+        position: fixed;
+        width: 18rem;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 1.5rem;
+    }
+
+    .hidden-on-desktop {
+        display: block;
+    }
+}
+
+.hidden-on-desktop {
+    display: none;
+}
+
+/* ========================================= */
+/* 2. КОМПОНЕНТИ (Sidebar, Cards, Buttons) */
+/* ========================================= */
+
+/* Sidebar */
+.sidebar-header {
+    margin-bottom: 3rem;
+}
+
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.sidebar-logo-icon svg {
+    width: 2.5rem;
+    height: 2.5rem;
+    stroke: var(--primary);
+}
+
+.sidebar-logo h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--dark);
+}
+
+.sidebar-nav {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 0.8rem;
+    color: var(--bodyText);
+    text-decoration: none;
+    border-radius: 0.6rem;
+    transition: all 0.2s;
+}
+
+.nav-link:hover,
+.nav-link:focus {
+    background-color: var(--bgGlassHover);
+    color: var(--dark);
+}
+
+.nav-link.active {
+    background: linear-gradient(90deg, var(--primary) 0%, rgba(91, 132, 255, 0.5) 100%);
+    color: var(--white);
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(91, 132, 255, 0.3);
+}
+
+.nav-link.active svg {
+    stroke: var(--white);
+}
+
+.nav-link svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    stroke: currentColor;
+}
+
+.sidebar-footer {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--tableBorder);
+    margin-top: 1.5rem;
+}
+
+.logout-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.75rem;
+    color: var(--bodyText);
+    text-decoration: none;
+    border-radius: 0.6rem;
+    transition: all 0.2s;
+}
+
+.logout-link:hover {
+    background-color: var(--secondary);
+    color: var(--white);
+}
+
+.logout-link svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    stroke: currentColor;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem 1.75rem;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    letter-spacing: 0.025em;
+    position: relative;
+    overflow: hidden;
+    color: var(--white) !important;
+    box-shadow: var(--shadow-button);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(91, 132, 255, 0.4);
+}
+
+/* Класи для кнопок, які мають спеціальну висоту/відступи (фільтри, пагінація) */
+.button-padding {
+    padding: 0.5rem 1rem;
+}
+
+
+/* НОВИЙ КЛАС: Кнопка для іконок (стрілок тижня) */
+.btn-icon-small {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.6rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin: 0;
+}
+
+.btn-icon-small.btn-neutral {
+    /* Робимо кнопки-стрілки темнішими (як на скріншоті) */
+    background-color: var(--neutral);
+    color: var(--white);
+}
+
+.btn-icon-small.btn-neutral:hover {
+    background-color: #797979;
+}
+
+.btn-icon-small svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.btn-icon-small:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* КОРИГУВАННЯ SVG: Фіксуємо розмір іконок всередині кнопок */
+.btn svg {
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    stroke: currentColor;
+}
+
+/* ДОДАНО: Специфічний клас для іконок 4x4, як в Tailwind */
+.svg-small {
+    width: 1rem;
+    height: 1rem;
+}
+
+.btn-primary {
+    background: var(--primary);
+    box-shadow: 0 4px 15px rgba(91, 132, 255, 0.3);
+}
+
+.btn-primary:hover {
+    background: #4a77e7;
+}
+
+.btn-accent {
+    background: var(--accent);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-accent:hover {
+    background: #3e8e42;
+}
+
+.btn-neutral {
+    background-color: var(--primary);
+    /* Змінено на основний синій за запитом користувача */
+    color: var(--white) !important;
+    box-shadow: 0 4px 15px rgba(91, 132, 255, 0.3);
+}
+
+.btn-neutral:hover {
+    background-color: #4a77e7;
+}
+
+.btn-delete {
+    background-color: var(--error);
+    color: var(--white);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+.btn-delete:hover {
+    background-color: #c7402f;
+}
+
+.btn-link {
+    background: none;
+    color: var(--primary);
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.btn-link:hover {
+    background-color: rgba(91, 132, 255, 0.1);
+    color: var(--dark);
+}
+
+.btn-link.danger {
+    color: var(--error);
+}
+
+.btn-link.danger:hover {
+    background-color: rgba(231, 76, 60, 0.1);
+    color: var(--error);
+}
+
+/* Glass Card */
+.content-card,
+.form-card {
+    background: var(--bgGlass);
+    backdrop-filter: blur(var(--blur-intensity));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: var(--shadow-glass);
+
+    border-radius: 1.25rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    transition: all 0.3s;
+}
+
+.add-form-spacing {
+    margin-top: 1.5rem;
+}
+
+.card-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    color: var(--dark);
+    margin: 0 0 1.25rem 0;
+}
+
+.form-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--dark);
+    margin: 0 0 1.5rem 0;
+}
+
+.form-control,
+.form-input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--tableBorder);
+    border-radius: 0.75rem;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    background: var(--white);
+    height: auto;
+}
+
+.form-control:focus,
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(91, 132, 255, 0.2);
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+.form-actions .btn-primary,
+.form-actions .btn-neutral {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.8rem;
+    border-radius: 0.5rem;
+    box-shadow: none;
+}
+
+.form-actions .btn-primary {
+    box-shadow: var(--shadow-button);
+}
+
+/* Специфічні класи для форм */
+.form-spacing-vertical>*+* {
+    margin-top: 1rem;
+    /* space-y-4 */
+}
+
+.form-spacing-vertical-large>*+* {
+    margin-top: 0.5rem;
+    /* space-y-6 */
+}
+
+/* Stats Grid */
+.statistic-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.stat-content-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stat-card {
+    /* GLASSMORPHISM СТИЛІ */
+    background: var(--bgGlass);
+    backdrop-filter: blur(var(--blur-intensity));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: var(--shadow-glass);
+
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border-left: 6px solid;
+    text-align: left;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card.primary {
+    border-left-color: var(--primary);
+}
+
+.stat-card.accent {
+    border-left-color: var(--accent);
+}
+
+.stat-card.secondary {
+    border-left-color: var(--secondary);
+}
+
+.stat-card.neutral {
+    border-left-color: var(--neutral);
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--bodyText);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--dark);
+    margin-bottom: 0.25rem;
+    margin: 0;
+}
+
+/* Table Styles */
+.table-container {
+    overflow-x: auto;
+    border-radius: 1rem;
+    box-shadow: var(--shadow-base);
+    border: 1px solid var(--tableBorder);
+    background: var(--white);
+}
+
+.data-table,
+.journal-table-full-width {
+    min-width: 100%;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+/* ЗАГОЛОВКИ ТАБЛИЦІ */
+th {
+    background-color: var(--primary);
+    color: var(--white) !important;
+    padding: 0.9rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: none;
+}
+
+.table-container thead th:first-child {
+    border-top-left-radius: 1rem;
+}
+
+.table-container thead th:last-child {
+    border-top-right-radius: 1rem;
+}
+
+.table-cell-padding {
+    padding: 0.85rem 1rem;
+    color: var(--dark);
+    border-bottom: 1px solid var(--tableBorder);
+}
+
+.table-body-divider>*+* {
+    border-top: 1px solid var(--tableBorder);
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table tbody tr.odd-row {
+    background-color: var(--tableBgLight);
+}
+
+.data-table tbody tr.even-row {
+    background-color: var(--tableBgDark);
+}
+
+.table-row-hover:hover {
+    background-color: rgba(91, 132, 255, 0.1);
+}
+
+/* Journal Table Specific */
+.journal-table-container {
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-glass);
+    background: var(--bgGlass);
+    backdrop-filter: blur(var(--blur-intensity));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.journal-table {
+    border-collapse: collapse;
+    background: transparent;
+}
+
+.sticky-column-base {
+    position: sticky;
+    z-index: 22;
+}
+
+.sticky-left-zero {
+    position: sticky;
+    left: 0;
+    z-index: 22;
+}
+
+.journal-table thead tr:first-child th {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+}
+
+.journal-table thead tr:last-child th {
+    position: sticky;
+    top: 3.5rem;
+    z-index: 25;
+
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--dark);
+    font-weight: 500;
+    text-transform: none;
+    font-size: 0.8rem;
+}
+
+.fixed-col-num {
+    left: 0;
+    min-width: 4rem;
+    padding: 0.75rem 0.5rem;
+}
+
+.journal-table thead tr:first-child th.fixed-col-num {
+    z-index: 31;
+}
+
+.journal-table thead tr:last-child th.fixed-col-num {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--dark);
+    top: 3.5rem;
+    z-index: 26;
+}
+
+.fixed-col-name {
+    left: 4rem;
+    min-width: 150px;
+}
+
+.journal-table thead tr:first-child th.fixed-col-name {
+    z-index: 31;
+}
+
+.journal-table thead tr:last-child th.fixed-col-name {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--dark);
+    top: 3.5rem;
+    z-index: 26;
+}
+
+/* **КРИТИЧНА ФІКСАЦІЯ: Фон для фіксованих колонок у тілі** */
+.journal-table tbody tr td.fixed-col-num,
+.journal-table tbody tr td.fixed-col-name {
+    position: sticky;
+    /* Використовуємо !important для гарантії, що стилі фону з циклів Django не будуть конфліктувати */
+    background-color: var(--tableBgLight) !important;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+    z-index: 21;
+    padding: 1rem 1.25rem;
+}
+
+.journal-table tbody tr.even-row td.fixed-col-num,
+.journal-table tbody tr.even-row td.fixed-col-name {
+    background-color: var(--tableBgDark) !important;
+}
+
+/* ---- КІНЕЦЬ КРИТИЧНОЇ ФІКСАЦІЇ ---- */
+
+/* Стилі для Journal Cells */
+.journal-cell {
+    cursor: pointer;
+    min-width: 70px;
+    border: 1px solid var(--tableBorder);
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    transition: all 0.2s;
+}
+
+/* Вирівнювання заголовків у журналі викладача */
+.lesson-date-header {
+    text-align: center !important;
+}
+
+.lesson-num-header {
+    text-align: center !important;
+    padding: 0.5rem 0.25rem !important;
+}
+
+/* Додаємо стиль для SELECT у журналі, щоб прибрати стандартний вигляд поля вводу */
+.input-journal-select {
+    appearance: none;
+    border: none !important;
+    text-align-last: center;
+    text-align: center;
+    padding-right: 1.5rem !important;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="none" stroke="%232F3640" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>');
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1rem;
+    box-shadow: none !important;
+    width: 100%;
+    background-color: transparent;
+    color: var(--dark);
+    font-weight: 700;
+}
+
+.input-journal-select:focus {
+    outline: 1px solid var(--primary);
+    border-radius: 4px;
+}
+
+.input-journal-grade {
+    width: 100%;
+    text-align: center;
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--dark);
+    font-weight: 700;
+    /* focus:border-primary */
+}
+
+.input-journal-grade:focus {
+    border-bottom: 2px solid var(--primary);
+    outline: none;
+}
+
+.journal-table thead th {
+    border-left: 1px solid rgba(255, 255, 255, 0.5);
+    border-right: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.journal-cell:hover {
+    background-color: rgba(91, 132, 255, 0.1);
+}
+
+.journal-cell:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: -3px;
+    border-radius: 4px;
+}
+
+/* Фон клітинок */
+.bg-attendance {
+    background-color: transparent;
+}
+
+.bg-grade {
+    background-color: var(--tableBgDark);
+}
+
+.journal-table input {
+    font-weight: 700;
+    color: var(--dark);
+}
+
+/* Кольори тексту оцінок та пропусків - ЗАСНОВАНІ НА НОВІЙ ГАМІ */
+.grade-excellent {
+    color: var(--accent);
+}
+
+.grade-good {
+    color: var(--primary);
+}
+
+.grade-satisfactory {
+    color: var(--satisfactory-color, #FFB142);
+}
+
+.grade-fail {
+    color: var(--error);
+}
+
+.attendance-paid {
+    color: var(--secondary);
+}
+
+.attendance-neutral {
+    color: var(--attendance-dark);
+}
+
+.attendance-unpaid {
+    color: var(--error);
+}
+
+/* Recent Activity (Glass) */
+.recent-activity {
+    margin-top: 2rem;
+    /* GLASSMORPHISM СТИЛІ */
+    background: var(--bgGlass);
+    backdrop-filter: blur(var(--blur-intensity));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: var(--shadow-glass);
+
+    border-radius: 1rem;
+    padding: 1.5rem;
+}
+
+.activity-item {
+    color: var(--bodyText);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    transition: background-color 0.2s, padding-left 0.2s;
+    /* Додаємо утиліти для списку активності */
+    padding: 0.75rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-item:hover {
+    background-color: rgba(91, 132, 255, 0.05);
+    padding-left: 0.5rem;
+}
+
+.activity-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 1rem;
+}
+
+.activity-list {
+    list-style: none;
+    padding: 0;
+}
+
+/* Login Specific (Glass) */
+.login-body {
+    background: linear-gradient(135deg, #D9E0EE 0%, #F3E8EE 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+        'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 450px;
+    display: flex;
+    justify-content: center;
+}
+
+.login-box {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+
+    padding: 2.5rem 2rem;
+    border-radius: 2rem;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+}
+
+.logo-container {
+    margin-bottom: 2rem;
+}
+
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.logo-icon-small svg {
+    width: 2.5rem;
+    height: 2.5rem;
+    stroke: #5B84FF;
+    fill: none;
+    stroke-width: 1.5;
+}
+
+.login-title {
+    color: #2F3640;
+    font-size: 1.95rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.login-subtitle {
+    color: #5E6C84;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin: 0.75rem 0 2rem 0;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #5E6C84;
+    z-index: 10;
+    pointer-events: none;
+    stroke-width: 2;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.8rem 1rem 0.8rem 2.8rem;
+    border: 1px solid #E0E6ED;
+    border-radius: 0.75rem;
+    background: #FAFBFC;
+    color: #2F3640;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.form-input::placeholder {
+    color: #A9A9A9;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #5B84FF;
+    background: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(91, 132, 255, 0.1), 0 0 0 1px rgba(91, 132, 255, 0.3);
+}
+
+.form-spacing-vertical-large {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.btn {
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 1rem;
+    border-radius: 0.75rem;
+    font-family: inherit;
+}
+
+.btn-primary {
+    background: #5B84FF;
+    color: white;
+    padding: 1rem;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(91, 132, 255, 0.35);
+    margin-top: 0.5rem;
+}
+
+.btn-primary:hover {
+    background: #4A75E8;
+    box-shadow: 0 6px 20px rgba(91, 132, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(91, 132, 255, 0.3);
+}
+
+.content-card .btn-primary {
+    width: auto;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.85rem;
+    margin-right: 0;
+}
+
+.text-secondary-neutral {
+    color: var(--bodyText);
+}
+
+.hover-primary:hover {
+    color: var(--primary);
+}
+
+.text-center.margin-top-large {
+    margin-top: 1.5rem;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Утиліти для таблиці користувачів */
+.user-role-admin {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.user-role-teacher {
+    color: var(--secondary);
+    font-weight: 600;
+}
+
+.user-role-student {
+    color: var(--bodyText);
+    font-weight: 600;
+}
+
+/* Утиліти для повідомлень */
+.alert {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+}
+
+.alert-error {
+    background-color: var(--text-red-light-bg);
+    color: var(--text-red);
+    border: 1px solid var(--text-red);
+}
+
+.alert-info {
+    background-color: rgba(91, 132, 255, 0.1);
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.alert-success {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+}
+
+/* Утиліта для контейнера розкладу */
+.schedule-entry-row {
+    background: var(--tableBgDark);
+    padding: 1.25rem;
+    margin-bottom: 0.75rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.schedule-entry-row>div {
+    margin-bottom: 0.5rem;
+}
+
+.schedule-entry-row .form-label {
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.bg-glass-inline-date {
+    background: var(--bgGlass);
+    backdrop-filter: blur(var(--blur-intensity));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-scroll-x-container {
+    overflow-x: auto;
+    position: relative;
+}
+
+.filter-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
+.filter-column-gap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    min-width: 0;
+    align-self: flex-end;
+}
+
+.filter-column-gap label {
+    margin-bottom: 0;
+}
+
+.filter-column-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.filter-row-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-top: 0.5rem;
+}
+
+.date-controls-group {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.filter-height {
+    height: 3.5rem;
+    padding: 0.75rem 1.5rem;
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-top: 0 !important;
+}
+
+.header-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* ---- УТИЛІТИ ГРИДІВ ТА ФЛЕКСІВ ---- */
+.layout-grid-base {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+    .layout-grid-desktop {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.grid-gap-medium {
+    gap: 1rem;
+}
+
+/* ---- УТИЛІТИ ДЛЯ ТЕКСТУ ТА ВІДСТУПІВ ---- */
+
+.text-xsmall {
+    font-size: 0.75rem;
+}
+
+.text-small {
+    font-size: 0.875rem;
+}
+
+.text-medium-sm {
+    font-size: 0.875rem;
+}
+
+.text-large {
+    font-size: 1.25rem;
+}
+
+.font-medium {
+    font-weight: 500;
+}
+
+.font-semibold {
+    font-weight: 600;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+.text-left {
+    text-align: left !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.rounded-large {
+    border-radius: 0.5rem;
+}
+
+.min-width-zero {
+    min-width: 0;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.flex-grow {
+    flex-grow: 1;
+}
+
+.flex-items-center {
+    display: flex;
+    align-items: center;
+}
+
+.flex-align-end {
+    align-items: flex-end;
+}
+
+.flex-justify-center {
+    justify-content: center;
+}
+
+/* Специфічні відступи та межі */
+.msg-top-padding {
+    padding-top: 0.25rem;
+}
+
+.msg-bottom-margin {
+    margin-bottom: 1rem;
+}
+
+.margin-bottom-small {
+    margin-bottom: 0.5rem !important;
+}
+
+.margin-bottom-medium {
+    margin-bottom: 1rem !important;
+}
+
+.margin-bottom-large {
+    margin-bottom: 2rem !important;
+}
+
+.margin-top-small {
+    margin-top: 0.5rem !important;
+}
+
+.margin-top-medium {
+    margin-top: 1rem !important;
+}
+
+.margin-top-large {
+    margin-top: 1.25rem !important;
+}
+
+.margin-top-xl {
+    margin-top: 2rem !important;
+}
+
+.margin-right-small {
+    margin-right: 0.5rem !important;
+}
+
+.margin-left-small {
+    margin-left: 0.5rem !important;
+}
+
+.margin-left-auto {
+    margin-left: auto;
+}
+
+.icon-margin-right {
+    margin-right: 0.25rem !important;
+}
+
+.padding-small {
+    padding: 0.75rem !important;
+}
+
+.padding-medium {
+    padding: 0.75rem 1rem !important;
+}
+
+.date-display-padding {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.padding-top-medium {
+    padding-top: 1rem !important;
+}
+
+.padding-zero {
+    padding: 0 !important;
+}
+
+.border-top-section {
+    border-top: 1px solid var(--tableBorder);
+}
+
+.border-secondary {
+    border-color: var(--tableBorder);
+}
+
+.action-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.action-link-group>*+* {
+    margin-left: 0.5rem !important;
+}
+
+.action-link-group-tight>*+* {
+    margin-left: 0.25rem !important;
+}
+
+/* Фікс для таблиці "Журнал успішності" */
+.data-table th {
+    padding: 0.9rem 1rem;
+}
+
+.data-table th:nth-child(5),
+.data-table td:nth-child(5) {
+    text-align: center !important;
+}
+
+/* Фікс для кнопок-стрілок тижня у журналі викладача */
+.journal-controls .btn-icon-small {
+    height: 2.2rem;
+    width: 2.2rem;
+    padding: 0.5rem 0.6rem;
+}
+
+/* Badge для предметів */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.badge-info {
+    background-color: rgba(91, 132, 255, 0.15);
+    color: var(--primary);
+    border: 1px solid rgba(91, 132, 255, 0.3);
+}
+
+.badge-neutral {
+    background-color: rgba(169, 169, 169, 0.15);
+    color: var(--neutral);
+    border: 1px solid rgba(169, 169, 169, 0.3);
+}
+
+/* ========================================= */
+/* НІЧНИЙ РЕЖИМ (EduDark)                    */
+/* ========================================= */
+html.dark {
+    --bgMain: linear-gradient(135deg, #0f172a 0%, #1a1035 100%);
+    --bgGlass: rgba(15, 23, 42, 0.85);
+    --bgGlassHover: rgba(30, 41, 59, 0.95);
+    --dark: #f1f5f9;
+    --bodyText: #94a3b8;
+    --neutral: #64748b;
+    --tableBorder: rgba(255, 255, 255, 0.08);
+    --tableBgLight: rgba(255, 255, 255, 0.03);
+    --tableBgDark: rgba(91, 132, 255, 0.08);
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+html.dark body {
+    background: var(--bgMain);
+    color: var(--bodyText);
+}
+
+/* Фон сторінки */
+html.dark .bg-main-gradient {
+    background-image: linear-gradient(135deg, #0f172a 0%, #1a1035 100%) !important;
+}
+
+/* Скляні елементи */
+html.dark .glass-panel {
+    background-color: rgba(15, 23, 42, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+html.dark .glass-sidebar {
+    background-color: rgba(10, 15, 30, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Загальні фони Tailwind */
+html.dark .bg-white {
+    background-color: #1e293b !important;
+}
+
+html.dark .bg-gray-50 {
+    background-color: #1e293b !important;
+}
+
+html.dark .bg-gray-100 {
+    background-color: #334155 !important;
+}
+
+html.dark .bg-gray-200 {
+    background-color: #334155 !important;
+}
+
+html.dark .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+html.dark .bg-green-50 {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+html.dark .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+html.dark .bg-yellow-50 {
+    background-color: rgba(234, 179, 8, 0.1) !important;
+}
+
+/* Текст Tailwind */
+html.dark .text-gray-900 {
+    color: #f1f5f9 !important;
+}
+
+html.dark .text-gray-800 {
+    color: #e2e8f0 !important;
+}
+
+html.dark .text-gray-700 {
+    color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-600 {
+    color: #94a3b8 !important;
+}
+
+html.dark .text-gray-500 {
+    color: #94a3b8 !important;
+}
+
+html.dark .text-gray-400 {
+    color: #94a3b8 !important;
+}
+
+html.dark .text-gray-300 {
+    color: #64748b !important;
+}
+
+html.dark .text-dark {
+    color: #f1f5f9 !important;
+}
+
+/* Межі Tailwind */
+html.dark .border-gray-100 {
+    border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.dark .border-gray-200 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .divide-gray-100 > * + * {
+    border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Роздільник у хедері */
+html.dark .bg-gray-200.h-8.w-px {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Картки та панелі */
+html.dark .card-bento,
+html.dark [class*="rounded-"][class*="border"],
+html.dark .rounded-3xl,
+html.dark .rounded-2xl,
+html.dark .rounded-xl {
+    --tw-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Інпути та форми */
+html.dark input,
+html.dark textarea,
+html.dark select {
+    background-color: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #475569 !important;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+    border-color: var(--primary) !important;
+    outline-color: var(--primary) !important;
+}
+
+/* Таблиці */
+html.dark table {
+    background-color: transparent !important;
+}
+
+html.dark thead th,
+html.dark .table-clean thead th {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+    color: #94a3b8 !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark tbody tr {
+    border-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html.dark tbody tr:hover {
+    background-color: rgba(91, 132, 255, 0.08) !important;
+}
+
+html.dark td {
+    color: #cbd5e1 !important;
+}
+
+/* Спадне меню */
+html.dark #user-dropdown {
+    background-color: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark #user-dropdown .border-gray-50,
+html.dark #user-dropdown .bg-gray-50\/50 {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark #user-dropdown p.text-gray-400 {
+    color: #475569 !important;
+}
+
+/* Навігаційні посилання у сайдбарі */
+html.dark nav a:not(.text-blue-600):not([class*="from-primary"]) {
+    color: #94a3b8 !important;
+}
+
+html.dark nav a:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #f1f5f9 !important;
+}
+
+/* Вихід */
+html.dark .hover\:bg-red-50:hover {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Кнопки навігації (назад/вперед) */
+html.dark button.bg-white\/60 {
+    background-color: rgba(30, 41, 59, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #94a3b8 !important;
+}
+
+html.dark button.bg-white\/60:hover {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+/* Заголовок сторінки */
+html.dark h1, html.dark h2, html.dark h3 {
+    color: #f1f5f9;
+}
+
+/* Сповіщення */
+html.dark .bg-green-50.text-green-600 {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+    border-color: rgba(34, 197, 94, 0.2) !important;
+}
+
+html.dark .bg-blue-50.text-blue-600 {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+html.dark .bg-red-50.text-red-600 {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Скролбар */
+html.dark ::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Нотифікації — dark mode */
+html.dark #notif-dropdown {
+    background: rgba(15, 23, 42, 0.96) !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07) inset !important;
+}
+
+html.dark #notif-dropdown > div:first-child {
+    border-color: rgba(255,255,255,0.07) !important;
+}
+
+html.dark #notif-dropdown span[style*="font-weight:700"] {
+    color: #f1f5f9 !important;
+}
+
+html.dark #notif-btn {
+    background: rgba(255,255,255,0.06) !important;
+    color: #94a3b8 !important;
+}
+
+html.dark #notif-btn:hover {
+    background: rgba(91,132,255,0.15) !important;
+    color: #5B84FF !important;
+}
+
+/* ========================================= */
+/* РОЗШИРЕНІ DARK MODE ФІКСИ                 */
+/* ========================================= */
+
+/* --- Напівпрозорі фони (bg-gray-50/50, bg-gray-100/50) --- */
+html.dark .bg-gray-50\/50 {
+    background-color: rgba(30, 41, 59, 0.5) !important;
+}
+html.dark .bg-gray-100\/50 {
+    background-color: rgba(30, 41, 59, 0.5) !important;
+}
+html.dark .bg-blue-50\/50 {
+    background-color: rgba(91, 132, 255, 0.06) !important;
+}
+
+/* --- Відсутні bg-xxx кольори --- */
+html.dark .bg-gray-100 {
+    background-color: #334155 !important;
+}
+html.dark .bg-green-100 {
+    background-color: rgba(34, 197, 94, 0.15) !important;
+}
+html.dark .bg-red-100 {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+}
+html.dark .bg-orange-100 {
+    background-color: rgba(249, 115, 22, 0.15) !important;
+}
+html.dark .bg-purple-100 {
+    background-color: rgba(168, 85, 247, 0.15) !important;
+}
+html.dark .bg-purple-50 {
+    background-color: rgba(168, 85, 247, 0.1) !important;
+}
+html.dark .bg-indigo-100 {
+    background-color: rgba(99, 102, 241, 0.15) !important;
+}
+html.dark .bg-indigo-50 {
+    background-color: rgba(99, 102, 241, 0.1) !important;
+}
+
+/* --- Відсутні text-xxx кольори --- */
+html.dark .text-gray-700 {
+    color: #cbd5e1 !important;
+}
+html.dark .text-gray-600 {
+    color: #94a3b8 !important;
+}
+html.dark .text-blue-600 {
+    color: #93c5fd !important;
+}
+html.dark .text-blue-700 {
+    color: #93c5fd !important;
+}
+html.dark .text-green-700 {
+    color: #4ade80 !important;
+}
+html.dark .text-green-600 {
+    color: #86efac !important;
+}
+html.dark .text-red-700 {
+    color: #fca5a5 !important;
+}
+html.dark .text-red-600 {
+    color: #fca5a5 !important;
+}
+html.dark .text-red-500 {
+    color: #fca5a5 !important;
+}
+html.dark .text-orange-700 {
+    color: #fdba74 !important;
+}
+html.dark .text-orange-600 {
+    color: #fdba74 !important;
+}
+html.dark .text-indigo-700 {
+    color: #a5b4fc !important;
+}
+html.dark .text-indigo-600 {
+    color: #a5b4fc !important;
+}
+html.dark .text-indigo-500 {
+    color: #a5b4fc !important;
+}
+html.dark .text-purple-700 {
+    color: #c4b5fd !important;
+}
+html.dark .text-purple-600 {
+    color: #c4b5fd !important;
+}
+html.dark .text-green-500 {
+    color: #86efac !important;
+}
+
+/* --- Межі --- */
+html.dark .border-gray-50 {
+    border-color: rgba(255, 255, 255, 0.04) !important;
+}
+html.dark .border-gray-100 {
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+html.dark .border-blue-100 {
+    border-color: rgba(91, 132, 255, 0.2) !important;
+}
+html.dark .border-green-100 {
+    border-color: rgba(34, 197, 94, 0.2) !important;
+}
+html.dark .border-purple-100 {
+    border-color: rgba(168, 85, 247, 0.2) !important;
+}
+
+/* --- Поділювачі (divide-xxx) --- */
+html.dark .divide-gray-50 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* --- Hover стани --- */
+html.dark .hover\:bg-gray-50:hover,
+html.dark .hover\:bg-gray-100:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+html.dark .hover\:bg-blue-50:hover {
+    background-color: rgba(91, 132, 255, 0.1) !important;
+}
+html.dark .hover\:bg-blue-50\/50:hover {
+    background-color: rgba(91, 132, 255, 0.06) !important;
+}
+html.dark .hover\:bg-blue-100:hover {
+    background-color: rgba(91, 132, 255, 0.15) !important;
+}
+html.dark .hover\:bg-red-50:hover {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+}
+
+/* --- Текст у hover станах --- */
+html.dark .hover\:text-blue-600:hover {
+    color: #93c5fd !important;
+}
+html.dark .hover\:text-red-500:hover {
+    color: #fca5a5 !important;
+}
+html.dark .hover\:text-blue-500:hover {
+    color: #93c5fd !important;
+}
+
+/* --- Glass Tile (student_dashboard) --- */
+html.dark .glass-tile {
+    background: rgba(30, 41, 59, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark .custom-shadow {
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* --- Картки які напряму використовують bg-white --- */
+/* Student dashboard tiles, news posts */
+html.dark .bg-white.rounded-3xl,
+html.dark .bg-white.rounded-2xl {
+    background-color: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* --- Post cards (news_feed) --- */
+html.dark .post-card {
+    background-color: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+html.dark .post-card .bg-gray-50\/50 {
+    background-color: rgba(15, 23, 42, 0.5) !important;
+}
+html.dark .post-card .border-gray-50 {
+    border-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* --- Коментарі (news_feed) --- */
+html.dark .bg-white.rounded-2xl.px-4.py-2\.5 {
+    background-color: rgba(51, 65, 85, 0.6) !important;
+}
+
+/* --- Правий сайдбар новин --- */
+html.dark .from-purple-50 {
+    --tw-gradient-from: rgba(168, 85, 247, 0.08) !important;
+}
+html.dark .from-blue-50.to-indigo-100\/50,
+html.dark .from-blue-50 {
+    --tw-gradient-from: rgba(59, 130, 246, 0.08) !important;
+}
+html.dark .from-green-50 {
+    --tw-gradient-from: rgba(34, 197, 94, 0.08) !important;
+}
+html.dark .to-purple-100\/50 {
+    --tw-gradient-to: rgba(168, 85, 247, 0.04) !important;
+}
+html.dark .to-indigo-100\/50 {
+    --tw-gradient-to: rgba(99, 102, 241, 0.04) !important;
+}
+html.dark .to-emerald-100\/50 {
+    --tw-gradient-to: rgba(16, 185, 129, 0.04) !important;
+}
+html.dark .border-purple-100,
+html.dark .border-blue-100,
+html.dark .border-green-100 {
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* --- "Нові дописи" банер --- */
+html.dark .bg-blue-50.hover\:bg-blue-100 {
+    background-color: rgba(91, 132, 255, 0.08) !important;
+}
+html.dark .text-blue-700 {
+    color: #93c5fd !important;
+}
+html.dark .border-blue-100 {
+    border-color: rgba(91, 132, 255, 0.2) !important;
+}
+
+/* --- Table heads --- */
+html.dark thead.bg-gray-50,
+html.dark thead > tr > th.bg-gray-50 {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+}
+html.dark .border-gray-200 {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* --- Pagination --- */
+html.dark nav a.rounded.border,
+html.dark nav span.rounded.border {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+    background-color: transparent !important;
+}
+html.dark nav a.rounded.border:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+html.dark nav span.bg-blue-600.rounded.border {
+    background-color: var(--primary) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+}
+
+/* --- Student dashboard card text fixes --- */
+html.dark .text-gray-800 {
+    color: #e2e8f0 !important;
+}
+html.dark .text-gray-500.font-semibold,
+html.dark h3.text-gray-500 {
+    color: #94a3b8 !important;
+}
+html.dark .border-t.border-gray-50 {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+html.dark .divide-gray-50 > * + * {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+html.dark .hover\:bg-gray-50\/50:hover {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* --- Нотифікації (list items) --- */
+html.dark #notif-list a {
+    border-bottom-color: rgba(255, 255, 255, 0.04) !important;
+}
+html.dark #notif-list a:hover {
+    background: rgba(91, 132, 255, 0.1) !important;
+}
+html.dark #notif-list p {
+    color: #64748b !important;
+}
+
+/* ========================================= */
+/* 20. ЧАТ ТА КОМЕНТАРІ (Premium Chat UI) */
+/* ========================================= */
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 0.5rem;
+}
+
+.chat-message {
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-end;
+    max-width: 90%;
+    animation: chatSlideUp 0.4s ease-out forwards;
+}
+
+.chat-message.me {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.chat-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--white);
+    background: var(--primary);
+    box-shadow: 0 4px 12px rgba(91, 132, 255, 0.25);
+    text-transform: uppercase;
+}
+
+.chat-message.other .chat-avatar {
+    background: linear-gradient(135deg, #FF6B6B 0%, #E74C3C 100%);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2);
+}
+
+.chat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.chat-bubble {
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.5;
+    position: relative;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    transition: transform 0.2s ease;
+}
+
+.chat-bubble:hover {
+    transform: scale(1.01);
+}
+
+.chat-message.me .chat-bubble {
+    background: linear-gradient(135deg, var(--primary) 0%, #4a77e7 100%);
+    color: var(--white);
+    border-bottom-right-radius: 4px;
+}
+
+.chat-message.other .chat-bubble {
+    background: var(--white);
+    border: 1px solid var(--tableBorder);
+    color: var(--dark);
+    border-bottom-left-radius: 4px;
+}
+
+.chat-meta {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--neutral);
+    margin: 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chat-message.me .chat-meta {
+    flex-direction: row-reverse;
+    text-align: right;
+}
+
+.chat-author {
+    color: var(--bodyText);
+}
+
+.chat-time {
+    opacity: 0.7;
+}
+
+@keyframes chatSlideUp {
+    from { opacity: 0; transform: translateY(12px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}

@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактор розкладу - {{ institution.name|default:"MyBosco" }}{% endblock %}
+{% block header_title %}Розклад{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block content %}
+<!-- Hero banner -->
+<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+    <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+    <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+    <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+    <div class="relative px-6 py-5 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6a2 2 0 00-2-2H5a2 2 0 00-2 2v13M13 19V3a2 2 0 00-2-2H9a2 2 0 00-2 2v16M18 19V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10"/>
+                </svg>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+            </div>
+            <h1 class="text-4xl font-black text-white leading-tight">
+                Редактор розкладу{% if selected_group %} — {{ selected_group.name }}{% endif %}
+            </h1>
+            <p class="text-white/65 text-sm mt-0.5">Редагування та налаштування розкладу занять</p>
+        </div>
+        <form method="GET" class="flex-shrink-0">
+            <select name="group_id"
+                class="px-4 py-2.5 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl text-sm font-medium text-white placeholder-white/50 transition-all focus:outline-none focus:ring-2 focus:ring-white/40"
+                onchange="this.form.submit()">
+                <option value="" class="text-mainText bg-surface">-- Виберіть групу --</option>
+                {% for group in groups %}
+                <option value="{{ group.id }}" {% if selected_group and selected_group.id == group.id %}selected{% endif %} class="text-mainText bg-surface">{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+</div>
+
+{% if selected_group %}
+<div class="space-y-6 pb-10">
+    {% for day in schedule_data %}
+    <div class="card-bento p-0 overflow-hidden">
+        <div class="px-6 py-4 border-b border-border flex justify-between items-center">
+            <h3 class="text-sm font-black text-mainText uppercase tracking-widest flex items-center gap-3">
+                <span class="w-1.5 h-6 bg-primary rounded-full"></span>
+                {{ day.day_name }}
+            </h3>
+            <span class="text-xs font-bold text-mutedText uppercase tracking-widest">План на день</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="border-b border-border">
+                    <tr>
+                        <th class="px-6 py-3 text-[10px] font-black text-mutedText uppercase tracking-widest w-16">Слот</th>
+                        <th class="px-6 py-3 text-[10px] font-black text-mutedText uppercase tracking-widest w-28">Час</th>
+                        <th class="px-6 py-3 text-[10px] font-black text-mutedText uppercase tracking-widest">Предмет</th>
+                        <th class="px-6 py-3 text-[10px] font-black text-mutedText uppercase tracking-widest">Аудиторія</th>
+                        <th class="px-6 py-3 text-[10px] font-black text-mutedText uppercase tracking-widest">Викладач</th>
+                        <th class="px-6 py-3 text-[10px] font-black text-mutedText uppercase tracking-widest w-20 text-center">Дія</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% for slot in day.slots %}
+                    <tr class="hover:bg-primary/5 transition-all duration-200 group cursor-pointer edit-slot-btn"
+                        data-day="{{ day.day_num }}" data-slot="{{ slot.number }}"
+                        data-subject-id="{{ slot.template.subject_id|default:'' }}"
+                        data-teacher-id="{{ slot.template.teacher_id|default:'' }}"
+                        data-classroom-id="{{ slot.template.classroom_id|default:'' }}"
+                        data-start-time='{{ slot.template.start_time|time:"H:i"|default:"08:30" }}'
+                        data-duration="{{ slot.template.duration_minutes|default:80 }}"
+                        onclick="handleRowClick(this)">
+
+                        <td class="px-6 py-4">
+                            <div class="w-9 h-9 rounded-xl bg-border flex items-center justify-center text-sm font-black text-mutedText group-hover:bg-primary group-hover:text-white transition-all duration-200">
+                                {{ slot.number }}
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4">
+                            {% if slot.template %}
+                            <div class="text-sm font-bold text-mainText">{{ slot.template.start_time|time:"H:i" }}</div>
+                            <div class="text-[10px] font-bold text-mutedText uppercase mt-0.5">{{ slot.template.duration_minutes }} хв</div>
+                            {% else %}
+                            <div class="text-sm text-mutedText/30">—</div>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-4">
+                            {% if slot.template %}
+                            <div class="text-sm font-extrabold text-mainText group-hover:text-primary transition-colors">
+                                {{ slot.template.subject.name }}
+                            </div>
+                            {% else %}
+                            <div class="text-sm text-mutedText/40 italic">Слот вільний</div>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-4">
+                            {% if slot.template and slot.template.classroom %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold border border-primary/20">
+                                {{ slot.template.classroom.name }}
+                            </span>
+                            {% else %}
+                            <span class="text-mutedText/30">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-mutedText">
+                                {{ slot.template.teacher.full_name|default:"—" }}
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4 text-center">
+                            <div class="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-border text-mutedText/40 group-hover:border-primary/30 group-hover:text-primary transition-all duration-200">
+                                {% if slot.is_empty %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                {% else %}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="card-bento flex flex-col items-center justify-center py-20 text-center">
+    <div class="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-6">
+        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+    </div>
+    <h3 class="text-lg font-black text-mainText mb-1">Розклад не відображається</h3>
+    <p class="text-sm text-mutedText max-w-xs">Будь ласка, оберіть групу зі списку ліворуч, щоб почати редагування розкладу.</p>
+</div>
+{% endif %}
+
+<!-- Modal -->
+<div id="editModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50">
+    <div class="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="px-6 py-4 border-b border-border flex justify-between items-center">
+            <h3 class="text-lg font-black text-mainText" id="modalTitle">Редагувати слот</h3>
+            <button onclick="closeModal()" class="text-mutedText hover:text-mainText transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form id="slotForm" class="p-6 space-y-4">
+            <input type="hidden" id="modalDay">
+            <input type="hidden" id="modalSlot">
+            <div>
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1.5">Предмет</label>
+                <select id="modalSubject" class="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                    <option value="">-- Виберіть предмет (або очистити) --</option>
+                    {% for s in subjects %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1.5">Час початку</label>
+                    <input type="time" id="modalStartTime" class="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1.5">Тривалість (хв)</label>
+                    <input type="number" id="modalDuration" class="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1.5">Аудиторія</label>
+                <select id="modalClassroom" class="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                    <option value="">-- Без аудиторії --</option>
+                    {% for c in classrooms %}<option value="{{ c.id }}">{{ c.name }} ({{ c.building }})</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1.5">Викладач</label>
+                <select id="modalTeacher" class="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                    <option value="">-- Без викладача --</option>
+                    {% for t in teachers %}<option value="{{ t.id }}">{{ t.full_name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div id="modalError" class="hidden p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-xl font-medium"></div>
+            <div class="pt-2 flex gap-3">
+                <button type="button" onclick="closeModal()"
+                    class="flex-1 px-4 py-2.5 border border-border text-mainText text-sm font-bold rounded-xl hover:bg-surface transition-all">Скасувати</button>
+                <button type="submit"
+                    class="flex-1 px-4 py-2.5 bg-primary text-white text-sm font-black rounded-xl hover:bg-primary/90 shadow-lg transition-all">Зберегти</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function handleRowClick(row) {
+        openEditModal(
+            row.getAttribute('data-day'),
+            row.getAttribute('data-slot'),
+            row.getAttribute('data-subject-id'),
+            row.getAttribute('data-teacher-id'),
+            row.getAttribute('data-classroom-id'),
+            row.getAttribute('data-start-time'),
+            row.getAttribute('data-duration')
+        );
+    }
+
+    function openEditModal(day, slot, subjectId, teacherId, classroomId, startTime, duration) {
+        document.getElementById('modalDay').value = day;
+        document.getElementById('modalSlot').value = slot;
+        document.getElementById('modalSubject').value = subjectId;
+        document.getElementById('modalTeacher').value = teacherId;
+        document.getElementById('modalClassroom').value = classroomId;
+        document.getElementById('modalStartTime').value = startTime;
+        document.getElementById('modalDuration').value = duration;
+        document.getElementById('modalTitle').textContent = `Пара №${slot}`;
+        document.getElementById('modalError').classList.add('hidden');
+        document.getElementById('editModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        document.getElementById('editModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    document.getElementById('slotForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const saveBtn = this.querySelector('button[type="submit"]');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span>Збереження...';
+
+        const data = {
+            group_id: "{{ selected_group.id }}",
+            day: document.getElementById('modalDay').value,
+            lesson_number: document.getElementById('modalSlot').value,
+            subject_id: document.getElementById('modalSubject').value || null,
+            teacher_id: document.getElementById('modalTeacher').value || null,
+            classroom_id: document.getElementById('modalClassroom').value || null,
+            start_time: document.getElementById('modalStartTime').value,
+            duration: document.getElementById('modalDuration').value
+        };
+
+        fetch('/api/schedule/slot/save/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (result.status === 'success') {
+                location.reload();
+            } else {
+                const errBox = document.getElementById('modalError');
+                errBox.textContent = result.message;
+                errBox.classList.remove('hidden');
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Зберегти';
+            }
+        })
+        .catch(() => {
+            alert('Сталася помилка при збереженні');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Зберегти';
+        });
+    });
+</script>
+{% endblock %}

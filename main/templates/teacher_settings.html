@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Налаштування викладача - {{ institution.name|default:"MyBosco" }}{% endblock %}
+
+{% block header_title %}Налаштування предметів та оцінювання{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Hero banner -->
+    <div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+        <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+        <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+        <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+        <div class="relative px-6 py-5 flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6a2 2 0 00-2-2H5a2 2 0 00-2 2v13M13 19V3a2 2 0 00-2-2H9a2 2 0 00-2 2v16M18 19V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10"/>
+                    </svg>
+                    <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }}</span>
+                </div>
+                <h1 class="text-4xl font-black text-white leading-tight">Мої предмети та типи занять</h1>
+                <p class="text-white/65 text-sm mt-0.5">Налаштуйте типи занять та їхню вагу для кожного предмету</p>
+            </div>
+            <a href="{% url 'teacher_journal' %}" class="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl text-white text-sm font-bold hover:bg-white/25 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Назад до журналу
+            </a>
+        </div>
+    </div>
+
+    <div class="space-y-8">
+        {% for item in settings_data %}
+        <div class="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden"
+            id="assignment-{{ item.assignment.id }}">
+            <div class="bg-background/50 p-5 border-b border-border flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-mainText">{{ item.assignment.subject.name }}</h2>
+                    <p class="text-sm text-mutedText">Група: <span class="font-medium text-mainText/80">{{ item.assignment.group.name }}</span></p>
+                </div>
+                <button onclick="showCreateModal({{ item.assignment.id }}, '{{ item.assignment.subject.name }}')"
+                    class="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all text-sm font-medium flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Додати тип заняття
+                </button>
+            </div>
+
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr
+                                class="text-left text-xs font-bold text-mutedText uppercase tracking-widest border-b border-border">
+                                <th class="pb-4">Назва типу</th>
+                                <th class="pb-4">Макс. бали / Вага</th>
+                                <th class="pb-4 text-right">Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border/30">
+                            {% for etype in item.types %}
+                            <tr class="group hover:bg-background/50 transition-colors">
+                                <td class="py-4">
+                                    <span class="font-semibold text-mainText">{{ etype.name }}</span>
+                                </td>
+                                <td class="py-4">
+                                    <div class="flex items-center">
+                                        <span class="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-bold">
+                                            {{ etype.weight_percent|floatformat:0 }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="py-4 text-right">
+                                    <div class="flex justify-end gap-2">
+                                        <button
+                                            onclick="showEditModal({{ etype.id }}, '{{ etype.name }}', {{ etype.weight_percent }})"
+                                            class="p-2 text-mutedText hover:text-primary transition-colors"
+                                            title="Редагувати">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M11 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                        <button onclick="deleteType({{ etype.id }})"
+                                            class="p-2 text-mutedText hover:text-red-500 transition-colors"
+                                            title="Видалити">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="py-8 text-center text-mutedText italic">
+                                    Типи занять ще не налаштовані. Додайте перший тип для цього предмета.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Модальне вікно Створення/Редагування -->
+<div id="typeModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-surface rounded-2xl border border-border p-8 max-w-md w-full mx-4 shadow-2xl">
+        <h3 id="modalTitle" class="text-2xl font-bold text-mainText mb-6">Додати тип заняття</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-mutedText uppercase mb-1">Назва (напр. Лекція, Прак.
+                    робота)</label>
+                <input type="text" id="typeName"
+                    class="w-full px-4 py-3 border border-border bg-background text-mainText rounded-xl focus:outline-none focus:border-primary transition-colors">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-mutedText uppercase mb-1">Максимальні бали (напр. 5, 10,
+                    12)</label>
+                <input type="number" id="typeWeight"
+                    class="w-full px-4 py-3 border border-border bg-background text-mainText rounded-xl focus:outline-none focus:border-primary transition-colors">
+            </div>
+            <div class="flex gap-4 mt-8">
+                <button onclick="closeModal()"
+                    class="flex-1 px-6 py-3 border border-border text-mutedText rounded-xl hover:bg-background transition-all font-bold">Скасувати</button>
+                <button onclick="saveType()"
+                    class="flex-1 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all font-bold shadow-lg shadow-primary/20">Зберегти</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentAssignmentId = null;
+    let currentTypeId = null;
+
+    function showCreateModal(assignmentId, subjectName) {
+        currentAssignmentId = assignmentId;
+        currentTypeId = null;
+        document.getElementById('modalTitle').textContent = `Додати тип для ${subjectName}`;
+        document.getElementById('typeName').value = '';
+        document.getElementById('typeWeight').value = '12';
+        document.getElementById('typeModal').classList.remove('hidden');
+    }
+
+    function showEditModal(typeId, name, weight) {
+        currentTypeId = typeId;
+        currentAssignmentId = null;
+        document.getElementById('modalTitle').textContent = 'Редагувати тип заняття';
+        document.getElementById('typeName').value = name;
+        document.getElementById('typeWeight').value = weight;
+        document.getElementById('typeModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('typeModal').classList.add('hidden');
+    }
+
+    async function saveType() {
+        const name = document.getElementById('typeName').value.trim();
+        const weight = document.getElementById('typeWeight').value;
+        const action = currentTypeId ? 'update' : 'create';
+
+        if (!name) return alert('Вкажіть назву');
+
+        const payload = {
+            action: action,
+            id: currentTypeId,
+            assignment_id: currentAssignmentId,
+            name: name,
+            weight: weight
+        };
+
+        try {
+            const response = await fetch('/api/teacher/manage-eval-types/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Помилка');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Помилка мережі');
+        }
+    }
+
+    async function deleteType(typeId) {
+        if (!confirm('Ви впевнені, що хочете видалити цей тип?')) return;
+
+        try {
+            const response = await fetch('/api/teacher/manage-eval-types/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ action: 'delete', id: typeId })
+            });
+
+            const data = await response.json();
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Помилка');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Помилка мережі');
+        }
+    }
+</script>
+{% endblock %}

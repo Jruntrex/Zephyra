@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* СВІТЛА ТЕМА (за замовчуванням) — RGB-канали для підтримки opacity-модифікаторів Tailwind */
+  :root {
+    --bg-main: 244 247 251;      /* #F4F7FB */
+    --bg-surface: 255 255 255;   /* #FFFFFF */
+    --text-main: 30 41 59;       /* #1E293B */
+    --text-muted: 100 116 139;   /* #64748B */
+    --border-color: 226 232 240; /* #E2E8F0 */
+
+    --color-primary: 91 132 255;  /* #5B84FF */
+    --color-success: 16 185 129;  /* #10B981 */
+    --color-error: 239 68 68;     /* #EF4444 */
+  }
+
+  /* ТЕМНА ТЕМА */
+  .dark {
+    --bg-main: 15 23 42;         /* #0F172A */
+    --bg-surface: 30 41 59;      /* #1E293B */
+    --text-main: 248 250 252;    /* #F8FAFC */
+    --text-muted: 148 163 184;   /* #94A3B8 */
+    --border-color: 51 65 85;    /* #334155 */
+
+    --color-primary: 107 144 255; /* #6B90FF */
+    --color-success: 16 185 129;  /* #10B981 */
+    --color-error: 239 68 68;     /* #EF4444 */
+  }
+
+  body {
+    @apply font-sans bg-background text-mainText leading-relaxed min-h-screen transition-colors duration-300;
+  }
+
+  h1, h2, h3 {
+    @apply leading-tight font-bold text-mainText;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-surface/80 backdrop-blur-md border border-border/50 shadow-glass;
+  }
+
+  .glass-sidebar {
+    @apply bg-surface/90 backdrop-blur-xl border-r border-border shadow-glass;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center px-7 py-3 border-none rounded-xl font-semibold text-sm uppercase tracking-wide cursor-pointer transition-all duration-300 relative overflow-hidden text-white bg-primary shadow-button hover:-translate-y-0.5 hover:shadow-button-hover;
+  }
+}
+
+@layer components {
+  /* Базова картка (Bento Tile) */
+  .card-bento {
+    @apply bg-surface rounded-3xl p-5 relative overflow-hidden flex flex-col justify-between border border-border transition-all duration-300;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+  }
+
+  .card-bento:hover {
+    @apply -translate-y-1;
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Premium Gradient variant */
+  .card-premium {
+    @apply relative overflow-hidden;
+  }
+
+  .card-premium::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none;
+  }
+
+  /* Акцентна картка (кольорова) */
+  .card-accent {
+    @apply bg-gradient-to-br from-primary to-indigo-700 text-white rounded-3xl shadow-xl p-8 flex flex-col justify-between;
+  }
+
+  /* Заголовок секції всередині картки */
+  .label-section {
+    @apply text-mutedText font-bold text-xs uppercase tracking-widest mb-4;
+  }
+
+  /* Величезна цифра (KPI) */
+  .stat-hero {
+    @apply text-6xl md:text-7xl font-black tracking-tighter text-mainText;
+  }
+
+  /* Таблиця в стилі MyBosco */
+  .table-clean {
+    @apply w-full text-left border-collapse;
+  }
+
+  .table-clean th {
+    @apply pb-4 pr-4 text-xs font-bold text-white border-b border-border italic uppercase;
+  }
+
+  .table-clean td {
+    @apply py-4 text-sm text-mainText border-b border-border/50;
+  }
+
+  .table-clean tr:last-child td {
+    @apply border-0;
+  }
+
+  .table-clean tr:hover td {
+    @apply bg-mainText/5 transition-colors;
+  }
+
+  /* Бейджі (оцінки, статус) */
+  .badge-pill {
+    @apply inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-bold;
+  }
+}

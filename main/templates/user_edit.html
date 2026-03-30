@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Редагування користувача{% endblock %}
+
+{% block header_title %}Редагування Користувача: {{ user.full_name }}{% endblock %}
+
+{% block content %}
+<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Форма редагування користувача">
+    <h3 class="text-2xl font-bold text-dark mb-6">Оновлення даних користувача ID: {{ user.pk }}</h3>
+
+    <form method="POST" action="{% url 'user_edit' pk=user.pk %}" class="space-y-6">
+        {% csrf_token %}
+
+        <div
+            class="bg-blue-50 border border-blue-100 text-blue-800 text-sm px-4 py-3 rounded-xl flex items-start gap-3">
+            <svg class="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-600" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div class="leading-relaxed">
+                Залиште поле <span class="font-bold">Новий Пароль</span> порожнім, якщо не бажаєте його змінювати.
+            </div>
+        </div>
+
+        {# ПІБ #}
+        <div class="space-y-1">
+            <label for="{{ form.full_name.id_for_label }}" class="block text-sm font-medium text-dark mb-1">ПІБ:</label>
+            {{ form.full_name.errors }}
+            <input type="text" name="{{ form.full_name.name }}" id="{{ form.full_name.id_for_label }}" placeholder="ПІБ"
+                value="{{ form.full_name.value|default:'' }}" required
+                class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
+        </div>
+
+        {# EMAIL #}
+        <div class="space-y-1">
+            <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-dark mb-1">Email:</label>
+            {{ form.email.errors }}
+            <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}" placeholder="Email"
+                value="{{ form.email.value|default:'' }}" required
+                class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
+        </div>
+
+        {# РОЛЬ #}
+        <div class="space-y-1">
+            <label for="{{ form.role.id_for_label }}" class="block text-sm font-medium text-dark mb-1">Роль:</label>
+            {{ form.role.errors }}
+            <select name="{{ form.role.name }}" id="{{ form.role.id_for_label }}" required
+                class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer">
+                {% for value, label in form.role.field.choices %}
+                <option value="{{ value }}" {% if value == form.role.value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {# ПАРОЛЬ #}
+        <div class="space-y-1">
+            <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-dark mb-1">Новий
+                Пароль:</label>
+            {{ form.password.errors }}
+            <input type="password" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}"
+                placeholder="Залиште порожнім, щоб не змінювати"
+                class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
+        </div>
+
+        {# ГРУПА #}
+        <div class="space-y-1" id="group-group">
+            <label for="{{ form.group.id_for_label }}" class="block text-sm font-medium text-dark mb-1">Група:</label>
+            {{ form.group.errors }}
+            <select name="{{ form.group.name }}" id="{{ form.group.id_for_label }}"
+                class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer"
+                title="Потрібна лише для ролі Студент">
+                <option value="" {% if not form.group.value %}selected{% endif %}>Група (Опціонально/Тільки для
+                    Студента)</option>
+                {% for group in groups %}
+                <option value="{{ group.pk }}" {% if group.pk == form.group.value %}selected{% endif %}>{{ group.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {# ПРЕДМЕТИ (для викладачів) #}
+        <div class="space-y-3" id="subjects-group">
+            <label class="block text-sm font-medium text-dark">Предмети:</label>
+            <div class="bg-blue-50 border border-blue-100 text-blue-800 text-sm px-4 py-2 rounded-lg"
+                id="current-subjects" style="display: none;">
+                <strong>Поточні предмети:</strong> <span id="current-subjects-list"></span>
+            </div>
+            {{ form.subjects.errors }}
+            <div
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-4 border border-tableBorder rounded-xl bg-white/50">
+                {% for checkbox in form.subjects %}
+                <label
+                    class="flex items-center gap-2 p-2 rounded-lg hover:bg-primary/5 cursor-pointer transition-colors duration-200">
+                    {{ checkbox.tag }}
+                    <span class="text-bodyText font-medium">{{ checkbox.choice_label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-4 mt-8 pt-4 border-t border-tableBorder">
+            <button type="submit"
+                class="btn bg-accent text-white shadow-button hover:bg-green-600 hover:shadow-button-hover py-2.5 px-6">Зберегти
+                Зміни</button>
+            <a href="{% url 'users_list' %}"
+                class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover py-2.5 px-6">Скасувати</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    function updateFormFields() {
+        const roleSelect = document.querySelector('select[name="role"]');
+        const groupGroup = document.getElementById('group-group');
+        const subjectsGroup = document.getElementById('subjects-group');
+        const currentSubjectsDiv = document.getElementById('current-subjects');
+        const currentSubjectsList = document.getElementById('current-subjects-list');
+
+        if (roleSelect && groupGroup && subjectsGroup) {
+            const selectedRole = roleSelect.value;
+
+            // Показуємо групу тільки для студентів
+            groupGroup.style.display = selectedRole === 'student' ? 'block' : 'none';
+
+            // Показуємо предмети тільки для викладачів
+            subjectsGroup.style.display = selectedRole === 'teacher' ? 'block' : 'none';
+
+            // Показуємо поточні предмети для викладачів
+            if (selectedRole === 'teacher' && {{ user_subjects|length }} > 0) {
+            currentSubjectsDiv.style.display = 'block';
+            currentSubjectsList.textContent = '{{ user_subjects|join:", "|escapejs }}';
+        } else {
+            currentSubjectsDiv.style.display = 'none';
+        }
+    }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        updateFormFields();
+
+        const roleSelect = document.querySelector('select[name="role"]');
+        if (roleSelect) {
+            roleSelect.addEventListener('change', updateFormFields);
+        }
+    });
+</script>
+{% endblock %}
+

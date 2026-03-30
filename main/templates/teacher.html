@@ -1,0 +1,960 @@
+{% extends "base.html" %}
+{% load static %}
+{% load math_filters %}
+{% load journal_filters %}
+
+{% block title %}Журнал викладача 2.0{% endblock %}
+
+{% block header_title %}Журнал Викладача{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom Scrollbar for the table container */
+    .journal-scroll::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .journal-scroll::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+
+    .journal-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    .journal-scroll::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Comment Triangle Marker */
+    .has-comment::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-bottom: 6px solid transparent;
+        border-top: 6px solid #ef4444;
+        /* Red triangle */
+        border-right: 6px solid #ef4444;
+    }
+
+    /* Input styling */
+    .grade-input {
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        background: transparent;
+        border: none;
+        outline: none;
+        font-weight: 600;
+        color: inherit;
+    }
+
+    .grade-input:focus {
+        background: rgba(255, 255, 255, 0.5);
+        box-shadow: inset 0 0 0 2px #3b82f6;
+    }
+
+    /* Status Dot */
+    .status-dot {
+        height: 8px;
+        width: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .status-dot.online {
+        background-color: #22c55e;
+        box-shadow: 0 0 4px #22c55e;
+    }
+
+    .status-dot.offline {
+        background-color: #ef4444;
+    }
+
+    /* Modal Animation */
+    .modal-enter {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    .modal-enter-active {
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 0.2s, transform 0.2s;
+    }
+</style>
+
+<!-- Hero banner -->
+<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+    <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+    <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+    <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+    <div class="relative px-6 py-5 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }}</span>
+            </div>
+            <h1 class="text-4xl font-black text-white leading-tight">Журнал Викладача</h1>
+            <p class="text-white/65 text-sm mt-0.5">Оцінки, відвідуваність та заняття</p>
+        </div>
+        <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+    </div>
+</div>
+
+{% with q="" %}
+<div class="card-bento">
+    <div class="flex justify-end items-center gap-3 mb-6">
+        <div class="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-xl border border-primary/20"
+            title="Легенда: Зелений = В коледжі, Червоний = Відсутній">
+            <span class="status-dot online"></span>
+            <span class="text-[10px] font-black text-primary uppercase tracking-widest leading-none">RFID
+                Monitoring</span>
+        </div>
+    </div>
+
+    <!-- FILTERS TOOLBAR -->
+    <div class="bg-background/50 rounded-2xl p-5 mb-6 border border-border">
+        <form method="GET" action="{% url 'teacher_journal' %}"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+            <!-- Subject Select -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Дисципліна</label>
+                <select name="subject" onchange="this.form.submit()"
+                    class="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:outline-none focus:border-primary text-mainText text-sm font-medium transition-all">
+                    <option value="">Оберіть предмет...</option>
+                    {% for s in subjects %}
+                    {% with s_id=s.id|stringformat:"s" %}
+                    <option value="{{ s.id }}" {% if request.GET.subject|is_equal:s_id %}selected{% endif %}>{{ s.name }}</option>
+                    {% endwith %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Group Select -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Академічна група</label>
+                <select name="group" onchange="this.form.submit()"
+                    class="w-full px-4 py-2.5 bg-background border border-border rounded-xl focus:outline-none focus:border-primary text-mainText text-sm font-medium transition-all">
+                    <option value="">Оберіть групу...</option>
+                    {% for g in groups %}
+                    {% with g_id=g.id|stringformat:"s" %}
+                    <option value="{{ g.id }}" {% if request.GET.group|is_equal:g_id %}selected{% endif %}>{{ g.name }}
+                    </option>
+                    {% endwith %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Week Navigator -->
+            <div class="flex flex-col gap-1.5 group/week">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest cursor-pointer"
+                    onclick="openWeekPicker()">Календарний період</label>
+                <div class="flex items-center justify-between bg-background rounded-xl border border-border p-1 hover:border-primary transition-all cursor-pointer"
+                    onclick="openWeekPicker()">
+                    <a href="?subject={{ request.GET.subject }}&group={{ request.GET.group }}&week={{ week_offset|add:'-1' }}"
+                        onclick="event.stopPropagation()"
+                        class="p-2 rounded-lg hover:bg-background text-mutedText hover:text-primary transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M15 19l-7-7 7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </a>
+                    <span class="text-xs font-black text-mainText/80 uppercase tracking-tighter">
+                        {% if week_start %}{{ week_start|date:"d.m" }} — {{ week_end|date:"d.m" }}{% else %}Оберіть
+                        параметри{% endif %}
+                    </span>
+                    <a href="?subject={{ request.GET.subject }}&group={{ request.GET.group }}&week={{ week_offset|add:'1' }}"
+                        onclick="event.stopPropagation()"
+                        class="p-2 rounded-lg hover:bg-background text-mutedText hover:text-primary transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- View Controls -->
+            <div class="flex items-center gap-3">
+                <button type="button" id="attendanceToggleBtn" onclick="toggleAttendanceMode()"
+                    class="flex-grow px-4 py-2.5 bg-background border border-border rounded-xl text-[10px] font-black uppercase tracking-widest text-mutedText hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all">
+                    Тільки пропуски
+                </button>
+                <a href="{% url 'teacher_settings' %}"
+                    class="p-2.5 bg-background border border-border rounded-xl text-mutedText hover:text-primary hover:border-primary/30 transition-all shadow-sm"
+                    title="Налаштування">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </a>
+            </div>
+            <input type="checkbox" id="attendanceOnly" class="hidden">
+            <input type="hidden" name="week" value="{{ week_shift }}">
+        </form>
+    </div>
+
+    <!-- MAIN GRID CONTAINER -->
+    <div
+        class="glass-panel shadow-sm rounded-3xl p-0 overflow-hidden relative w-full journal-scroll flex flex-col max-h-[80vh] border border-gray-100 bg-white">
+        <div class="overflow-auto flex-grow journal-scroll">
+            <table class="w-full border-collapse text-sm">
+                <thead
+                    class="bg-gray-50 text-gray-400 font-black uppercase text-[10px] tracking-widest sticky top-0 z-40 shadow-sm">
+                    <tr>
+                        <!-- Fixed Columns Header 1 -->
+                        <th rowspan="2"
+                            class="sticky left-0 top-0 z-50 bg-gray-50 border-b border-r border-gray-100 p-4 min-w-[50px] text-center">
+                            #</th>
+                        <th rowspan="2"
+                            class="sticky left-[50px] top-0 z-50 bg-gray-50 border-b border-r border-gray-100 p-4 min-w-[220px] text-left">
+                            Студент</th>
+
+                        <!-- Day Headers -->
+                        {% for header in lesson_headers %}
+                        <th colspan="{{ header.lessons|length }}"
+                            class="border-b border-r border-gray-200 p-2 text-center bg-gray-50 min-w-[100px]">
+                            <div class="flex flex-col">
+                                <span class="text-base font-extrabold text-gray-800">{{ header.date|date:"d" }}</span>
+                                <span class="text-[10px] text-gray-400">
+                                    {{ header.date|date:"F" }} ({{ header.day_name }})
+                                </span>
+                            </div>
+                        </th>
+                        {% empty %}
+                        <th class="p-4 text-center text-gray-400 font-normal">Немає занять</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <!-- Lesson Headers -->
+                        {% for header in lesson_headers %}
+                        {% for lesson in header.lessons %}
+                        <th class="border-b border-r border-gray-200 p-2 min-w-[70px] {% if lesson.is_cancelled %}bg-red-50 opacity-60{% else %}bg-white{% endif %} group hover:bg-blue-50 transition-colors relative cursor-pointer"
+                            data-lesson-id="{{ lesson.id }}"
+                            onclick="openLessonModal('{{ lesson.id }}', '{{ lesson.topic|default:q|escapejs }}', '{{ lesson.evaluation_type.id|default:q }}', '{{ lesson.homework|default:q|escapejs }}', '{{ lesson.materials|default:q|escapejs }}', {% if lesson.is_cancelled %}true{% else %}false{% endif %}, '{{ lesson.cancellation_reason|default:q|escapejs }}')"
+                            title="{% if lesson.is_cancelled %}Скасовано: {{ lesson.cancellation_reason|default:'без причини' }}{% else %}Натисніть для редагування деталей уроку{% endif %}">
+                            <div class="flex flex-col items-center gap-1">
+                                <span class="text-[10px] font-black text-gray-400">{{ lesson.lesson_num }}</span>
+                                <div class="lesson-topic-text text-[10px] font-bold {% if lesson.is_cancelled %}text-red-400 line-through{% else %}text-gray-600{% endif %} leading-tight"
+                                    title="{{ lesson.topic|default:'Без теми' }} / {{ lesson.max_points|floatformat:0 }}">
+                                    {{ lesson.topic|default:"—" }} / {{ lesson.max_points|floatformat:0 }}
+                                </div>
+                                <div class="flex items-center gap-0.5">
+                                    {% if lesson.homework %}<span class="hw-icon text-blue-400 text-[10px]" title="Є домашнє завдання">📎</span>{% endif %}
+                                    {% if lesson.is_cancelled %}<span class="text-red-400 text-[10px]" title="Скасовано">✕</span>{% endif %}
+                                </div>
+                            </div>
+                            <!-- Tooltip -->
+                            <div
+                                class="hidden group-hover:flex flex-col gap-1 absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-gray-800 text-white text-xs rounded-xl shadow-lg z-50 overflow-hidden min-w-[120px]">
+                                <span class="px-3 pt-2 pb-1 whitespace-nowrap">{% if lesson.is_cancelled %}Скасовано{% else %}{{ lesson.topic|default:"Без теми" }}{% endif %}</span>
+                                <a href="/lesson/{{ lesson.id }}/" onclick="event.stopPropagation()"
+                                    class="px-3 pb-2 pt-1 text-blue-300 hover:text-blue-200 font-bold border-t border-white/10 whitespace-nowrap flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    Деталі уроку
+                                </a>
+                            </div>
+                        </th>
+                        {% endfor %}
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for student in students %}
+                    <tr class="hover:bg-blue-50/50 transition-colors group h-[50px]">
+                        <!-- # Column -->
+                        <td
+                            class="sticky left-0 z-30 bg-white group-hover:bg-blue-50/30 border-r border-gray-200 text-center font-medium text-gray-400">
+                            {{ forloop.counter }}</td>
+
+                        <!-- Name & RFID Status Column -->
+                        <td
+                            class="sticky left-[50px] z-30 bg-white group-hover:bg-blue-50/30 border-r border-gray-200 px-4 py-2 font-medium text-gray-800 flex items-center justify-between gap-2 h-[50px]">
+                            <span class="truncate max-w-[160px]" title="{% if student.name %}{{ student.name }}{% else %}—{% endif %}">{% if student.name %}{{ student.name }}{% else %}—{% endif %}</span>
+                            <!-- RFID Indicator -->
+                            <span class="status-dot {% if student.is_in_building %}online{% else %}offline{% endif %}"
+                                title="{% if student.is_in_building %}В коледжі{% else %}Відсутній в будівлі{% endif %}"></span>
+                        </td>
+
+                        <!-- Grades Cells -->
+                        {% for header in lesson_headers %}
+                        {% for lesson in header.lessons %}
+                        {% with student_data=journal_data|get_item:student.id %}
+                        {% with date_data=student_data|get_item:header.date %}
+                        {% with entry=date_data|get_item:lesson.lesson_num %}
+                        <td class="border-r border-gray-100 p-0 relative transition-all cursor-text
+                            {% if entry.comment %}has-comment{% endif %}" data-student-id="{{ student.id }}"
+                            data-lesson-date="{{ header.date|date:'Y-m-d' }}" data-lesson-num="{{ lesson.lesson_num }}"
+                            data-lesson-id="{{ lesson.id }}" data-max-points="{{ lesson.max_points|default:12 }}"
+                            data-is-in-building="{% if student.is_in_building %}true{% else %}false{% endif %}">
+
+                            <!-- Unified Input -->
+                            <div class="flex h-full w-full items-center relative group/cell">
+                                <input type="text"
+                                    class="grade-input text-sm 
+                                        {% if entry.is_grade %}text-gray-800{% else %}text-gray-400{% endif %}
+                                        {% if entry.get_display_value == 'Н' %}text-red-500 font-bold bg-red-50{% endif %}"
+                                    value="{{ entry.get_display_value|default:q }}" placeholder="·"
+                                    onfocus="this.select()" onblur="handleCellBlur(this)"
+                                    onkeydown="handleCellKey(event, this)">
+
+                                <!-- Comment Toggle -->
+                                <button onclick="openCommentModal(this.parentElement.parentElement)"
+                                    class="absolute right-0 top-0 p-1 opacity-0 group-hover/cell:opacity-100 hover:text-primary transition-opacity text-gray-300">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Hidden Comment Data -->
+                            <input type="hidden" class="comment-data" value="{{ entry.comment|default:q }}">
+                        </td>
+                        {% endwith %}
+                        {% endwith %}
+                        {% endwith %}
+                        {% endfor %}
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="100" class="p-8 text-center text-gray-400">
+                            Дані відсутні. Оберіть предмет та групу.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div id="saveStatus"
+        class="fixed bottom-6 right-6 px-4 py-3 rounded-xl shadow-lg bg-gray-900 text-white text-sm font-medium flex items-center gap-3 transition-transform translate-y-20 opacity-0 z-50">
+        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>Всі зміни збережено</span>
+    </div>
+</div>
+{% endwith %}
+
+<!-- LESSON MODAL -->
+<div id="lessonModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/20 backdrop-blur-sm" onclick="closeLessonModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl transform transition-all scale-95 opacity-0"
+        id="lessonModalContent">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-black text-gray-800 tracking-tight">Деталі заняття</h3>
+            <button onclick="closeLessonModal()" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <input type="hidden" id="modalLessonId">
+
+        <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+            <!-- Тема -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Тема заняття</label>
+                <input type="text" id="modalLessonTopic"
+                    class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-gray-700 font-medium"
+                    placeholder="Введіть тему уроку...">
+            </div>
+
+            <!-- Тип оцінювання -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Тип оцінювання</label>
+                <select id="modalLessonType" onchange="onEvalTypeChange()"
+                    class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-gray-700 font-medium h-[52px]">
+                    <option value="">Без специфічного типу</option>
+                    {% for etype in evaluation_types %}
+                    {% if not etype.is_homework_type %}
+                    <option value="{{ etype.id }}" data-weight="{{ etype.weight_percent|floatformat:0 }}">{{ etype.name }} ({{ etype.weight_percent|floatformat:0 }}%)</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Вплив ДЗ на оцінку -->
+            <div id="hwWeightSection" class="hidden flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Вплив ДЗ на підсумкову оцінку</label>
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 relative">
+                        <input type="number" id="modalHwWeight" min="0" max="100" step="1"
+                            class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-gray-700 font-medium pr-10"
+                            placeholder="0">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">%</span>
+                    </div>
+                    <a href="{% url 'teacher_settings' %}"
+                        class="p-3 bg-blue-50 border border-blue-100 rounded-2xl text-primary hover:bg-blue-100 transition-colors flex-shrink-0"
+                        title="Керувати типами оцінювання в налаштуваннях">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </a>
+                </div>
+                <p class="text-[10px] text-gray-400 px-1">Вага оцінки цього типу у загальному балі. <a href="{% url 'teacher_settings' %}" class="text-primary hover:underline font-bold">Детальне налаштування →</a></p>
+            </div>
+
+            <!-- ДЗ — завжди присутній тип, показується окремо -->
+            {% for etype in evaluation_types %}
+            {% if etype.is_homework_type %}
+            <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+                    <div>
+                        <p class="text-xs font-black text-indigo-700">Домашнє Завдання · {{ etype.weight_percent|floatformat:0 }}% від оцінки</p>
+                        <p class="text-[10px] text-indigo-400">Обов'язковий тип — оцінки з Мої Уроки</p>
+                    </div>
+                </div>
+                <a href="{% url 'teacher_settings' %}" class="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 hover:underline whitespace-nowrap">Змінити %</a>
+            </div>
+            {% endif %}
+            {% endfor %}
+
+            <!-- Посилання на деталі уроку (Мої Уроки) -->
+            <a id="modalLessonDetailLink" href="#"
+                class="flex items-center gap-2 px-4 py-3 bg-blue-50 border border-blue-100 rounded-2xl text-sm font-bold text-primary hover:bg-blue-100 transition-colors group">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                <span>Детальне редагування Домашнього Завдання та лекції — Мої Уроки</span>
+            </a>
+
+            <!-- Скасування заняття -->
+            <div class="flex flex-col gap-2 p-4 bg-red-50 border border-red-100 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <label class="text-[10px] font-black text-red-400 uppercase tracking-widest">Скасувати заняття</label>
+                    <button type="button" id="cancelledToggleBtn" onclick="toggleCancelledState()"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none">
+                        <span id="cancelledToggleTrack"
+                            class="absolute inset-0 rounded-full bg-gray-200 transition-colors"></span>
+                        <span id="cancelledToggleThumb"
+                            class="relative z-10 inline-block h-4 w-4 translate-x-1 rounded-full bg-white shadow transition-transform"></span>
+                    </button>
+                </div>
+                <div id="cancellationReasonBlock" class="hidden mt-1">
+                    <label class="text-[10px] font-black text-red-400 uppercase tracking-widest">Причина скасування</label>
+                    <input type="text" id="modalCancellationReason"
+                        class="mt-1 w-full px-4 py-2.5 bg-white border border-red-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-400 outline-none transition-all text-gray-700 font-medium"
+                        placeholder="Вкажіть причину...">
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex gap-3">
+            <button onclick="closeLessonModal()"
+                class="flex-1 px-6 py-4 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-2xl transition-colors">Скасувати</button>
+            <button onclick="saveLessonDetails()"
+                class="flex-1 px-6 py-4 text-sm font-black bg-primary text-white rounded-2xl shadow-lg shadow-primary/30 hover:bg-blue-600 transform hover:-translate-y-0.5 active:translate-y-0 transition-all">
+                Оновити
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- COMMENT MODAL -->
+<div id="commentModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/20 backdrop-blur-sm" onclick="closeCommentModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white p-6 rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0"
+        id="commentModalContent">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Коментар до оцінки</h3>
+        <textarea id="modalCommentText"
+            class="w-full h-32 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary resize-none text-sm text-gray-700 placeholder-gray-400 mb-4"
+            placeholder="Введіть коментар..."></textarea>
+        <div class="flex justify-end gap-3">
+            <button onclick="closeCommentModal()"
+                class="px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100 rounded-lg transition">Скасувати</button>
+            <button onclick="saveModalComment()"
+                class="px-4 py-2 text-sm font-semibold bg-primary text-white rounded-lg shadow hover:bg-blue-600 transition">Зберегти</button>
+        </div>
+    </div>
+</div>
+
+<!-- WEEK PICKER MODAL -->
+<div id="weekPickerModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/20 backdrop-blur-sm" onclick="closeWeekPicker()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white p-6 rounded-2xl shadow-2xl transform transition-all scale-95 opacity-0"
+        id="weekPickerContent">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-bold text-gray-800">Вибір тижня</h3>
+            <button onclick="closeWeekPicker()" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Оберіть дату</label>
+                <input type="date" id="weekPickerDate"
+                    class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-gray-700 font-medium">
+            </div>
+            <button onclick="jumpToSelectedWeek()"
+                class="w-full px-6 py-4 text-sm font-black bg-primary text-white rounded-2xl shadow-lg shadow-primary/30 hover:bg-blue-600 transform hover:-translate-y-0.5 active:translate-y-0 transition-all">
+                Перейти до тижня
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // === CONFIGURATION ===
+    const SAVE_URL = "{% url 'api_save_grade' %}";
+
+    // === DOM ELEMENTS ===
+    const saveStatus = document.getElementById('saveStatus');
+    const commentModal = document.getElementById('commentModal');
+    const modalContent = document.getElementById('commentModalContent');
+    const modalText = document.getElementById('modalCommentText');
+    const attendanceCheckbox = document.getElementById('attendanceOnly');
+
+    let activeCell = null; // Currently active cell for comment editing
+
+    // === EVENT LISTENERS ===
+
+    // Right Click on Cell -> Open Comment
+    document.querySelectorAll('td[data-student-id]').forEach(cell => {
+        cell.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+            openCommentModal(this);
+        });
+    });
+
+    // Toggle Attendance Mode
+    function toggleAttendanceMode() {
+        const checkbox = document.getElementById('attendanceOnly');
+        const btn = document.getElementById('attendanceToggleBtn');
+        checkbox.checked = !checkbox.checked;
+
+        // Trigger the change event manually
+        const event = new Event('change');
+        checkbox.dispatchEvent(event);
+
+        // Update button style
+        if (checkbox.checked) {
+            btn.classList.add('bg-red-50', 'text-red-500', 'border-red-100');
+            btn.classList.remove('bg-white', 'text-gray-400', 'border-gray-200');
+        } else {
+            btn.classList.remove('bg-red-50', 'text-red-500', 'border-red-100');
+            btn.classList.add('bg-white', 'text-gray-400', 'border-gray-200');
+        }
+    }
+
+    attendanceCheckbox.addEventListener('change', function () {
+        const inputs = document.querySelectorAll('.grade-input');
+        if (this.checked) {
+            inputs.forEach(input => {
+                const val = input.value;
+                if (val !== 'Н' && val !== 'н' && val !== 'n' && val !== 'N' && val !== '') {
+                    input.closest('td').style.opacity = '0.2';
+                }
+            });
+        } else {
+            document.querySelectorAll('td[data-student-id]').forEach(td => td.style.opacity = '1');
+        }
+    });
+
+    // === LOGIC ===
+
+    function handleCellKey(e, input) {
+        if (e.key === 'Enter') {
+            input.blur(); // Triggers handleCellBlur
+            // Move selection down? Or next?
+            // Optional: Implement navigation
+        }
+    }
+
+    function handleCellBlur(input) {
+        const cell = input.closest('td');
+        const rawValue = input.value.trim();
+        const studentId = cell.dataset.studentId;
+        const lessonDate = cell.dataset.lessonDate;
+
+        const payload = {
+            student_id: studentId,
+            lesson_id: cell.dataset.lessonId,
+            date: lessonDate,
+            lesson_num: cell.dataset.lessonNum,
+            value: rawValue,
+            subject_id: "{{ selected_subject_id }}",
+            comment: cell.querySelector('.comment-data')?.value || ''
+        };
+
+        // Validation Check (Ghost Protocol)
+        const isInBuilding = cell.dataset.isInBuilding === 'true';
+        let points = parseInt(rawValue);
+
+        if (!isNaN(points) && points > 0 && !isInBuilding) {
+            const studentName = cell.parentElement.querySelector('td:nth-child(2)').innerText.trim();
+            if (!confirm(`Увага! Студент ${studentName} не зафіксований на вході в коледж. Зберегти оцінку?`)) {
+                input.value = ''; // Revert
+                return;
+            }
+        }
+
+        saveData(payload);
+        updateCellStyle(input);
+    }
+
+    function updateCellStyle(input) {
+        const val = input.value.toUpperCase();
+        input.classList.remove('text-red-500', 'font-bold', 'bg-red-50', 'text-gray-400', 'text-gray-800');
+
+        if (['Н', 'N', 'H'].includes(val)) {
+            input.value = 'Н';
+            input.classList.add('text-red-500', 'font-bold', 'bg-red-50');
+        } else if (val === '' || val === '—') {
+            input.classList.add('text-gray-400');
+        } else {
+            input.classList.add('text-gray-800', 'font-bold');
+        }
+    }
+
+    function saveData(payload) {
+        showStatus('saving');
+
+        fetch(SAVE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify(payload)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showStatus('saved');
+                } else {
+                    alert('Помилка: ' + data.message);
+                    showStatus('error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showStatus('error');
+            });
+    }
+
+    function showStatus(state) {
+        saveStatus.classList.remove('translate-y-20', 'opacity-0', 'bg-gray-900', 'bg-red-600', 'bg-blue-600');
+        const icon = saveStatus.querySelector('svg');
+        const text = saveStatus.querySelector('span');
+
+        if (state === 'saving') {
+            saveStatus.classList.add('bg-blue-600');
+            text.innerText = "Збереження...";
+            saveStatus.classList.remove('translate-y-20', 'opacity-0');
+        } else if (state === 'saved') {
+            saveStatus.classList.add('bg-gray-900');
+            text.innerText = "Зміни збережено";
+            saveStatus.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                saveStatus.classList.add('translate-y-20', 'opacity-0');
+            }, 2000);
+        } else {
+            saveStatus.classList.add('bg-red-600');
+            text.innerText = "Помилка збереження!";
+            saveStatus.classList.remove('translate-y-20', 'opacity-0');
+        }
+    }
+
+    // === MODAL FUNCTIONS ===
+
+    // Lesson Modal
+    let isCancelledState = false;
+
+    function toggleCancelledState() {
+        isCancelledState = !isCancelledState;
+        const track = document.getElementById('cancelledToggleTrack');
+        const thumb = document.getElementById('cancelledToggleThumb');
+        const reasonBlock = document.getElementById('cancellationReasonBlock');
+        if (isCancelledState) {
+            track.classList.replace('bg-gray-200', 'bg-red-400');
+            thumb.classList.replace('translate-x-1', 'translate-x-6');
+            reasonBlock.classList.remove('hidden');
+        } else {
+            track.classList.replace('bg-red-400', 'bg-gray-200');
+            thumb.classList.replace('translate-x-6', 'translate-x-1');
+            reasonBlock.classList.add('hidden');
+        }
+    }
+
+    function onEvalTypeChange() {
+        const select = document.getElementById('modalLessonType');
+        const section = document.getElementById('hwWeightSection');
+        const weightInput = document.getElementById('modalHwWeight');
+        const selectedOption = select.options[select.selectedIndex];
+
+        if (select.value) {
+            const weight = selectedOption.getAttribute('data-weight') || '0';
+            weightInput.value = weight;
+            section.classList.remove('hidden');
+            section.classList.add('flex');
+        } else {
+            section.classList.add('hidden');
+            section.classList.remove('flex');
+            weightInput.value = '';
+        }
+    }
+
+    function openLessonModal(id, topic, typeId, homework, materials, isCancelled, cancellationReason) {
+        document.getElementById('modalLessonId').value = id;
+        document.getElementById('modalLessonTopic').value = topic;
+        document.getElementById('modalLessonType').value = typeId || "";
+        document.getElementById('modalCancellationReason').value = cancellationReason || "";
+        // Trigger weight section update
+        onEvalTypeChange();
+        document.getElementById('modalLessonDetailLink').href = '/lesson/' + id + '/';
+
+        // Reset toggle first, then apply state
+        const track = document.getElementById('cancelledToggleTrack');
+        const thumb = document.getElementById('cancelledToggleThumb');
+        const reasonBlock = document.getElementById('cancellationReasonBlock');
+        isCancelledState = !!isCancelled;
+        if (isCancelledState) {
+            track.className = 'absolute inset-0 rounded-full bg-red-400 transition-colors';
+            thumb.className = 'relative z-10 inline-block h-4 w-4 translate-x-6 rounded-full bg-white shadow transition-transform';
+            reasonBlock.classList.remove('hidden');
+        } else {
+            track.className = 'absolute inset-0 rounded-full bg-gray-200 transition-colors';
+            thumb.className = 'relative z-10 inline-block h-4 w-4 translate-x-1 rounded-full bg-white shadow transition-transform';
+            reasonBlock.classList.add('hidden');
+        }
+
+        const modal = document.getElementById('lessonModal');
+        const content = document.getElementById('lessonModalContent');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+        }, 10);
+    }
+
+    function closeLessonModal() {
+        const modal = document.getElementById('lessonModal');
+        const content = document.getElementById('lessonModalContent');
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    function saveLessonDetails() {
+        const id = document.getElementById('modalLessonId').value;
+        const topic = document.getElementById('modalLessonTopic').value;
+        const typeId = document.getElementById('modalLessonType').value;
+        const cancellationReason = document.getElementById('modalCancellationReason').value;
+        const hwWeightInput = document.getElementById('modalHwWeight');
+        const evalWeight = hwWeightInput && typeId ? hwWeightInput.value : null;
+
+        showStatus('saving');
+
+        fetch("{% url 'api_update_lesson' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({
+                lesson_id: id,
+                topic: topic,
+                type_id: typeId,
+                homework: homework,
+                materials: materials,
+                is_cancelled: isCancelledState,
+                cancellation_reason: cancellationReason,
+                eval_weight: evalWeight
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showStatus('saved');
+                    closeLessonModal();
+                    // Update lesson header cell immediately
+                    updateLessonHeader(id, data);
+                } else {
+                    alert('Помилка збереження: ' + data.message);
+                    showStatus('error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showStatus('error');
+            });
+    }
+
+    function updateLessonHeader(lessonId, data) {
+        // Find the th that corresponds to this lesson
+        const th = document.querySelector(`th[data-lesson-id="${lessonId}"]`);
+        if (!th) { location.reload(); return; }
+
+        // Update topic text
+        const topicEl = th.querySelector('.lesson-topic-text');
+        if (topicEl) topicEl.textContent = (data.topic || '—') + ' / ' + Math.round(data.max_points);
+
+        // Sync eval type option data-weight so modal re-opens with correct %
+        if (data.eval_weight !== null && data.eval_weight !== undefined) {
+            const typeSelect = document.getElementById('modalLessonType');
+            const selectedOpt = typeSelect.options[typeSelect.selectedIndex];
+            if (selectedOpt && selectedOpt.value) {
+                selectedOpt.setAttribute('data-weight', Math.round(data.eval_weight));
+                selectedOpt.text = selectedOpt.text.replace(/\(\d+%\)/, `(${Math.round(data.eval_weight)}%)`);
+            }
+        }
+
+        // Homework icon
+        let hwIcon = th.querySelector('.hw-icon');
+        if (data.homework) {
+            if (!hwIcon) {
+                hwIcon = document.createElement('span');
+                hwIcon.className = 'hw-icon text-blue-400 text-[10px]' ;
+                hwIcon.title = 'Є домашнє завдання';
+                hwIcon.textContent = '📎';
+                th.querySelector('.flex').appendChild(hwIcon);
+            }
+        } else if (hwIcon) {
+            hwIcon.remove();
+        }
+
+        // Cancelled styling
+        if (data.is_cancelled) {
+            th.classList.add('bg-red-50', 'opacity-60');
+            th.title = 'Заняття скасовано: ' + (data.cancellation_reason || '');
+        } else {
+            th.classList.remove('bg-red-50', 'opacity-60');
+            th.title = 'Натисніть для редагування деталей уроку';
+        }
+    }
+
+    function openCommentModal(cell) {
+        activeCell = cell;
+        const hiddenInput = cell.querySelector('.comment-data');
+        modalText.value = hiddenInput.value;
+
+        commentModal.classList.remove('hidden');
+        // Small delay for animation
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+        }, 10);
+        modalText.focus();
+    }
+
+    function closeCommentModal() {
+        modalContent.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            commentModal.classList.add('hidden');
+        }, 200);
+        activeCell = null;
+    }
+
+    function saveModalComment() {
+        if (!activeCell) return;
+
+        const newExplan = modalText.value.trim();
+        const hiddenInput = activeCell.querySelector('.comment-data');
+        if (hiddenInput) hiddenInput.value = newExplan;
+
+        // Update UI marker
+        if (newExplan) {
+            activeCell.classList.add('has-comment');
+        } else {
+            activeCell.classList.remove('has-comment');
+        }
+
+        const input = activeCell.querySelector('input');
+
+        const payload = {
+            student_id: activeCell.dataset.studentId,
+            lesson_id: activeCell.dataset.lessonId,
+            date: activeCell.dataset.lessonDate,
+            lesson_num: activeCell.dataset.lessonNum,
+            value: input.value,
+            comment: newExplan,
+            subject_id: "{{ selected_subject_id }}"
+        };
+
+        saveData(payload);
+        closeCommentModal();
+    }
+
+    // Week Picker Functions
+    function openWeekPicker() {
+        const modal = document.getElementById('weekPickerModal');
+        const content = document.getElementById('weekPickerContent');
+        const dateInput = document.getElementById('weekPickerDate');
+
+        // Default to today if nothing set
+        if (!dateInput.value) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+        }, 10);
+    }
+
+    function closeWeekPicker() {
+        const modal = document.getElementById('weekPickerModal');
+        const content = document.getElementById('weekPickerContent');
+
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    function jumpToSelectedWeek() {
+        const selectedDateStr = document.getElementById('weekPickerDate').value;
+        if (!selectedDateStr) return;
+
+        const selectedDate = new Date(selectedDateStr);
+        const today = new Date();
+
+        // Find Monday of the selected week
+        const dayOfWeek = selectedDate.getDay(); // 0 is Sunday
+        const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+        const selectedMonday = new Date(selectedDate);
+        selectedMonday.setDate(selectedDate.getDate() + diffToMonday);
+        selectedMonday.setHours(0, 0, 0, 0);
+
+        // Find Monday of the current week (today)
+        const todayDayOfWeek = today.getDay();
+        const todayDiffToMonday = (todayDayOfWeek === 0 ? -6 : 1 - todayDayOfWeek);
+        const currentMonday = new Date(today);
+        currentMonday.setDate(today.getDate() + todayDiffToMonday);
+        currentMonday.setHours(0, 0, 0, 0);
+
+        // Calculate week offset
+        const oneWeek = 1000 * 60 * 60 * 24 * 7;
+        const weekOffset = Math.round((selectedMonday.getTime() - currentMonday.getTime()) / oneWeek);
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('week', weekOffset);
+        window.location.href = url.toString();
+    }
+
+</script>
+{% endblock %}

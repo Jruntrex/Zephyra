@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+
+  <!-- feather: flipped upside-down (scaleY negative), no background -->
+  <g transform="translate(100,100) scale(-0.55,0.55) rotate(-45) translate(0,-169)">
+
+    <!-- spine -->
+    <path d="M0 300 C-4 220, 6 120, 0 0" fill="none" stroke="#6B5FE8" stroke-width="6" stroke-linecap="round"/>
+
+    <!-- left barbs -->
+    <path d="M-1 56  C-16 44, -38 30, -50 14"    fill="none" stroke="#4A6CF7" stroke-width="4.0" stroke-linecap="round"/>
+    <path d="M-1 112 C-22 92, -54 70, -70 50"    fill="none" stroke="#4A6CF7" stroke-width="5.0" stroke-linecap="round"/>
+    <path d="M-1 168 C-24 140, -58 110, -76 84"  fill="none" stroke="#4A6CF7" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M-1 224 C-18 196, -44 164, -58 140" fill="none" stroke="#4A6CF7" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M-1 278 C-10 254, -22 228, -30 208" fill="none" stroke="#4A6CF7" stroke-width="3.5" stroke-linecap="round"/>
+
+    <!-- right barbs -->
+    <path d="M1 56  C16 44,  38 30,  50 14"    fill="none" stroke="#5DCAA5" stroke-width="4.0" stroke-linecap="round"/>
+    <path d="M1 112 C22 92,  54 70,  70 50"    fill="none" stroke="#5DCAA5" stroke-width="5.0" stroke-linecap="round"/>
+    <path d="M1 168 C24 140, 58 110, 76 84"    fill="none" stroke="#5DCAA5" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M1 224 C18 196, 44 164, 58 140"   fill="none" stroke="#5DCAA5" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M1 278 C10 254, 22 228, 30 208"   fill="none" stroke="#5DCAA5" stroke-width="3.5" stroke-linecap="round"/>
+
+    <!-- tip dot -->
+    <circle cx="0" cy="0" r="7" fill="#5DCAA5"/>
+
+    <!-- calamus -->
+    <path d="M0 300 C-2 316, -1 328, 0 338" fill="none" stroke="#6B5FE8" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+
+  </g>
+
+</svg>

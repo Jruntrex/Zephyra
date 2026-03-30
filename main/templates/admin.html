@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Панель Адміна{% endblock %}
+{% block header_title %}Панель Адміна{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block content %}
+
+<!-- Hero banner -->
+<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+    <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+    <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+    <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+    <div class="relative px-6 py-5 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+            </div>
+            <h1 class="text-4xl font-black text-white leading-tight">Вітаємо, {{ request.user.full_name }}!</h1>
+            <p class="text-white/65 text-sm mt-0.5">Панель управління системою</p>
+        </div>
+        <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+            <span class="text-xl font-black text-white">{{ total_users }}</span>
+            <span class="text-[10px] text-white/65 font-semibold">юзерів</span>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 pb-10">
+
+    <!-- Stat: Всього користувачів -->
+    <a href="{% url 'users_list' %}" class="card-bento hover:translate-y-[-4px] transition-transform duration-300 group">
+        <div class="w-12 h-12 bg-violet-500/10 text-violet-500 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-violet-500 group-hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+        </div>
+        <div class="text-4xl font-black text-mainText mb-1">{{ total_users|default:0 }}</div>
+        <h3 class="text-sm font-bold text-mutedText group-hover:text-violet-500 transition-colors">Всього користувачів</h3>
+        <p class="text-[10px] text-mutedText/60 mt-1">Переглянути список →</p>
+    </a>
+
+    <!-- Stat: Студенти -->
+    <a href="{% url 'users_list' %}?role=student" class="card-bento hover:translate-y-[-4px] transition-transform duration-300 group">
+        <div class="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+            </svg>
+        </div>
+        <div class="text-4xl font-black text-mainText mb-1">{{ student_count|default:0 }}</div>
+        <h3 class="text-sm font-bold text-mutedText group-hover:text-blue-500 transition-colors">Студентів</h3>
+        <p class="text-[10px] text-mutedText/60 mt-1">Переглянути список →</p>
+    </a>
+
+    <!-- Stat: Групи -->
+    <a href="{% url 'groups_list' %}" class="card-bento hover:translate-y-[-4px] transition-transform duration-300 group">
+        <div class="w-12 h-12 bg-indigo-500/10 text-indigo-500 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+        </div>
+        <div class="text-4xl font-black text-mainText mb-1">{{ group_count|default:0 }}</div>
+        <h3 class="text-sm font-bold text-mutedText group-hover:text-indigo-500 transition-colors">Груп</h3>
+        <p class="text-[10px] text-mutedText/60 mt-1">Переглянути список →</p>
+    </a>
+
+    <!-- Accent: Предмети + Аудиторії -->
+    <div class="col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-xl p-8 flex flex-col justify-between">
+        <div>
+            <div class="bg-white/20 w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+            </div>
+            <div class="flex gap-6">
+                <div>
+                    <span class="text-violet-200 text-xs font-medium block mb-1">Предмети</span>
+                    <div class="text-4xl font-black tracking-tighter">{{ subject_count|default:0 }}</div>
+                </div>
+                <div class="w-px bg-white/20"></div>
+                <div>
+                    <span class="text-violet-200 text-xs font-medium block mb-1">Аудиторії</span>
+                    <div class="text-4xl font-black tracking-tighter">{{ classroom_count|default:0 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+            <a href="{% url 'subjects_list' %}" class="text-xs bg-white/20 hover:bg-white/30 transition-colors px-3 py-1.5 rounded-lg font-bold">Предмети →</a>
+            <a href="{% url 'classrooms_list' %}" class="text-xs bg-white/20 hover:bg-white/30 transition-colors px-3 py-1.5 rounded-lg font-bold">Аудиторії →</a>
+        </div>
+    </div>
+
+    <!-- Швидкі дії -->
+    <div class="col-span-1 md:col-span-4 card-bento">
+        <h3 class="text-mutedText font-semibold tracking-wide uppercase text-sm mb-6">Швидкі дії</h3>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+
+            <a href="{% url 'users_list' %}" class="flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border border-border hover:border-violet-400/50 hover:bg-violet-500/5 transition-all group">
+                <div class="w-11 h-11 bg-violet-500/10 text-violet-500 rounded-xl flex items-center justify-center group-hover:bg-violet-500 group-hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-bold text-mainText group-hover:text-violet-500 transition-colors text-center">Додати користувача</span>
+            </a>
+
+            <a href="{% url 'set_weekly_schedule' %}" class="flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border border-border hover:border-blue-400/50 hover:bg-blue-500/5 transition-all group">
+                <div class="w-11 h-11 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-bold text-mainText group-hover:text-blue-500 transition-colors text-center">Встановити розклад</span>
+            </a>
+
+            <a href="{% url 'classrooms_list' %}" class="flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border border-border hover:border-indigo-400/50 hover:bg-indigo-500/5 transition-all group">
+                <div class="w-11 h-11 bg-indigo-500/10 text-indigo-500 rounded-xl flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-bold text-mainText group-hover:text-indigo-500 transition-colors text-center">Управління аудиторіями</span>
+            </a>
+
+            <a href="{% url 'admin_reports' %}" class="flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border border-border hover:border-purple-400/50 hover:bg-purple-500/5 transition-all group">
+                <div class="w-11 h-11 bg-purple-500/10 text-purple-500 rounded-xl flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-bold text-mainText group-hover:text-purple-500 transition-colors text-center">Генерувати звіти</span>
+            </a>
+
+            <a href="{% url 'institution_settings' %}" class="flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border border-border hover:border-teal-400/50 hover:bg-teal-500/5 transition-all group">
+                <div class="w-11 h-11 bg-teal-500/10 text-teal-500 rounded-xl flex items-center justify-center group-hover:bg-teal-500 group-hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <span class="text-sm font-bold text-mainText group-hover:text-teal-500 transition-colors text-center">Налаштування закладу</span>
+            </a>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+{% endblock %}

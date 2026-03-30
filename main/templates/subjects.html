@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Управління предметами{% endblock %}
+{% block header_title %}Предмети{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block content %}
+<!-- Hero banner -->
+<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+    <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+    <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+    <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+    <div class="relative px-6 py-5 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6a2 2 0 00-2-2H5a2 2 0 00-2 2v13M13 19V3a2 2 0 00-2-2H9a2 2 0 00-2 2v16M18 19V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10"/>
+                </svg>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+            </div>
+            <h1 class="text-4xl font-black text-white leading-tight">Управління Предметами</h1>
+            <p class="text-white/65 text-sm mt-0.5">Перегляд та редагування навчальних дисциплін</p>
+        </div>
+        <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+        </div>
+    </div>
+</div>
+
+<div class="card-bento min-h-[600px] pb-10">
+    <div class="flex flex-wrap justify-end items-center gap-3 mb-8">
+        <a href="{% url 'subjects_csv_export' %}"
+            class="px-5 py-3 bg-surface border border-border text-mainText rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-border transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Експорт CSV
+        </a>
+        <button onclick="document.getElementById('importModal').classList.remove('hidden')"
+            class="px-5 py-3 bg-surface border border-border text-mainText rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-border transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4 4l-4-4m0 0l-4 4m4-4V4"/></svg>
+            Імпорт CSV
+        </button>
+        <button onclick="toggleForm()"
+            class="px-6 py-3 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-primary/90 transform hover:-translate-y-0.5 transition-all">
+            Додати предмет
+        </button>
+    </div>
+
+    <!-- IMPORT MODAL -->
+    <div id="importModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-surface border border-border rounded-2xl shadow-2xl p-8 w-full max-w-lg mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-bold text-mainText">Імпорт предметів з CSV</h3>
+                <button onclick="document.getElementById('importModal').classList.add('hidden')" class="text-mutedText hover:text-mainText transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="mb-5 p-4 bg-surface border border-border rounded-xl text-xs leading-relaxed">
+                <p class="font-bold text-mainText mb-2">Формат CSV файлу:</p>
+                <p class="font-mono text-primary mb-1 break-all">name, code, description, credits, hours_total, hours_lectures, hours_practicals, semester, is_active</p>
+                <div class="mt-3 flex flex-col gap-1 text-mainText">
+                    <p><span class="text-error font-bold">Обов'язкові:</span> name</p>
+                    <p><span class="text-mutedText">credits:</span> кредити ECTS (число)</p>
+                    <p><span class="text-mutedText">semester:</span> від 1 до 8</p>
+                    <p><span class="text-mutedText">is_active:</span> 1 або 0 (за замовч. 1)</p>
+                </div>
+            </div>
+            <form method="POST" action="{% url 'subjects_csv_import' %}" enctype="multipart/form-data" class="flex flex-col gap-4">
+                {% csrf_token %}
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">CSV файл</label>
+                <input type="file" name="csv_file" accept=".csv" required
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-sm text-mainText file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer">
+                <div class="flex gap-3 justify-end mt-2">
+                    <button type="button" onclick="document.getElementById('importModal').classList.add('hidden')"
+                        class="px-5 py-2.5 rounded-xl border border-border text-mainText text-xs font-bold hover:bg-surface transition-all">Скасувати</button>
+                    <button type="submit"
+                        class="px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all">Імпортувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Фільтри -->
+    <div class="bg-background/50 rounded-2xl p-6 mb-8 border border-border">
+        <form method="GET" action="{% url 'subjects_list' %}"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+            <div class="flex flex-col gap-1.5 lg:col-span-3">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Пошук предмета</label>
+                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Назва або опис..."
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="submit"
+                    class="flex-grow px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all">Знайти</button>
+                <a href="{% url 'subjects_list' %}"
+                    class="p-2.5 bg-surface border border-border rounded-xl text-mutedText hover:text-red-500 transition-all shadow-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div id="addForm" class="hidden bg-background/50 rounded-2xl p-6 mb-8 border border-primary/20 animate-slide-down">
+        <h4 class="text-xl font-black text-mainText mb-6 uppercase tracking-tighter">Нова дисципліна</h4>
+        <form method="POST" action="{% url 'subject_add' %}" class="space-y-6">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Назва предмета</label>
+                    {% if form.name.errors %}<div class="text-red-500 text-[10px] font-bold mb-1">{{ form.name.errors }}
+                    </div>{% endif %}
+                    <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}"
+                        value="{{ form.name.value|default:'' }}" required
+                        class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                </div>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Опис (опціонально)</label>
+                {% if form.description.errors %}<div class="text-red-500 text-[10px] font-bold mb-1">{{ form.description.errors }}</div>{% endif %}
+                <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" rows="2"
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">{{ form.description.value|default:'' }}</textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-4">
+                <button type="button" onclick="toggleForm()"
+                    class="px-6 py-2.5 text-xs font-black text-mutedText uppercase tracking-widest hover:bg-surface rounded-xl transition-all">Скасувати</button>
+                <button type="submit"
+                    class="px-10 py-2.5 bg-primary text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-lg">Додати</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="glass-panel shadow-sm rounded-3xl p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-background border-b border-border">
+                    <tr>
+                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase hidden xl:table-cell">ID</th>
+                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Назва предмета</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden md:table-cell">Код</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden lg:table-cell">
+                            Кредити</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden xl:table-cell">
+                            Семестр</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden xl:table-cell">
+                            Години</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Викладачів</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden lg:table-cell">
+                            Статус</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden xl:table-cell">
+                            Створено</th>
+                        <th class="p-4 text-right text-xs font-bold text-mutedText uppercase">Керування</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% for subject in subjects %}
+                    <tr class="hover:bg-primary/5 transition duration-150 group">
+                        <td class="p-4 text-xs font-mono text-mutedText hidden xl:table-cell">#{{ subject.id }}</td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-xs shadow-sm">
+                                    {{ subject.name|slice:":2" }}
+                                </div>
+                                <div>
+                                    <span class="font-bold text-mainText">{{ subject.name }}</span>
+                                    {% if subject.description %}
+                                    <p class="text-[10px] text-mutedText mt-0.5 truncate max-w-xs">{{ subject.description }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-4 text-center text-sm text-mainText font-mono hidden md:table-cell">
+                            {% if subject.code %}
+                            {{ subject.code }}
+                            {% else %}
+                            <span class="text-mutedText/40 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center hidden lg:table-cell">
+                            {% if subject.credits %}
+                            <span class="inline-flex px-2 py-1 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-bold">
+                                {{ subject.credits }} ECTS
+                            </span>
+                            {% else %}
+                            <span class="text-mutedText/40 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center text-sm text-mutedText hidden xl:table-cell">
+                            {% if subject.semester %}
+                            {{ subject.semester }} сем.
+                            {% else %}
+                            <span class="text-mutedText/40 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center text-sm text-mutedText hidden xl:table-cell">
+                            {% if subject.hours_total %}
+                            {{ subject.hours_total }} год.
+                            {% else %}
+                            <span class="text-mutedText/40 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center">
+                            <span
+                                class="inline-flex items-center justify-center min-w-[30px] h-[30px] rounded-full bg-surface border border-border text-primary font-black text-xs">
+                                {{ subject.teachers_count|default:0 }}
+                            </span>
+                        </td>
+                        <td class="p-4 text-center hidden lg:table-cell">
+                            {% if subject.is_active %}
+                            <span class="inline-flex px-2 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold">
+                                Активний
+                            </span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 rounded-full bg-border text-mutedText text-xs font-bold">
+                                Архів
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center text-xs text-mutedText hidden xl:table-cell">
+                            {% if subject.created_at %}
+                            <span class="block font-medium text-mainText">{{ subject.created_at|date:"d.m.Y" }}</span>
+                            <span class="text-mutedText">{{ subject.created_at|date:"H:i" }}</span>
+                            {% else %}
+                            <span class="text-mutedText/40">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <form method="POST" action="{% url 'subject_delete' pk=subject.pk %}"
+                                    onsubmit="return confirm('Видалити предмет {{ subject.name }}?');" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                        class="p-2 text-mutedText hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                        title="Видалити">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="p-12 text-center text-mutedText">
+                            <div class="text-4xl mb-4 opacity-50">📚</div>
+                            <p class="font-bold text-xs uppercase tracking-widest">Предметів не знайдено</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleForm() {
+        const form = document.getElementById('addForm');
+        form.classList.toggle('hidden');
+    }
+</script>
+{% endblock %}

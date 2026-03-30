@@ -1,0 +1,593 @@
+{% extends "base.html" %}
+{% load journal_filters %}
+
+{% block title %}Конструктор розкладу - {{ institution.name|default:"MyBosco" }}{% endblock %}
+{% block header_title %}Розклад{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+    <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+    <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+    <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+    <div class="relative px-8 py-6 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+            </div>
+            <h1 class="text-4xl font-black text-white tracking-tighter">Конструктор Розкладу</h1>
+            <p class="text-white/65 font-medium text-sm mt-1">Створення та налаштування розкладу занять</p>
+        </div>
+        <div class="flex-shrink-0 w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+        </div>
+    </div>
+</div>
+<div class="glass-panel rounded-[2rem] p-6 min-h-[600px] pb-10">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="glass-panel rounded-[2rem] p-6 sticky top-6 border border-border/40">
+                <div class="mb-5">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest mb-2 block">Оберіть групу</label>
+                    <select id="groupSelect"
+                        class="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                        <option value="">-- Виберіть групу --</option>
+                        {% for g in groups %}
+                        <option value="{{ g.id }}">{{ g.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div id="groupInfo" class="mb-5 p-4 bg-primary/10 border border-primary/20 rounded-2xl hidden">
+                    <div id="groupInfoText" class="text-sm font-bold text-primary">
+                        Оберіть групу для початку
+                    </div>
+                </div>
+
+                <div id="autoSaveStatus" class="mb-4 text-sm font-bold"></div>
+
+                <div class="space-y-3">
+                    <button id="saveBtn"
+                        class="w-full px-6 py-3 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-primary/90 transform hover:-translate-y-0.5 transition-all">
+                        Зберегти розклад
+                    </button>
+                    <button id="clearAllBtn"
+                        class="w-full px-6 py-3 bg-surface border border-border text-mainText rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-border transition-all">
+                        Очистити все
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="lg:col-span-3">
+            <div id="scheduleContainer" style="display: none;" class="space-y-8">
+                {% for day_id, day_name in days %}
+                <div class="glass-panel rounded-[2rem] day-panel p-0 overflow-hidden border border-border/40">
+                    <div class="px-6 py-4 border-b border-border flex items-center justify-between">
+                        <h3 class="text-sm font-black text-mainText uppercase tracking-widest flex items-center gap-3">
+                            <span class="w-1.5 h-6 bg-primary rounded-full"></span>
+                            {{ day_name }}
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[800px]">
+                            <thead class="border-b border-border">
+                                <tr>
+                                    <th class="p-3 text-center text-[10px] font-black text-mutedText uppercase w-10">№</th>
+                                    <th class="p-3 text-left text-[10px] font-black text-mutedText uppercase w-48">Час (Початок / Тривалість)</th>
+                                    <th class="p-3 text-left text-[10px] font-black text-mutedText uppercase">Предмет</th>
+                                    <th class="p-3 text-left text-[10px] font-black text-mutedText uppercase w-40">Викладач</th>
+                                    <th class="p-3 text-center text-[10px] font-black text-mutedText uppercase w-20">Ауд.</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                {% for num in lesson_numbers %}
+                                <tr class="hover:bg-primary/5 transition-colors lesson-row" data-day="{{ day_id }}" data-lesson="{{ num }}">
+                                    <td class="p-3 text-center align-top pt-4">
+                                        <div class="w-8 h-8 rounded-lg bg-border flex items-center justify-center font-black text-sm text-mutedText mx-auto">{{ num }}</div>
+                                    </td>
+                                    <td class="p-3 align-top">
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <input type="time"
+                                                    class="lesson-start-time w-24 px-2 py-1 bg-background border border-border rounded-lg text-xs font-bold text-mainText"
+                                                    value="{% with times=lesson_times|get_item:num %}{{ times.0 }}{% endwith %}">
+                                                <span class="text-mutedText text-xs">-</span>
+                                                <span class="lesson-end-time text-xs font-bold text-mutedText">--:--</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <select class="lesson-duration w-24 px-2 py-1 bg-background border border-border rounded-lg text-xs text-mainText">
+                                                    <option value="45">45 хв</option>
+                                                    <option value="50">50 хв</option>
+                                                    <option value="80">80 хв</option>
+                                                    <option value="90" selected>90 хв</option>
+                                                    <option value="custom">Інше...</option>
+                                                </select>
+                                                <input type="number"
+                                                    class="lesson-duration-custom w-16 px-2 py-1 bg-background border border-border rounded-lg text-xs hidden"
+                                                    placeholder="Хв">
+                                            </div>
+                                            <div class="time-error text-[10px] text-red-500 font-bold hidden"></div>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 align-top pt-3">
+                                        <select class="lesson-subject w-full px-3 py-2 bg-background border border-border rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary transition-all text-mainText">
+                                            <option value="">--</option>
+                                            {% for item in subject_data %}
+                                            <option value="{{ item.id }}">{{ item.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td class="p-3 align-top pt-3">
+                                        <select class="lesson-teacher-select w-full px-3 py-2 bg-background border border-border rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary transition-all text-mutedText" disabled>
+                                            <option value="">Автоматично</option>
+                                        </select>
+                                        <input type="hidden" class="lesson-teacher-id">
+                                        <div class="teacher-busy-warning text-[10px] text-amber-500 font-bold hidden mt-1"></div>
+                                    </td>
+                                    <td class="p-3 align-top pt-3">
+                                        <input type="text"
+                                            class="lesson-classroom w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary transition-all text-center text-mainText"
+                                            placeholder="...">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState"
+                class="glass-panel rounded-[2rem] flex flex-col items-center justify-center py-20 text-center mt-0 border border-border/40"
+                style="display: none;">
+                <div class="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-black text-mainText mb-1">Розклад не відображається</h3>
+                <p class="text-sm text-mutedText max-w-sm">Будь ласка, оберіть групу зі списку ліворуч, щоб почати редагування розкладу.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const elements = {
+            groupSelect: document.getElementById('groupSelect'),
+            scheduleContainer: document.getElementById('scheduleContainer'),
+            emptyState: document.getElementById('emptyState'),
+            saveBtn: document.getElementById('saveBtn'),
+            clearAllBtn: document.getElementById('clearAllBtn'),
+            autoSaveStatus: document.getElementById('autoSaveStatus'),
+            groupInfo: document.getElementById('groupInfo'),
+            groupInfoText: document.getElementById('groupInfoText')
+        };
+
+        let allScheduleData = {};
+        try {
+            const dataEl = document.getElementById('schedule-data');
+            if (dataEl) allScheduleData = JSON.parse(dataEl.textContent);
+        } catch (e) { console.error("Error parsing schedule data", e); }
+
+        let subjectTeachersMap = {};
+        try {
+            const el = document.getElementById('subject-teachers-data');
+            if (el) subjectTeachersMap = JSON.parse(el.textContent);
+        } catch (e) { console.error("Error parsing subject teachers data", e); }
+
+        let state = { currentGroup: null, modified: false };
+        let teacherBusyMap = {}; // { day: { lessonNum: Set(teacherIds) } } — other groups only
+
+        function buildTeacherBusyMap(currentGroupId) {
+            teacherBusyMap = {};
+            for (const [gid, gdata] of Object.entries(allScheduleData)) {
+                if (String(gid) === String(currentGroupId)) continue;
+                for (const [day, dayData] of Object.entries(gdata)) {
+                    if (!teacherBusyMap[day]) teacherBusyMap[day] = {};
+                    for (const [lessonNum, lesson] of Object.entries(dayData)) {
+                        if (!teacherBusyMap[day][lessonNum]) teacherBusyMap[day][lessonNum] = new Set();
+                        if (lesson.teacher_id) teacherBusyMap[day][lessonNum].add(String(lesson.teacher_id));
+                    }
+                }
+            }
+        }
+
+        // --- Event Listeners ---
+
+        elements.groupSelect.addEventListener('change', function () {
+            const groupId = this.value;
+            state.currentGroup = groupId;
+
+            if (groupId) {
+                elements.scheduleContainer.style.display = 'block';
+                elements.emptyState.style.display = 'none';
+                elements.groupInfo.classList.remove('hidden');
+                elements.groupInfoText.textContent = `Редагування: ${this.options[this.selectedIndex].text}`;
+
+                buildTeacherBusyMap(groupId);
+                loadScheduleForGroup(groupId);
+                state.modified = false;
+                updateStatus('');
+                elements.scheduleContainer.querySelectorAll('.day-panel').forEach(p => validateDayTimes(p));
+            } else {
+                elements.scheduleContainer.style.display = 'none';
+                elements.emptyState.style.display = 'flex';
+                elements.groupInfo.classList.add('hidden');
+            }
+        });
+
+        elements.scheduleContainer.addEventListener('change', function (e) {
+            const target = e.target;
+
+            if (target.classList.contains('lesson-subject')) {
+                handleSubjectChange(target);
+                markModified();
+            } else if (target.classList.contains('lesson-teacher-select')) {
+                handleTeacherChange(target);
+                markModified();
+            } else if (target.classList.contains('lesson-classroom')) {
+                markModified();
+            } else if (target.classList.contains('lesson-start-time') ||
+                target.classList.contains('lesson-duration') ||
+                target.classList.contains('lesson-duration-custom')) {
+
+                if (target.classList.contains('lesson-duration')) {
+                    const row = target.closest('tr');
+                    const customInput = row.querySelector('.lesson-duration-custom');
+                    if (target.value === 'custom') {
+                        customInput.classList.remove('hidden');
+                        customInput.focus();
+                    } else {
+                        customInput.classList.add('hidden');
+                    }
+                }
+
+                updateEndTime(target.closest('tr'));
+                validateDayTimes(target.closest('.day-panel'));
+                markModified();
+            }
+        });
+
+        elements.scheduleContainer.addEventListener('input', function (e) {
+            if (e.target.classList.contains('lesson-duration-custom')) {
+                updateEndTime(e.target.closest('tr'));
+                validateDayTimes(e.target.closest('.day-panel'));
+                markModified();
+            }
+        });
+
+        elements.saveBtn.addEventListener('click', saveSchedule);
+
+        elements.clearAllBtn.addEventListener('click', function () {
+            if (!state.currentGroup) return;
+            if (!confirm('Ви впевнені? Це видалить весь розклад для цієї групи.')) return;
+
+            elements.scheduleContainer.querySelectorAll('.lesson-row').forEach(row => {
+                row.querySelector('.lesson-subject').value = '';
+                resetTeacherSelect(row);
+                row.querySelector('.lesson-classroom').value = '';
+            });
+
+            setTimeout(() => saveSchedule(), 100);
+        });
+
+        // --- Functions ---
+
+        function updateEndTime(row) {
+            const startTimeInput = row.querySelector('.lesson-start-time');
+            const durationSelect = row.querySelector('.lesson-duration');
+            const durationCustom = row.querySelector('.lesson-duration-custom');
+            const endTimeSpan = row.querySelector('.lesson-end-time');
+
+            if (!startTimeInput.value) { endTimeSpan.textContent = "--:--"; return; }
+
+            let duration = parseInt(durationSelect.value);
+            if (isNaN(duration) || durationSelect.value === 'custom') {
+                duration = parseInt(durationCustom.value) || 0;
+            }
+
+            const [hours, minutes] = startTimeInput.value.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, minutes + duration);
+
+            const endHours = String(date.getHours()).padStart(2, '0');
+            const endMinutes = String(date.getMinutes()).padStart(2, '0');
+            endTimeSpan.textContent = `${endHours}:${endMinutes}`;
+            row.dataset.totalMinutesEnd = hours * 60 + minutes + duration;
+        }
+
+        function validateDayTimes(dayPanel) {
+            const rows = Array.from(dayPanel.querySelectorAll('.lesson-row'));
+            let previousEndMinutes = -1;
+
+            rows.forEach((row, index) => {
+                const startTimeInput = row.querySelector('.lesson-start-time');
+                const errorDiv = row.querySelector('.time-error');
+
+                errorDiv.textContent = '';
+                errorDiv.classList.add('hidden');
+                startTimeInput.classList.remove('border-red-500', 'text-red-500');
+
+                if (!startTimeInput.value) return;
+
+                const [hours, minutes] = startTimeInput.value.split(':').map(Number);
+                const currentStartMinutes = hours * 60 + minutes;
+
+                if (index > 0 && previousEndMinutes !== -1) {
+                    const diff = currentStartMinutes - previousEndMinutes;
+                    if (diff < 5) {
+                        errorDiv.textContent = `Перерва < 5 хв! (${diff} хв)`;
+                        errorDiv.classList.remove('hidden');
+                        startTimeInput.classList.add('border-red-500', 'text-red-500');
+                    }
+                }
+
+                const durationSelect = row.querySelector('.lesson-duration');
+                const durationCustom = row.querySelector('.lesson-duration-custom');
+                let duration = parseInt(durationSelect.value);
+                if (isNaN(duration) || durationSelect.value === 'custom') {
+                    duration = parseInt(durationCustom.value) || 0;
+                }
+                if (duration > 0) previousEndMinutes = currentStartMinutes + duration;
+            });
+        }
+
+        function resetTeacherSelect(row) {
+            const teacherSelect = row.querySelector('.lesson-teacher-select');
+            const teacherIdInput = row.querySelector('.lesson-teacher-id');
+            const warningDiv = row.querySelector('.teacher-busy-warning');
+            teacherSelect.innerHTML = '<option value="">Автоматично</option>';
+            teacherSelect.disabled = true;
+            teacherSelect.classList.remove('border-red-400');
+            teacherIdInput.value = '';
+            warningDiv.classList.add('hidden');
+            warningDiv.textContent = '';
+        }
+
+        function populateTeacherSelect(row, subjectId, preselectedTeacherId) {
+            const teacherSelect = row.querySelector('.lesson-teacher-select');
+            const teacherIdInput = row.querySelector('.lesson-teacher-id');
+
+            teacherSelect.innerHTML = '';
+            const teachers = subjectTeachersMap[subjectId] || [];
+
+            if (teachers.length === 0) {
+                teacherSelect.innerHTML = '<option value="">Автоматично</option>';
+                teacherSelect.disabled = true;
+                teacherIdInput.value = '';
+                return;
+            }
+
+            if (teachers.length === 1) {
+                // Single teacher — auto-select, disable
+                const t = teachers[0];
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = t.name;
+                teacherSelect.appendChild(opt);
+                teacherSelect.value = t.id;
+                teacherSelect.disabled = true;
+                teacherSelect.classList.add('text-gray-700');
+                teacherIdInput.value = t.id;
+                checkTeacherBusy(row, String(t.id));
+            } else {
+                // Multiple teachers — show dropdown
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = '-- Виберіть викладача --';
+                teacherSelect.appendChild(placeholder);
+
+                teachers.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.name;
+                    teacherSelect.appendChild(opt);
+                });
+
+                teacherSelect.disabled = false;
+
+                if (preselectedTeacherId) {
+                    teacherSelect.value = String(preselectedTeacherId);
+                    teacherIdInput.value = teacherSelect.value;
+                    checkTeacherBusy(row, teacherSelect.value);
+                } else {
+                    teacherSelect.value = '';
+                    teacherIdInput.value = '';
+                }
+            }
+        }
+
+        function handleSubjectChange(selectElement) {
+            const row = selectElement.closest('tr');
+            if (!row) return;
+            const subjectId = selectElement.value;
+
+            if (!subjectId) {
+                resetTeacherSelect(row);
+                return;
+            }
+
+            populateTeacherSelect(row, subjectId, null);
+        }
+
+        function handleTeacherChange(selectElement) {
+            const row = selectElement.closest('tr');
+            const teacherIdInput = row.querySelector('.lesson-teacher-id');
+            teacherIdInput.value = selectElement.value;
+            checkTeacherBusy(row, selectElement.value);
+        }
+
+        function checkTeacherBusy(row, teacherId) {
+            const warningDiv = row.querySelector('.teacher-busy-warning');
+            const teacherSelect = row.querySelector('.lesson-teacher-select');
+
+            warningDiv.classList.add('hidden');
+            warningDiv.textContent = '';
+            teacherSelect.classList.remove('border-red-400');
+
+            if (!teacherId) return;
+
+            const day = row.dataset.day;
+            const lessonNum = row.dataset.lesson;
+            const busySet = teacherBusyMap[day]?.[lessonNum];
+
+            if (busySet && busySet.has(String(teacherId))) {
+                const busyGroups = [];
+                for (const [gid, gdata] of Object.entries(allScheduleData)) {
+                    const lesson = gdata[day]?.[lessonNum];
+                    if (lesson && String(lesson.teacher_id) === String(teacherId)) {
+                        const opt = document.querySelector(`#groupSelect option[value="${gid}"]`);
+                        if (opt) busyGroups.push(opt.textContent.trim());
+                    }
+                }
+                const teacherName = teacherSelect.options[teacherSelect.selectedIndex]?.textContent || '';
+                warningDiv.textContent = `⚠ ${teacherName} вже зайнятий в: ${busyGroups.join(', ')}`;
+                warningDiv.classList.remove('hidden');
+                teacherSelect.classList.add('border-red-400');
+            }
+        }
+
+        function loadScheduleForGroup(groupId) {
+            const allRows = elements.scheduleContainer.querySelectorAll('.lesson-row');
+            allRows.forEach(row => {
+                row.querySelector('.lesson-subject').value = '';
+                resetTeacherSelect(row);
+                row.querySelector('.lesson-classroom').value = '';
+            });
+
+            const groupData = allScheduleData[groupId];
+            if (!groupData) {
+                allRows.forEach(row => updateEndTime(row));
+                return;
+            }
+
+            Object.keys(groupData).forEach(dayId => {
+                const dayLessons = groupData[dayId];
+                Object.keys(dayLessons).forEach(lessonNum => {
+                    const lessonData = dayLessons[lessonNum];
+                    const row = elements.scheduleContainer.querySelector(`.lesson-row[data-day="${dayId}"][data-lesson="${lessonNum}"]`);
+                    if (!row) return;
+
+                    const subjectSelect = row.querySelector('.lesson-subject');
+                    const subjectId = String(lessonData.subject_id || '');
+                    const teacherId = String(lessonData.teacher_id || '');
+
+                    subjectSelect.value = subjectId;
+                    if (subjectId) {
+                        populateTeacherSelect(row, subjectId, teacherId);
+                    }
+
+                    row.querySelector('.lesson-classroom').value = lessonData.classroom || '';
+
+                    if (lessonData.start_time) {
+                        row.querySelector('.lesson-start-time').value = lessonData.start_time;
+                    }
+
+                    if (lessonData.duration) {
+                        const duration = lessonData.duration;
+                        const durationSelect = row.querySelector('.lesson-duration');
+                        const customInput = row.querySelector('.lesson-duration-custom');
+                        const option = durationSelect.querySelector(`option[value="${duration}"]`);
+                        if (option) {
+                            durationSelect.value = duration;
+                            customInput.classList.add('hidden');
+                        } else {
+                            durationSelect.value = 'custom';
+                            customInput.value = duration;
+                            customInput.classList.remove('hidden');
+                        }
+                    }
+
+                    updateEndTime(row);
+                });
+            });
+
+            elements.scheduleContainer.querySelectorAll('.day-panel').forEach(p => validateDayTimes(p));
+        }
+
+        function saveSchedule() {
+            if (!state.currentGroup) return;
+
+            updateStatus('Збереження...', 'blue');
+            const scheduleToSave = {};
+
+            elements.scheduleContainer.querySelectorAll('.lesson-row').forEach(row => {
+                const day = row.dataset.day;
+                const lesson = row.dataset.lesson;
+                const subjectSelect = row.querySelector('.lesson-subject');
+                const subjectId = subjectSelect.value;
+                if (!subjectId) return;
+
+                if (!scheduleToSave[day]) scheduleToSave[day] = {};
+
+                const teacherSelect = row.querySelector('.lesson-teacher-select');
+                const teacherId = row.querySelector('.lesson-teacher-id').value;
+                const teacherName = teacherSelect.options[teacherSelect.selectedIndex]?.textContent || '';
+                const classroom = row.querySelector('.lesson-classroom').value;
+                const startTime = row.querySelector('.lesson-start-time').value;
+                const durationSelect = row.querySelector('.lesson-duration');
+                let duration = parseInt(durationSelect.value);
+                if (isNaN(duration) || durationSelect.value === 'custom') {
+                    duration = parseInt(row.querySelector('.lesson-duration-custom').value) || 90;
+                }
+
+                scheduleToSave[day][lesson] = {
+                    subject_id: parseInt(subjectId),
+                    subject_name: subjectSelect.options[subjectSelect.selectedIndex].text.trim(),
+                    teacher_id: teacherId ? parseInt(teacherId) : null,
+                    teacher_name: teacherName,
+                    start_time: startTime,
+                    duration: duration,
+                    classroom: classroom,
+                };
+            });
+
+            fetch('{% url "save_schedule" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ group_id: parseInt(state.currentGroup), schedule: scheduleToSave })
+            })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        state.modified = false;
+                        updateStatus('✓ Збережено успішно!', 'green');
+                        allScheduleData[state.currentGroup] = scheduleToSave;
+                        buildTeacherBusyMap(state.currentGroup);
+                    } else {
+                        updateStatus('❌ Помилка: ' + res.message, 'red');
+                    }
+                })
+                .catch(err => { console.error(err); updateStatus('❌ Помилка з\'єднання', 'red'); });
+        }
+
+        function markModified() {
+            state.modified = true;
+            updateStatus('⚠️ Є незбережені зміни', 'amber');
+        }
+
+        function updateStatus(msg, color = 'gray') {
+            const colors = { green: 'text-green-500', red: 'text-red-500', blue: 'text-primary', amber: 'text-amber-500', gray: 'text-mutedText' };
+            elements.autoSaveStatus.textContent = msg;
+            elements.autoSaveStatus.className = `mb-6 text-sm font-bold ${colors[color] || colors.gray}`;
+        }
+
+        elements.groupSelect.value = "";
+        elements.groupSelect.dispatchEvent(new Event('change'));
+    });
+</script>
+
+{{ schedule_map|json_script:"schedule-data" }}
+{{ subject_teachers_map|json_script:"subject-teachers-data" }}
+{% endblock %}

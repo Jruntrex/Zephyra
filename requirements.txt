@@ -1,0 +1,7 @@
+Django>=6.0
+python-dotenv>=1.0
+mysqlclient>=2.2
+twilio>=9.0
+Pillow>=10.0
+requests>=2.32
+aiohttp>=3.13

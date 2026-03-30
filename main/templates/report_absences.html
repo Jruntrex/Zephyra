@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% load journal_filters %}
+
+{% block title %}Звіт: {% if is_rating_report %}Рейтинг{% else %}Пропуски{% endif %}{% endblock %}
+
+{% block header_title %}{% endblock %}
+
+{% block content %}
+<div class="glass-panel rounded-3xl p-6 mb-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <h3 class="text-2xl font-bold text-dark">{{ report_title }}</h3>
+
+        <a href="{% url report_reset_url_name %}?group={{ request.GET.group }}&subject={{ request.GET.subject }}&date_from={{ request.GET.date_from }}&date_to={{ request.GET.date_to }}&export=csv"
+            class="px-6 py-2 rounded-lg bg-primary text-white hover:bg-blue-700 shadow-md transition flex items-center gap-2">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 12l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Експорт CSV
+        </a>
+    </div>
+
+    <form method="GET" action="{% url report_reset_url_name %}"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end border-t pt-6">
+
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">Група</label>
+            <select name="group"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option value="">Усі групи</option>
+                {% for g in groups %}
+                {% with g_id=g.pk|stringformat:"s" %}
+                <option value="{{ g.pk }}" {% if request.GET.group|is_equal:g_id %}selected{% endif %}>
+                    {{ g.name }}
+                </option>
+                {% endwith %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">Курс</label>
+            <select name="course"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option value="">Усі курси</option>
+                {% for c in courses %}
+                {% with c_str=c|stringformat:"s" %}
+                <option value="{{ c }}" {% if request.GET.course|is_equal:c_str %}selected{% endif %}>
+                    {{ c }} курс
+                </option>
+                {% endwith %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">Спеціальність</label>
+            <select name="specialty"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option value="">Усі спеціальності</option>
+                {% for spec in specialties %}
+                <option value="{{ spec }}" {% if request.GET.specialty == spec %}selected{% endif %}>
+                    {{ spec }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">Предмет</label>
+            <select name="subject"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option value="">Усі предмети</option>
+                {% for sub in all_subjects %}
+                {% with sub_id=sub.id|stringformat:"s" %}
+                <option value="{{ sub.id }}" {% if request.GET.subject|is_equal:sub_id %}selected{% endif %}>
+                    {{ sub.name }}
+                </option>
+                {% endwith %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">Статус</label>
+            <select name="is_active"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option value="">Усі студенти</option>
+                <option value="true" {% if request.GET.is_active == 'true' %}selected{% endif %}>Активні</option>
+                <option value="false" {% if request.GET.is_active == 'false' %}selected{% endif %}>Неактивні</option>
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1 lg:col-span-2">
+            <label class="text-xs font-bold text-gray-500 uppercase">Період</label>
+            <div class="flex gap-2">
+                <input type="date" name="date_from" value="{{ request.GET.date_from }}" {{
+                    is_weekly_report|yesno:"disabled title='Заблоковано для тижневого звіту' ," }}
+                    class="w-full px-2 py-2 border border-gray-300 rounded-lg text-xs {{ is_weekly_report|yesno:'bg-gray-50,' }}">
+                <input type="date" name="date_to" value="{{ request.GET.date_to }}" {{ is_weekly_report|yesno:"disabled
+                    title='Заблоковано для тижневого звіту' ," }}
+                    class="w-full px-2 py-2 border border-gray-300 rounded-lg text-xs {{ is_weekly_report|yesno:'bg-gray-50,' }}">
+            </div>
+        </div>
+
+        {% if is_absences_report and not is_weekly_report %}
+        <div class="flex flex-col gap-1 lg:col-span-2">
+            <label class="text-xs font-bold text-gray-500 uppercase">Обмеження</label>
+            <select name="limit"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option value="10" {% if request.GET.limit|is_equal:'10' %}selected{% endif %}>Топ 10</option>
+                <option value="25" {% if request.GET.limit|is_equal:'25' %}selected{% endif %}>Топ 25</option>
+                <option value="0" {% if request.GET.limit|is_equal:'0' %}selected{% endif %}>Усі</option>
+            </select>
+        </div>
+        {% else %}
+        <div class="lg:col-span-2"></div>
+        {% endif %}
+
+        <div class="flex items-end justify-end">
+            <button type="submit"
+                class="px-8 py-2 rounded-lg bg-primary text-white hover:bg-blue-700 shadow-md transition w-full">
+                Застосувати фільтри
+            </button>
+        </div>
+
+        <div class="lg:col-span-5 flex justify-start mt-2 border-t pt-4">
+            <a href="{% url report_reset_url_name %}"
+                class="px-6 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
+                Скинути все
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="glass-panel shadow-sm rounded-3xl p-0 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Студент</th>
+                    <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Група</th>
+
+                    {% if is_rating_report %}
+                    <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase">Рейтинг (Зважений)</th>
+                    <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase">Сер. бал</th>
+                    <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase">Оцінок</th>
+                    {% else %}
+                    <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase">Всього (Н)</th>
+                    <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase">Неповажні</th>
+                    {% if not is_weekly_report %}
+                    <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase">Поважні</th>
+                    {% endif %}
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for entry in report_data %}
+                <tr class="hover:bg-blue-50/50 transition duration-150">
+                    <td class="p-4 text-sm font-bold text-gray-900">{{ entry.full_name }}</td>
+                    <td class="p-4 text-sm text-gray-500">
+                        {{ entry.group.name }}
+                    </td>
+
+                    {% if is_rating_report %}
+                    <td class="p-4 text-center">
+                        <span
+                            class="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-primary/10 text-primary font-bold shadow-sm">
+                            {{ entry.weighted_avg|floatformat:2 }}
+                        </span>
+                    </td>
+                    <td class="p-4 text-center">
+                        <span class="text-sm font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-lg">
+                            {{ entry.raw_avg|floatformat:1 }}
+                        </span>
+                    </td>
+                    <td class="p-4 text-center text-sm font-bold text-gray-400 opacity-60">{{ entry.count }}</td>
+                    {% else %}
+                    <td class="p-4 text-center font-bold text-dark">{{ entry.total_absences }}</td>
+                    <td class="p-4 text-center">
+                        <span
+                            class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-700 font-bold">
+                            {{ entry.unexcused_absences }}
+                        </span>
+                    </td>
+                    {% if not is_weekly_report %}
+                    <td class="p-4 text-center text-sm font-medium text-blue-600">
+                        {{ entry.excused_absences }}
+                    </td>
+                    {% endif %}
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-12 text-center text-gray-400">
+                        <p class="text-lg">Даних не знайдено</p>
+                        <p class="text-sm">Спробуйте змінити параметри пошуку</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

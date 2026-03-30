@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ lesson.subject.name }} — {{ lesson.date }} | {{ institution.name|default:"MyBosco" }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Prose */
+    .lesson-prose { line-height:1.85; font-size:15px; color:var(--text-main); }
+    .lesson-prose h1,.lesson-prose h2,.lesson-prose h3 { font-weight:800; margin:1.2em 0 .5em; color:var(--text-main); }
+    .lesson-prose h2 { font-size:1.25em; } .lesson-prose h3 { font-size:1.1em; }
+    .lesson-prose p { margin:.8em 0; }
+    .lesson-prose ul,.lesson-prose ol { padding-left:1.5em; margin:.8em 0; }
+    .lesson-prose li { margin:.3em 0; }
+    .lesson-prose blockquote { border-left:3px solid var(--primary,#5B84FF); padding-left:1em; margin:1em 0; color:var(--text-muted); font-style:italic; }
+    .lesson-prose code { background:rgba(91,132,255,.1); padding:2px 6px; border-radius:5px; font-family:monospace; font-size:.9em; }
+    .lesson-prose a { color:var(--primary,#5B84FF); text-decoration:underline; }
+    .lesson-prose strong { font-weight:700; }
+
+    /* Sticky panel */
+    .sticky-panel { position:sticky; top:68px; }
+
+    /* Toast */
+    #toast-container { position:fixed; bottom:28px; right:28px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+    .toast { padding:12px 20px; border-radius:12px; font-size:13px; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.12); animation:slideInRight .3s ease; display:flex; align-items:center; gap:8px; max-width:320px; }
+    .toast.success { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+    .toast.error   { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+    .toast.info    { background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; }
+    @keyframes slideInRight { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+
+    /* Chat container scroll */
+    #comments-list { scroll-behavior: smooth; }
+
+    /* Drop */
+    #hw-drop-zone.drag-over { border-color:var(--primary,#5B84FF); background:rgba(91,132,255,.05); }
+
+    /* Dropdown */
+    #add-dropdown { transform-origin:top left; }
+    #add-dropdown.hidden { display:none; }
+</style>
+{% endblock %}
+
+{% block header_title %}{{ lesson.subject.name }}{% endblock %}
+
+{% block content %}
+<div>
+
+    <!-- Breadcrumb -->
+    <div class="flex flex-wrap items-center gap-3 mb-6 text-sm text-mutedText">
+        <a href="{% url 'lessons_list' %}" class="hover:text-primary transition-colors">Уроки</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-mainText font-semibold">{{ lesson.subject.name }}</span>
+    </div>
+
+    <!-- 70 / 30 grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-7">
+
+        <!-- ══ LEFT: Content (70%) ══ -->
+        <div class="lg:col-span-2 space-y-4">
+
+            <!-- Lesson header card -->
+            <div class="bg-surface rounded-2xl border border-border shadow-sm p-6">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <!-- Left: icon + title + meta -->
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-black text-mainText leading-tight">
+                                {% if lesson.topic %}{{ lesson.topic }}{% else %}<span class="text-mutedText/60 font-normal italic">Тема не вказана</span>{% endif %}
+                            </h1>
+                            <p class="text-sm text-mutedText mt-1">{{ lesson.teacher.full_name }} · {{ lesson.date|date:"d E Y" }}</p>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span class="px-2 py-0.5 bg-surface border border-border text-mutedText rounded-full text-xs">{{ lesson.start_time|time:"H:i" }}–{{ lesson.end_time|time:"H:i" }}</span>
+                                {% if lesson.classroom %}<span class="px-2 py-0.5 bg-surface border border-border text-mutedText rounded-full text-xs">{{ lesson.classroom }}</span>{% endif %}
+                                {% if lesson.evaluation_type %}<span class="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-bold">{{ lesson.evaluation_type.name }}</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Right: points + deadline -->
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-xl font-black text-mainText">{{ lesson.max_points }} балів</p>
+                        {% if lesson.deadline %}
+                        <p class="text-xs text-mutedText mt-1">Термін: <span class="font-semibold">{{ lesson.deadline|date:"d.m.Y H:i" }}</span></p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theory -->
+            {% if lesson.materials %}
+            <div class="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-border">
+                    <div class="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    </div>
+                    <h3 class="font-bold text-mainText text-sm">Теоретичний матеріал</h3>
+                </div>
+                <div class="px-6 py-5 lesson-prose">{{ lesson.materials|safe }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Homework task -->
+            {% if lesson.homework %}
+            <div class="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
+                <div class="flex items-center gap-3 px-5 py-3.5 border-b border-border">
+                    <div class="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    </div>
+                    <h3 class="font-bold text-mainText text-sm">Домашнє завдання</h3>
+                </div>
+                <div class="px-6 py-5 lesson-prose">{{ lesson.homework|safe }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Teacher materials (attachments) -->
+            {% if attachments %}
+            <div class="bg-surface rounded-2xl border border-border shadow-sm p-5">
+                <h3 class="font-bold text-mainText text-sm mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                    Матеріали ({{ attachments|length }})
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {% for att in attachments %}
+                    <a href="{% if att.file %}{{ att.file.url }}{% elif att.link %}{{ att.link }}{% else %}#{% endif %}" target="_blank"
+                        class="flex flex-col items-center p-3 bg-background rounded-xl border border-border hover:border-primary/40 hover:bg-primary/5 transition-all group">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center mb-2
+                            {% if att.file_type == 'video' %}bg-red-500/10{% elif att.file_type == 'link' %}bg-purple-500/10{% else %}bg-blue-500/10{% endif %}">
+                            {% if att.file_type == 'video' %}
+                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            {% elif att.file_type == 'link' %}
+                            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m7.172-7.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/></svg>
+                            {% else %}
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            {% endif %}
+                        </div>
+                        <p class="text-[11px] font-semibold text-mainText text-center truncate w-full group-hover:text-primary transition-colors">{{ att.file_name }}</p>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div><!-- /LEFT -->
+
+
+        <!-- ══ RIGHT: Sticky panel (30%) ══ -->
+        <div class="lg:col-span-1">
+            <div class="sticky-panel space-y-5">
+
+                <!-- ── Block 1: My work ── -->
+                <div class="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-border">
+                        <h3 class="font-bold text-mainText text-sm">Моя робота</h3>
+                        <!-- Status badge -->
+                        <span id="work-status-badge" class="text-xs font-bold px-2.5 py-1 rounded-full
+                            {% if submission %}
+                                {% if submission.status == 'turned_in' %}bg-green-500/10 text-green-500
+                                {% elif submission.status == 'graded' %}bg-primary/10 text-primary
+                                {% elif submission.status == 'missing' %}bg-red-500/10 text-red-500
+                                {% else %}bg-surface border border-border text-mutedText{% endif %}
+                            {% else %}bg-surface border border-border text-mutedText{% endif %}">
+                            {% if submission %}{{ submission.get_status_display }}{% else %}Призначено{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="p-5 space-y-3">
+
+                        <!-- Grade if graded -->
+                        {% if submission.grade %}
+                        <div class="flex items-center gap-2 p-3 bg-primary/5 rounded-xl border border-primary/20">
+                            <svg class="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <p class="text-sm font-bold text-primary">Оцінка: {{ submission.grade }} / {{ lesson.max_points }}</p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Submitted files list -->
+                        <div id="student-files-list" class="space-y-2">
+                            {% if submission %}
+                                {% for f in submission.files.all %}
+                                <div class="sub-file-item flex items-center gap-2 p-2.5 bg-background rounded-xl border border-border group" data-id="{{ f.id }}">
+                                    <svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                    <a href="{{ f.file.url }}" target="_blank" class="flex-1 text-xs font-semibold text-mainText hover:text-primary truncate">{{ f.file_name }}</a>
+                                    {% if submission.status == 'assigned' %}
+                                    <button onclick="deleteFile({{ f.id }},this)" class="p-1 rounded hover:bg-red-500/10 text-mutedText hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                {% empty %}
+                                <p id="no-files-msg" class="text-xs text-mutedText text-center py-1">Файлів немає</p>
+                                {% endfor %}
+                            {% else %}
+                            <p id="no-files-msg" class="text-xs text-mutedText text-center py-1">Файлів немає</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Add or create button (only if not turned in) -->
+                        {% if not submission or submission.status == 'assigned' %}
+                        <div class="relative">
+                            <button onclick="toggleAddDropdown()" id="add-btn"
+                                class="border-2 border-dashed border-border text-primary hover:bg-primary/5 w-full py-2 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                Додати або створити
+                            </button>
+                            <div id="add-dropdown" class="hidden absolute left-0 top-full mt-1 z-50 w-48 bg-surface border border-border rounded-xl shadow-lg overflow-hidden">
+                                <button onclick="openFilePicker()" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-background text-sm text-mainText transition-colors">
+                                    <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    Файл
+                                </button>
+                            </div>
+                            <input type="file" id="hw-file-input" class="hidden" onchange="uploadStudentFile(this.files[0])">
+                        </div>
+                        {% endif %}
+
+                        <!-- Main action button -->
+                        {% if not submission or submission.status == 'assigned' %}
+                        <button onclick="turnIn()" id="turn-in-btn"
+                            class="bg-primary text-white w-full py-2.5 rounded-lg shadow-button font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                            {% if submission and submission.files.count %}Здати{% else %}Позначити як виконане{% endif %}
+                        </button>
+                        {% elif submission.status == 'turned_in' %}
+                        <button onclick="cancelTurnIn()" id="cancel-btn"
+                            class="bg-surface border border-border text-mutedText w-full py-2.5 rounded-lg font-semibold text-sm hover:bg-background transition-colors">
+                            Скасувати здачу
+                        </button>
+                        {% elif submission.status == 'graded' %}
+                        <div class="flex items-center justify-center gap-2 py-2 text-xs text-mutedText">
+                            <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Роботу перевірено
+                        </div>
+                        {% endif %}
+
+                    </div><!-- /p-5 -->
+                </div><!-- /my work -->
+
+
+                <!-- ── Block 2: Private comments ── -->
+                <div class="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
+                    <div class="flex items-center gap-2 px-5 py-3.5 border-b border-border">
+                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        <h3 class="font-bold text-mainText text-sm">Приватні коментарі</h3>
+                    </div>
+
+                    <!-- Comments list -->
+                    <div id="comments-list" class="chat-container max-h-64 overflow-y-auto min-h-[60px]">
+                        {% if submission %}
+                            {% for c in submission.private_comments.all %}
+                            <div class="chat-message {% if c.author == request.user %}me{% else %}other{% endif %}">
+                                <div class="chat-avatar">{{ c.author.full_name|slice:":1" }}</div>
+                                <div class="chat-content">
+                                    <div class="chat-bubble">
+                                        {{ c.text }}
+                                    </div>
+                                    <div class="chat-meta">
+                                        <span class="chat-author text-mutedText truncate max-w-[100px]">{{ c.author.full_name }}</span>
+                                        <span class="chat-time">{{ c.created_at|date:"d.m H:i" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p id="no-comments-msg" class="text-xs text-mutedText text-center py-3">Коментарів поки немає</p>
+                            {% endfor %}
+                        {% else %}
+                        <p id="no-comments-msg" class="text-xs text-mutedText text-center py-3">Коментарів поки немає</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Input -->
+                    <div class="p-3 border-t border-border flex gap-2">
+                        <input type="text" id="comment-input" placeholder="Написати..."
+                            class="flex-1 text-sm bg-background border border-border rounded-xl px-3 py-2 text-mainText focus:outline-none focus:border-primary transition-colors"
+                            onkeydown="if(event.key==='Enter')sendComment()">
+                        <button onclick="sendComment()" class="p-2 bg-primary text-white rounded-xl hover:opacity-90 transition-opacity">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+            </div><!-- /sticky-panel -->
+        </div><!-- /RIGHT -->
+
+    </div><!-- /grid -->
+</div>
+
+<div id="toast-container"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+const LESSON_ID    = {{ lesson.id }};
+const CSRF         = '{{ csrf_token }}';
+const UPLOAD_URL   = "{% url 'api_submission_upload_file' lesson.id %}";
+const TURN_IN_URL  = "{% url 'api_lesson_turn_in' lesson.id %}";
+const CANCEL_URL   = "{% url 'api_lesson_cancel_homework' lesson.id %}";
+const DEL_FILE_BASE = "/api/lesson/{{ lesson.id }}/submission/delete-file/";
+{% if submission %}const SUBMISSION_ID = {{ submission.id }};
+const COMMENT_URL = "/api/submission/{{ submission.id }}/comment/";
+{% else %}let SUBMISSION_ID = null;
+let COMMENT_URL = null;
+{% endif %}
+
+// ── Dropdown ──────────────────────────────────────────────
+function toggleAddDropdown() {
+    document.getElementById('add-dropdown').classList.toggle('hidden');
+}
+function openFilePicker() {
+    document.getElementById('add-dropdown').classList.add('hidden');
+    document.getElementById('hw-file-input').click();
+}
+document.addEventListener('click', e => {
+    const btn=document.getElementById('add-btn'), dd=document.getElementById('add-dropdown');
+    if (dd && btn && !btn.contains(e.target) && !dd.contains(e.target)) dd.classList.add('hidden');
+});
+
+// ── Upload file ───────────────────────────────────────────
+async function uploadStudentFile(file) {
+    if (!file) return;
+    const fd = new FormData(); fd.append('file', file);
+    try {
+        const d = await (await fetch(UPLOAD_URL, {method:'POST', headers:{'X-CSRFToken':CSRF}, body:fd})).json();
+        if (d.status === 'success') {
+            document.getElementById('hw-file-input').value='';
+            document.getElementById('no-files-msg')?.remove();
+            // Update submission ID if newly created
+            if (!SUBMISSION_ID) {
+                SUBMISSION_ID = d.submission_id;
+                COMMENT_URL = '/api/submission/'+SUBMISSION_ID+'/comment/';
+            }
+            addFileToList(d.file);
+            showToast('Файл додано','success');
+        } else showToast('Помилка: '+d.message,'error');
+    } catch(e){ showToast('Помилка мережі','error'); }
+}
+
+function addFileToList(f) {
+    const list = document.getElementById('student-files-list');
+    const el = document.createElement('div');
+    el.className = 'sub-file-item flex items-center gap-2 p-2.5 bg-background rounded-xl border border-border group';
+    el.dataset.id = f.id;
+    el.innerHTML = `<svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+        <a href="${f.file_url}" target="_blank" class="flex-1 text-xs font-semibold text-mainText hover:text-primary truncate">${escHtml(f.file_name)}</a>
+        <button onclick="deleteFile(${f.id},this)" class="p-1 rounded hover:bg-red-500/10 text-mutedText hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>`;
+    list.appendChild(el);
+}
+
+async function deleteFile(attId, btn) {
+    if (!confirm('Видалити файл?')) return;
+    try {
+        const d = await (await fetch(DEL_FILE_BASE+attId+'/',{method:'POST',headers:{'X-CSRFToken':CSRF}})).json();
+        if (d.status==='success') { btn.closest('.sub-file-item').remove(); showToast('Видалено','info'); }
+        else showToast('Помилка','error');
+    } catch(e){ showToast('Помилка мережі','error'); }
+}
+
+// ── Turn in ───────────────────────────────────────────────
+async function turnIn() {
+    const btn = document.getElementById('turn-in-btn');
+    btn.disabled=true;
+    try {
+        const d = await (await fetch(TURN_IN_URL,{method:'POST',headers:{'X-CSRFToken':CSRF}})).json();
+        if (d.status==='success'){
+            showToast('Роботу здано!','success');
+            // Update UI without reload
+            document.getElementById('work-status-badge').textContent='Здано';
+            document.getElementById('work-status-badge').className='text-xs font-bold px-2.5 py-1 rounded-full bg-green-500/10 text-green-500';
+            btn.outerHTML=`<button onclick="cancelTurnIn()" id="cancel-btn" class="bg-surface border border-border text-mutedText w-full py-2.5 rounded-lg font-semibold text-sm hover:bg-background transition-colors">Скасувати здачу</button>`;
+            document.getElementById('add-btn')?.remove();
+            document.querySelectorAll('.sub-file-item button').forEach(b=>b.remove());
+        } else { showToast(d.message||'Помилка','error'); btn.disabled=false; }
+    } catch(e){ showToast('Помилка мережі','error'); btn.disabled=false; }
+}
+
+// ── Cancel submission ─────────────────────────────────────
+async function cancelTurnIn() {
+    if (!confirm('Скасувати здачу? Роботу можна буде відредагувати.')) return;
+    const btn=document.getElementById('cancel-btn'); btn.disabled=true;
+    try {
+        const d=await(await fetch(CANCEL_URL,{method:'POST',headers:{'X-CSRFToken':CSRF}})).json();
+        if(d.status==='success') { showToast('Здачу скасовано','info'); setTimeout(()=>location.reload(),900); }
+        else { showToast(d.message||'Помилка','error'); btn.disabled=false; }
+    } catch(e){ showToast('Помилка мережі','error'); btn.disabled=false; }
+}
+
+// ── Private comments ──────────────────────────────────────
+async function sendComment() {
+    const input=document.getElementById('comment-input'), text=input.value.trim();
+    if (!text) return;
+    if (!SUBMISSION_ID) {
+        // Need to create submission first (turn-in triggers SUBMISSION_ID update)
+        // For comments before submission: create submission implicitly
+        showToast('Спочатку додайте файл або здайте роботу','info');
+        return;
+    }
+    try {
+        const d=await(await fetch(COMMENT_URL,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({text})})).json();
+        if(d.status==='success'){
+            input.value='';
+            document.getElementById('no-comments-msg')?.remove();
+            const box=document.getElementById('comments-list');
+            const el=document.createElement('div');
+            el.className='chat-message me';
+            el.innerHTML=`
+                <div class="chat-avatar">${escHtml(d.comment.author.substring(0,1))}</div>
+                <div class="chat-content">
+                    <div class="chat-bubble">
+                        ${escHtml(d.comment.text)}
+                    </div>
+                    <div class="chat-meta">
+                        <span class="chat-author text-mutedText truncate max-w-[100px]">${escHtml(d.comment.author)}</span>
+                        <span class="chat-time">${d.comment.created_at}</span>
+                    </div>
+                </div>`;
+            box.appendChild(el); box.scrollTop=box.scrollHeight;
+        } else showToast('Помилка','error');
+    } catch(e){ showToast('Помилка мережі','error'); }
+}
+
+// ── Utils ─────────────────────────────────────────────────
+function showToast(msg, type='info') {
+    const c=document.getElementById('toast-container'), el=document.createElement('div');
+    el.className=`toast ${type}`;
+    const icons={success:'<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',error:'<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>',info:'<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'};
+    el.innerHTML=(icons[type]||'')+`<span>${escHtml(msg)}</span>`;
+    c.appendChild(el); setTimeout(()=>el.remove(),3500);
+}
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+{% endblock %}

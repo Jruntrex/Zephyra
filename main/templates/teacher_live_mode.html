@@ -1,0 +1,378 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Live Mode — {{ lesson.subject.name }}{% endblock %}
+{% block header_title %}Live Mode{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .student-card {
+        transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .student-card:hover {
+        transform: translateY(-6px) scale(1.02);
+    }
+    .roulette-active {
+        outline: 3px solid rgb(var(--color-primary));
+        transform: scale(1.04);
+    }
+    .roulette-winner {
+        outline: 4px solid rgb(var(--color-success));
+        transform: scale(1.08);
+        box-shadow: 0 0 36px rgba(16, 185, 129, 0.4);
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    @keyframes fade-in  { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scale-up { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .animate-fade-in  { animation: fade-in  0.25s ease-out forwards; }
+    .animate-scale-up { animation: scale-up 0.35s cubic-bezier(0.165, 0.84, 0.44, 1) forwards; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- ── Sticky header ── -->
+    <div class="card-bento sticky top-4 z-50 flex flex-col md:flex-row justify-between items-center gap-4 !overflow-visible">
+
+        <!-- Left: info -->
+        <div class="flex items-center gap-4">
+            <div class="hidden sm:flex w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center text-primary flex-shrink-0">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2.5 py-0.5 bg-primary text-white rounded-full text-[10px] font-black uppercase tracking-widest">
+                        LIVE MODE
+                    </span>
+                    <span class="text-mutedText text-sm font-bold">{{ lesson.group.name }}</span>
+                </div>
+                <h1 class="text-xl font-black text-mainText leading-tight">
+                    {% if lesson and lesson.subject %}{{ lesson.subject.name }}{% else %}—{% endif %}
+                </h1>
+                <div class="relative group mt-0.5">
+                    <input type="text" id="lessonTopic"
+                        class="border-none focus:ring-0 text-mutedText bg-transparent p-0 w-full md:w-80 placeholder-border hover:text-mainText transition font-medium italic text-sm"
+                        placeholder="Додати тему заняття..."
+                        value="{{ lesson.topic }}"
+                        onchange="updateTopic(this.value)">
+                    <div class="absolute bottom-0 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: roulette + timer -->
+        <div class="flex items-center gap-3">
+
+            <!-- Roulette -->
+            <button onclick="spinRoulette()"
+                title="Випадковий студент"
+                class="group flex items-center justify-center w-11 h-11 bg-background rounded-2xl border border-border hover:border-primary/40 hover:bg-primary/5 transition-all active:scale-95">
+                <span class="text-xl group-hover:rotate-12 transition-transform">🎲</span>
+            </button>
+
+            <!-- Timer -->
+            <div class="flex items-center gap-1.5 bg-mainText text-white p-1.5 rounded-2xl shadow-xl">
+                <div class="flex flex-col items-center px-3 py-0.5">
+                    <input type="number" id="timerInput"
+                        class="bg-transparent border-none focus:ring-0 p-0 w-10 text-2xl font-black text-center text-white placeholder-white/30"
+                        value="45" min="1" max="180" onchange="manualTimeChange()">
+                    <span class="text-[9px] font-black text-white/40 uppercase tracking-tighter">хвилин</span>
+                </div>
+                <div class="h-8 w-px bg-white/10"></div>
+                <div class="text-3xl font-black font-mono w-20 text-center text-white" id="timerDisplay">45:00</div>
+                <div class="flex gap-1 pr-1">
+                    <button onclick="toggleTimer()" id="timerBtn"
+                        class="w-10 h-10 flex items-center justify-center bg-primary hover:bg-primary/80 rounded-xl text-white transition-all active:scale-90">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" id="playIcon">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </button>
+                    <button onclick="resetTimer()"
+                        class="w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-xl text-white/60 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Students Grid ── -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5" id="studentsGrid">
+        {% for student in student_list %}
+        <div id="student-card-{{ student.user.id }}"
+            class="student-card card-bento !p-5 cursor-pointer hover:border-primary/40 hover:!-translate-y-2"
+            data-comment="{{ student.comment }}"
+            onclick="openGradeModal('{{ student.user.id }}', '{{ student.user.full_name }}')">
+
+            <!-- Absent overlay -->
+            <div id="overlay-{{ student.user.id }}"
+                class="absolute inset-0 bg-surface/90 backdrop-blur-sm rounded-3xl flex flex-col items-center justify-center z-10 transition-all duration-400 {% if not student.is_absent %}hidden opacity-0 scale-95{% endif %}">
+                <span class="text-error font-black text-[10px] uppercase tracking-widest mb-2 px-3 py-1 bg-error/10 text-error rounded-full">Відсутній</span>
+                <button onclick="event.stopPropagation(); toggleAbsence('{{ student.user.id }}')"
+                    class="px-4 py-1.5 bg-mainText text-white text-xs font-bold rounded-xl hover:bg-primary transition mt-1">
+                    Повернути
+                </button>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <!-- Avatar -->
+                <div class="relative mb-4">
+                    <div class="w-20 h-20 rounded-2xl bg-background border border-border flex items-center justify-center text-xl font-black text-mutedText/40 group-hover:scale-105 transition-transform duration-300">
+                        {{ student.initials }}
+                    </div>
+                    <!-- Grade badge -->
+                    <div id="badge-{{ student.user.id }}"
+                        class="{% if student.grade %}scale-100 opacity-100{% else %}scale-0 opacity-0{% endif %} absolute -top-2 -right-2 w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-black text-base shadow-lg shadow-primary/30 transition-all duration-400">
+                        {{ student.grade }}
+                    </div>
+                </div>
+
+                <h3 class="font-bold text-mainText text-center text-sm leading-snug mb-3 truncate w-full">
+                    {{ student.user.full_name }}
+                </h3>
+
+                <div class="pt-3 border-t border-border w-full flex items-center justify-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                    <span class="text-[10px] font-bold text-mutedText uppercase tracking-tight">На зв'язку</span>
+                </div>
+            </div>
+
+            <!-- Fast absence toggle -->
+            <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="event.stopPropagation(); toggleAbsence('{{ student.user.id }}')"
+                    class="w-7 h-7 rounded-xl bg-background border border-border hover:bg-error/10 hover:border-error/30 text-mutedText hover:text-error flex items-center justify-center transition-all"
+                    title="Відмітити відсутність">
+                    <span class="font-black text-xs">Н</span>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- ── Grade Modal ── -->
+<div id="gradeModal" class="fixed inset-0 z-[100] hidden overflow-y-auto">
+    <div class="fixed inset-0 bg-mainText/40 backdrop-blur-lg animate-fade-in" onclick="closeModal()"></div>
+    <div class="relative min-h-screen flex items-center justify-center p-4" onclick="closeModal()">
+        <div class="relative bg-surface rounded-3xl shadow-2xl border border-border p-8 w-full max-w-md animate-scale-up" onclick="event.stopPropagation()">
+
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-primary/10 rounded-2xl mx-auto mb-5 flex items-center justify-center text-primary">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </div>
+                <h2 id="modalStudentName" class="text-2xl font-black text-mainText mb-1">—</h2>
+                <p class="text-mutedText text-sm font-medium">Виберіть оцінку за активність</p>
+            </div>
+
+            <div class="grid grid-cols-4 gap-3 mb-6">
+                {% for g in "123" %}{% endfor %}
+                <button onclick="setGrade(1)"  class="grade-btn h-12 rounded-xl bg-error/10 hover:bg-error hover:text-white text-error font-black border border-error/20 transition-all text-lg">1</button>
+                <button onclick="setGrade(2)"  class="grade-btn h-12 rounded-xl bg-error/10 hover:bg-error hover:text-white text-error font-black border border-error/20 transition-all text-lg">2</button>
+                <button onclick="setGrade(3)"  class="grade-btn h-12 rounded-xl bg-error/10 hover:bg-error hover:text-white text-error font-black border border-error/20 transition-all text-lg">3</button>
+                <button onclick="setGrade(4)"  class="grade-btn h-12 rounded-xl bg-yellow-400/10 hover:bg-yellow-400 hover:text-white text-yellow-500 font-black border border-yellow-400/20 transition-all text-lg">4</button>
+                <button onclick="setGrade(5)"  class="grade-btn h-12 rounded-xl bg-yellow-400/10 hover:bg-yellow-400 hover:text-white text-yellow-500 font-black border border-yellow-400/20 transition-all text-lg">5</button>
+                <button onclick="setGrade(6)"  class="grade-btn h-12 rounded-xl bg-yellow-400/10 hover:bg-yellow-400 hover:text-white text-yellow-500 font-black border border-yellow-400/20 transition-all text-lg">6</button>
+                <button onclick="setGrade(7)"  class="grade-btn h-12 rounded-xl bg-primary/10 hover:bg-primary hover:text-white text-primary font-black border border-primary/20 transition-all text-lg">7</button>
+                <button onclick="setGrade(8)"  class="grade-btn h-12 rounded-xl bg-primary/10 hover:bg-primary hover:text-white text-primary font-black border border-primary/20 transition-all text-lg">8</button>
+                <button onclick="setGrade(9)"  class="grade-btn h-12 rounded-xl bg-primary/10 hover:bg-primary hover:text-white text-primary font-black border border-primary/20 transition-all text-lg">9</button>
+                <button onclick="setGrade(10)" class="grade-btn h-12 rounded-xl bg-success/10 hover:bg-success hover:text-white text-success font-black border border-success/20 transition-all text-lg">10</button>
+                <button onclick="setGrade(11)" class="grade-btn h-12 rounded-xl bg-success/10 hover:bg-success hover:text-white text-success font-black border border-success/20 transition-all text-lg">11</button>
+                <button onclick="setGrade(12)" class="grade-btn h-12 rounded-xl bg-orange-500 text-white font-black hover:bg-orange-600 transition-all text-lg shadow-lg shadow-orange-200/40">12</button>
+            </div>
+
+            <textarea id="modalComment"
+                class="w-full bg-background border border-border rounded-2xl px-5 py-4 text-mainText text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder-mutedText resize-none transition-all font-medium mb-5"
+                rows="2" placeholder="Додати коментар..."></textarea>
+
+            <div class="flex gap-3">
+                <button onclick="setGrade(null)"
+                    class="flex-1 py-3 rounded-2xl border border-border text-mutedText hover:text-error hover:bg-error/5 hover:border-error/20 font-black transition-all text-sm">
+                    ОЧИСТИТИ
+                </button>
+                <button onclick="submitGrading()"
+                    class="flex-[2] py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 font-black transition-all text-sm shadow-lg shadow-primary/25">
+                    ЗБЕРЕГТИ
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentStudentId = null;
+    let timerInterval = null;
+    let totalSeconds = 45 * 60;
+    let timeLeft = 45 * 60;
+    let isRunning = false;
+
+    function manualTimeChange() {
+        const input = document.getElementById('timerInput');
+        let mins = parseInt(input.value);
+        if (isNaN(mins) || mins < 1) mins = 1;
+        if (mins > 180) mins = 180;
+        totalSeconds = mins * 60;
+        timeLeft = totalSeconds;
+        updateTimerDisplay();
+        if (isRunning) toggleTimer();
+    }
+
+    function updateTimerDisplay() {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        document.getElementById('timerDisplay').innerText =
+            `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function toggleTimer() {
+        const btn = document.getElementById('timerBtn');
+        const icon = document.getElementById('playIcon');
+        if (isRunning) {
+            clearInterval(timerInterval);
+            icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+            btn.classList.replace('bg-orange-500', 'bg-primary');
+        } else {
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) { timeLeft--; updateTimerDisplay(); }
+                else { clearInterval(timerInterval); celebrateTimeEnd(); }
+            }, 1000);
+            icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+            btn.classList.replace('bg-primary', 'bg-orange-500');
+        }
+        isRunning = !isRunning;
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        timeLeft = totalSeconds;
+        updateTimerDisplay();
+        document.getElementById('playIcon').innerHTML = '<path d="M8 5v14l11-7z"/>';
+        document.getElementById('timerBtn').classList.remove('bg-orange-500');
+        document.getElementById('timerBtn').classList.add('bg-primary');
+    }
+
+    function celebrateTimeEnd() {
+        alert("Час пари закінчився! 🔔");
+        resetTimer();
+    }
+
+    let currentGradeValue = null;
+
+    function openGradeModal(id, name) {
+        currentStudentId = id;
+        const card = document.getElementById(`student-card-${id}`);
+        const badge = document.getElementById(`badge-${id}`);
+        currentGradeValue = !badge.classList.contains('opacity-0') ? badge.innerText.trim() : null;
+        document.getElementById('modalStudentName').innerText = name;
+        document.getElementById('modalComment').value = card.getAttribute('data-comment') || '';
+        document.getElementById('gradeModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('gradeModal').classList.add('hidden');
+        currentStudentId = null;
+        currentGradeValue = null;
+    }
+
+    function getBadgeColor(val) {
+        const n = parseInt(val);
+        if (n >= 12) return 'bg-orange-500 shadow-orange-200';
+        if (n >= 10) return 'bg-success shadow-green-200';
+        if (n >= 7)  return 'bg-primary shadow-blue-200';
+        if (n >= 4)  return 'bg-yellow-400 shadow-yellow-200';
+        return 'bg-error shadow-red-200';
+    }
+
+    function setGrade(value) {
+        currentGradeValue = value;
+        const badge = document.getElementById(`badge-${currentStudentId}`);
+        if (value) {
+            badge.innerText = value;
+            badge.className = badge.className.replace(/bg-\S+/g, '').replace(/shadow-\S+/g, '');
+            badge.classList.add(...getBadgeColor(value).split(' '));
+            badge.classList.remove('scale-0', 'opacity-0');
+            badge.classList.add('scale-100', 'opacity-100');
+        } else {
+            badge.classList.replace('scale-100', 'scale-0');
+            badge.classList.replace('opacity-100', 'opacity-0');
+        }
+        submitGrading();
+    }
+
+    function submitGrading() {
+        if (!currentStudentId) return;
+        const comment = document.getElementById('modalComment').value;
+        saveGrade(currentStudentId, currentGradeValue, comment);
+        document.getElementById(`student-card-${currentStudentId}`).setAttribute('data-comment', comment);
+        closeModal();
+    }
+
+    function toggleAbsence(id) {
+        const overlay = document.getElementById(`overlay-${id}`);
+        const hidden = overlay.classList.contains('hidden');
+        if (hidden) {
+            overlay.classList.remove('hidden');
+            setTimeout(() => { overlay.classList.remove('opacity-0', 'scale-95'); overlay.classList.add('opacity-100', 'scale-100'); }, 10);
+            saveGrade(id, 'H', '');
+        } else {
+            overlay.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => overlay.classList.add('hidden'), 400);
+            saveGrade(id, null, '');
+        }
+    }
+
+    function saveGrade(studentId, value, comment) {
+        fetch("{% url 'api_save_grade' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ lesson_id: '{{ lesson.id }}', student_id: studentId, value: value, comment: comment })
+        });
+    }
+
+    function updateTopic(topic) {
+        fetch("{% url 'api_update_lesson' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ lesson_id: '{{ lesson.id }}', topic: topic })
+        });
+    }
+
+    function spinRoulette() {
+        const cards = document.querySelectorAll('.student-card');
+        if (!cards.length) return;
+        let iterations = 0;
+        const max = 30;
+        let speed = 50;
+        const cycle = () => {
+            cards.forEach(c => c.classList.remove('roulette-active', 'z-50'));
+            const chosen = cards[Math.floor(Math.random() * cards.length)];
+            chosen.classList.add('roulette-active', 'z-50');
+            iterations++;
+            if (iterations < max) { speed *= 1.1; setTimeout(cycle, speed); }
+            else {
+                chosen.classList.remove('roulette-active');
+                chosen.classList.add('roulette-winner');
+                chosen.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => chosen.classList.remove('roulette-winner', 'z-50'), 4000);
+            }
+        };
+        cycle();
+    }
+
+    updateTimerDisplay();
+</script>
+{% endblock %}

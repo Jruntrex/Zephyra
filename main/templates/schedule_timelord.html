@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load journal_filters %}
+
+{% block title %}Розклад занять - {{ institution.name|default:"MyBosco" }}{% endblock %}
+
+{% block header_title %}Графік Занять{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Top Header Card -->
+    <div class="glass-panel rounded-[2rem] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm relative overflow-hidden">
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl"></div>
+        <div class="relative z-10 flex items-center gap-4">
+            <div class="bg-primary/10 text-primary px-5 py-2.5 rounded-2xl font-black text-lg">
+                {% if group %}{{ group.name }}{% else %}Оберіть групу{% endif %}
+            </div>
+            <div class="text-mutedText font-semibold">
+                {{ start_of_week|date:"d.m" }} — {{ end_of_week|date:"d.m.Y" }}
+            </div>
+        </div>
+
+        <div class="relative z-10 flex flex-wrap gap-2 items-center">
+            <!-- Week navigation -->
+            <div class="flex gap-1">
+                <a href="?week={{ week_shift|add:-1 }}{% if group %}&group_id={{ group.id }}{% endif %}"
+                    class="px-4 py-2.5 bg-background border border-border rounded-xl text-sm font-bold text-mutedText hover:bg-surface hover:text-primary transition-all">‹</a>
+                <a href="?week=0{% if group %}&group_id={{ group.id }}{% endif %}"
+                    class="px-4 py-2.5 bg-background border border-border rounded-xl text-sm font-bold text-mutedText hover:bg-surface hover:text-primary transition-all">Сьогодні</a>
+                <a href="?week={{ week_shift|add:1 }}{% if group %}&group_id={{ group.id }}{% endif %}"
+                    class="px-4 py-2.5 bg-background border border-border rounded-xl text-sm font-bold text-mutedText hover:bg-surface hover:text-primary transition-all">›</a>
+            </div>
+
+            <!-- Group selector -->
+            <select onchange="location.href='?week={{ week_shift }}&group_id=' + this.value"
+                class="px-4 py-2.5 bg-background border border-border rounded-xl text-mainText font-medium text-sm focus:outline-none focus:border-primary transition-all cursor-pointer">
+                <option value="">-- Оберіть групу --</option>
+                {% for g in all_groups %}
+                <option value="{{ g.id }}" {% if group and group.id == g.id %}selected{% endif %}>{{ g.name }}</option>
+                {% endfor %}
+            </select>
+
+            {% if user.role == 'admin' %}
+            <a href="{% url 'schedule_editor' %}"
+                class="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-all shadow-sm">
+                Редагувати
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Schedule Table -->
+    <div class="glass-panel rounded-[2rem] overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[700px]" style="border-collapse: separate; border-spacing: 0;">
+                <thead>
+                    <tr class="border-b border-border">
+                        <th class="px-5 py-4 text-left text-[10px] font-black text-mutedText uppercase tracking-widest w-24">День</th>
+                        <th class="px-3 py-4 text-center text-[10px] font-black text-mutedText uppercase tracking-widest w-12">Пара</th>
+                        <th class="px-3 py-4 text-left text-[10px] font-black text-mutedText uppercase tracking-widest w-28">Час</th>
+                        <th class="px-5 py-4 text-left text-[10px] font-black text-mutedText uppercase tracking-widest">Предмет</th>
+                        <th class="px-3 py-4 text-center text-[10px] font-black text-mutedText uppercase tracking-widest w-24">Аудиторія</th>
+                        <th class="px-5 py-4 text-left text-[10px] font-black text-mutedText uppercase tracking-widest w-48">Викладач</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day_data in week_days %}
+                    {% for lesson_num in "1,2,3,4,5,6"|split:"," %}
+                    <tr class="border-b border-border/50 hover:bg-primary/5 transition-colors">
+                        {% if forloop.first %}
+                        <td rowspan="6" class="px-5 py-4 align-middle border-r border-border/50">
+                            <div class="flex flex-col items-center gap-1">
+                                <span class="text-[10px] font-black text-mutedText uppercase tracking-widest">{{ day_data.day_name|upper }}</span>
+                                <span class="text-lg font-black text-mainText">{{ day_data.date|date:"d.m" }}</span>
+                            </div>
+                        </td>
+                        {% endif %}
+
+                        <td class="px-3 py-4 text-center">
+                            <div class="w-7 h-7 rounded-lg bg-border/60 flex items-center justify-center font-black text-sm text-mutedText mx-auto">{{ lesson_num }}</div>
+                        </td>
+                        <td class="px-3 py-4">
+                            <span class="text-xs font-bold text-mutedText font-mono bg-background px-2 py-1 rounded-lg">{% lesson_hours lesson_num %}</span>
+                        </td>
+
+                        {% get_schedule_template_at schedule_templates day_data.day_of_week lesson_num as template %}
+                        {% if template %}
+                        <td class="px-5 py-4 font-bold text-mainText text-sm">{{ template.subject.name }}</td>
+                        <td class="px-3 py-4 text-center">
+                            {% if template.classroom %}
+                            <span class="bg-accent/10 text-accent text-xs font-bold px-3 py-1 rounded-full">{{ template.classroom.name }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4 text-mutedText text-sm font-medium">{{ template.teacher.full_name|format_teacher_short }}</td>
+                        {% else %}
+                        <td class="px-5 py-4 text-mutedText/30 text-sm">—</td>
+                        <td class="px-3 py-4"></td>
+                        <td class="px-5 py-4"></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

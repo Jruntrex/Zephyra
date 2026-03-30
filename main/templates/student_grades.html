@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load journal_filters %}
+
+{% block title %}Мої Оцінки{% endblock %}
+{% block header_title %}Журнал Оцінок{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block content %}
+
+<!-- Hero banner -->
+<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+  <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+  <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+  <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+  <div class="relative px-6 py-5 flex items-center justify-between">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }}</span>
+      </div>
+      <h1 class="text-4xl font-black text-white leading-tight">Журнал Оцінок</h1>
+      <p class="text-white/65 text-sm mt-0.5">Перегляд та фільтрація оцінок</p>
+    </div>
+    <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+      <span class="text-xl font-black text-white">{{ grades|length }}</span>
+      <span class="text-[10px] text-white/65 font-semibold">записів</span>
+    </div>
+  </div>
+</div>
+
+<div class="bg-surface rounded-2xl border border-border shadow-sm p-6 mb-6">
+  <form method="GET" action="{% url 'student_grades' %}"
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold text-mutedText uppercase tracking-wider">Пошук (тема/коментар)</label>
+      <input type="text" name="search" placeholder="Введіть текст..." value="{{ request.GET.search }}"
+        class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-mainText text-sm focus:outline-none focus:border-primary transition-colors">
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold text-mutedText uppercase tracking-wider">Предмет</label>
+      <select name="subject" class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-mainText text-sm focus:outline-none focus:border-primary transition-colors">
+        <option value="">Усі предмети</option>
+        {% for sub in student_subjects %}
+        {% with sub_id=sub.id|stringformat:"s" %}
+        <option value="{{ sub.id }}" {% if request.GET.subject|is_equal:sub_id %}selected{% endif %}>
+          {{ sub.name }}
+        </option>
+        {% endwith %}
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold text-mutedText uppercase tracking-wider">Період</label>
+      <div class="flex gap-2">
+        <input type="date" name="date_from" value="{{ request.GET.date_from }}"
+          class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-mainText text-xs focus:outline-none focus:border-primary transition-colors">
+        <input type="date" name="date_to" value="{{ request.GET.date_to }}"
+          class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-mainText text-xs focus:outline-none focus:border-primary transition-colors">
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold text-mutedText uppercase tracking-wider">Оцінка (від 1 до 12)</label>
+      <div class="flex gap-2">
+        <input type="number" name="min_grade" placeholder="1" min="1" max="12" value="{{ request.GET.min_grade }}"
+          class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-mainText text-sm focus:outline-none focus:border-primary transition-colors">
+        <input type="number" name="max_grade" placeholder="12" min="1" max="12" value="{{ request.GET.max_grade }}"
+          class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-mainText text-sm focus:outline-none focus:border-primary transition-colors">
+      </div>
+    </div>
+
+    <div class="lg:col-span-4 flex justify-end gap-3 mt-2 border-t border-border pt-4">
+      <a href="{% url 'student_grades' %}"
+        class="px-5 py-2.5 bg-surface text-mutedText border border-border rounded-xl text-sm font-bold hover:bg-background transition-all">
+        Скинути все
+      </a>
+      <button type="submit" class="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-all">
+        Застосувати фільтри
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-background/50 border-b border-border">
+        <tr>
+          <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Дата</th>
+          <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Предмет</th>
+          <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Тема / Тип</th>
+          <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Оцінка</th>
+          <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Коментар</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border/50">
+        {% for entry in grades %}
+        <tr class="hover:bg-primary/5 transition-colors">
+          <td class="p-4 text-sm font-medium text-mainText whitespace-nowrap">
+            {{ entry.lesson.date|date:"d.m.Y" }}
+            <div class="text-xs text-mutedText/60">{{ entry.lesson.date|date:"l" }}</div>
+          </td>
+          <td class="p-4 text-sm text-mainText">
+            <div class="font-bold">{% if entry.lesson and entry.lesson.subject %}{{ entry.lesson.subject.name }}{% else %}—{% endif %}</div>
+            <div class="text-xs text-mutedText">{{ entry.lesson.teacher.full_name }}</div>
+          </td>
+          <td class="p-4 text-sm">
+            <span
+              class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary mb-1">
+              {{ entry.lesson.evaluation_type.name }}
+            </span>
+            {% if entry.lesson.topic %}
+            <div class="text-xs text-mutedText truncate max-w-[200px]" title="{{ entry.lesson.topic }}">
+              {{ entry.lesson.topic }}
+            </div>
+            {% endif %}
+          </td>
+          <td class="p-4 text-center">
+            <div class="inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg
+                            {% if entry.earned_points >= 10 %}bg-green-100 text-green-700
+                            {% elif entry.earned_points >= 7 %}bg-blue-100 text-blue-700
+                            {% elif entry.earned_points >= 4 %}bg-yellow-100 text-yellow-700
+                            {% else %}bg-red-100 text-red-700{% endif %}">
+              {{ entry.earned_points|floatformat:0 }}
+            </div>
+          </td>
+          <td class="p-4 text-sm text-mutedText italic">
+            {{ entry.comment|default:"—" }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="p-12 text-center text-mutedText">
+            <p class="text-lg">Записів не знайдено</p>
+            <p class="text-sm">Спробуйте змінити параметри пошуку</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+{% load journal_filters %}
+
+{% block title %}Управління користувачами{% endblock %}
+{% block header_title %}Користувачі{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block content %}
+<!-- Hero banner -->
+<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+    <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+    <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+    <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+    <div class="relative px-6 py-5 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6a2 2 0 00-2-2H5a2 2 0 00-2 2v13M13 19V3a2 2 0 00-2-2H9a2 2 0 00-2 2v16M18 19V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10"/>
+                </svg>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+            </div>
+            <h1 class="text-4xl font-black text-white leading-tight">Управління Користувачами</h1>
+            <p class="text-white/65 text-sm mt-0.5">Перегляд та адміністрування облікових записів</p>
+        </div>
+        <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+        </div>
+    </div>
+</div>
+
+<div class="card-bento min-h-[600px] pb-10">
+    <div class="flex flex-wrap justify-end items-center gap-3 mb-8">
+        <!-- Експорт CSV -->
+        <a href="{% url 'users_csv_export' %}"
+            class="px-5 py-3 bg-surface border border-border text-mainText rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-border transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Експорт CSV
+        </a>
+        <!-- Імпорт CSV -->
+        <button onclick="document.getElementById('importModal').classList.remove('hidden')"
+            class="px-5 py-3 bg-surface border border-border text-mainText rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-border transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4 4l-4-4m0 0l-4 4m4-4V4" />
+            </svg>
+            Імпорт CSV
+        </button>
+        <button onclick="toggleForm()"
+            class="px-6 py-3 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-primary/90 transform hover:-translate-y-0.5 transition-all">
+            Додати користувача
+        </button>
+    </div>
+
+    <!-- IMPORT MODAL -->
+    <div id="importModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-surface border border-border rounded-2xl shadow-2xl p-8 w-full max-w-lg mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-bold text-mainText">Імпорт користувачів з CSV</h3>
+                <button onclick="document.getElementById('importModal').classList.add('hidden')"
+                    class="text-mutedText hover:text-mainText transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-5 p-4 bg-surface border border-border rounded-xl text-xs leading-relaxed">
+                <p class="font-bold text-mainText mb-2">Формат CSV файлу:</p>
+                <p class="font-mono text-primary mb-1 break-all">full_name, email, role, password, group, phone, date_of_birth, address, student_id, is_active</p>
+                <div class="mt-3 flex flex-col gap-1 text-mainText">
+                    <p><span class="text-error font-bold">Обов'язкові:</span> full_name, email, role</p>
+                    <p><span class="text-mutedText">role:</span> admin / teacher / student</p>
+                    <p><span class="text-mutedText">password:</span> якщо порожній — <span class="font-mono font-semibold">ChangeMe123!</span></p>
+                    <p><span class="text-mutedText">date_of_birth:</span> РРРР-ММ-ДД або ДД.ММ.РРРР</p>
+                    <p><span class="text-mutedText">is_active:</span> 1 або 0 (за замовч. 1)</p>
+                </div>
+            </div>
+
+            <form method="POST" action="{% url 'users_csv_import' %}" enctype="multipart/form-data" class="flex flex-col gap-4">
+                {% csrf_token %}
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">CSV файл</label>
+                <input type="file" name="csv_file" accept=".csv" required
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-sm text-mainText file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-primary file:text-white hover:file:bg-primary/90 cursor-pointer">
+                <div class="flex gap-3 justify-end mt-2">
+                    <button type="button" onclick="document.getElementById('importModal').classList.add('hidden')"
+                        class="px-5 py-2.5 rounded-xl border border-border text-mainText text-xs font-bold hover:bg-surface transition-all">
+                        Скасувати
+                    </button>
+                    <button type="submit"
+                        class="px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all">
+                        Імпортувати
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- FILTERS TOOLBAR -->
+    <div class="bg-background/50 rounded-2xl p-6 mb-8 border border-border">
+        <form method="GET" action="{% url 'users_list' %}"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 items-end">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Пошук</label>
+                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Ім'я або Email..."
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Роль</label>
+                <select name="role"
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                    <option value="">Всі ролі</option>
+                    <option value="student" {% if request.GET.role|is_equal:'student' %}selected{% endif %}>Студенти
+                    </option>
+                    <option value="teacher" {% if request.GET.role|is_equal:'teacher' %}selected{% endif %}>Викладачі
+                    </option>
+                    <option value="admin" {% if request.GET.role|is_equal:'admin' %}selected{% endif %}>Адміни</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Група</label>
+                <select name="group"
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                    <option value="">Всі групи</option>
+                    {% for g in groups %}
+                    {% with group_id=g.id|stringformat:"s" %}
+                    <option value="{{ g.id }}" {% if request.GET.group|is_equal:group_id %}selected{% endif %}>{{ g.name }}</option>
+                    {% endwith %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Дисципліна</label>
+                <select name="subject"
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                    <option value="">Всі предмети</option>
+                    {% for sub in all_subjects %}
+                    {% with sub_id=sub.id|stringformat:"s" %}
+                    <option value="{{ sub.id }}" {% if request.GET.subject|is_equal:sub_id %}selected{% endif %}>{{ sub.name }}</option>
+                    {% endwith %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="submit"
+                    class="flex-grow px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all">Знайти</button>
+                <a href="{% url 'users_list' %}"
+                    class="p-2.5 bg-surface border border-border rounded-xl text-mutedText hover:text-red-500 transition-all shadow-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div id="addForm" class="hidden bg-background/50 rounded-2xl p-6 mb-8 border border-primary/20 animate-slide-down" aria-hidden="true">
+        <h4 class="text-xl font-black text-mainText mb-6 uppercase tracking-tighter">Додати нового користувача</h4>
+        <form method="POST" action="{% url 'users_list' %}" class="space-y-4">
+            {% csrf_token %}
+            <div class="space-y-1">
+                <input type="text" name="full_name" placeholder="ПІБ" required
+                    class="w-full px-4 py-3 border border-border rounded-xl text-mainText bg-surface focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
+            </div>
+            <div class="space-y-1">
+                <input type="email" name="email" placeholder="Email" required
+                    class="w-full px-4 py-3 border border-border rounded-xl text-mainText bg-surface focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
+            </div>
+            <div class="space-y-1">
+                <select name="role" required onchange="updateFormFields()"
+                    class="role-select w-full px-4 py-3 border border-border rounded-xl text-mainText bg-surface focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer">
+                    <option value="" disabled selected>Виберіть роль</option>
+                    <option value="admin">Адміністратор</option>
+                    <option value="teacher">Викладач</option>
+                    <option value="student">Студент</option>
+                </select>
+            </div>
+            <div class="space-y-1">
+                <input type="password" name="password" id="newUserPassword" placeholder="Пароль" required
+                    class="w-full px-4 py-3 border border-border rounded-xl text-mainText bg-surface focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
+            </div>
+            <div class="space-y-1">
+                <input type="password" name="password_confirm" id="newUserPasswordConfirm" placeholder="Підтвердіть пароль" required
+                    class="w-full px-4 py-3 border border-border rounded-xl text-mainText bg-surface focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
+                <p id="passwordMismatch" class="hidden text-xs text-red-500 px-1 mt-1">Паролі не співпадають</p>
+            </div>
+            <div class="space-y-1 group-field" style="display: none;">
+                <select name="group"
+                    class="w-full px-4 py-3 border border-border rounded-xl text-mainText bg-surface focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
+                    <option value="">Оберіть групу</option>
+                    {% for group in groups %}
+                    <option value="{{ group.pk }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="space-y-2 subjects-field" style="display: none;">
+                <label class="font-medium text-mainText">Предмети (для викладачів):</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {% for subject in all_subjects %}
+                    <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-primary/5 cursor-pointer">
+                        <input type="checkbox" name="subjects" value="{{ subject.pk }}">
+                        <span class="text-mutedText">{{ subject.name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button type="button" onclick="toggleForm()"
+                    class="px-6 py-2.5 text-xs font-black text-mutedText uppercase tracking-widest hover:bg-surface rounded-xl transition-all">Скасувати</button>
+                <button type="submit"
+                    class="px-10 py-2.5 bg-primary text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-lg">Зберегти</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="glass-panel shadow-sm rounded-3xl p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-background border-b border-border">
+                    <tr>
+                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase hidden xl:table-cell">ID</th>
+                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Користувач</th>
+                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Роль</th>
+                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Контакти</th>
+                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase hidden lg:table-cell">
+                            Призначення</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden lg:table-cell">
+                            Статус</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden xl:table-cell">
+                            Реєстрація</th>
+                        <th class="p-4 text-right text-xs font-bold text-mutedText uppercase">Керування</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% for user in users %}
+                    <tr class="hover:bg-primary/5 transition duration-150 group">
+                        <td class="p-4 text-xs font-mono text-mutedText hidden xl:table-cell">#{{ user.id }}</td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-xs shadow-sm">
+                                    {{ user.full_name|slice:":1" }}
+                                </div>
+                                <span class="text-sm font-bold text-mainText">{{ user.full_name }}</span>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            {% if user.role == 'admin' %}
+                            <span class="badge-pill bg-purple-500/10 text-purple-600 dark:text-purple-400">Адмін</span>
+                            {% elif user.role == 'teacher' %}
+                            <span class="badge-pill bg-primary/10 text-primary">Викладач</span>
+                            {% else %}
+                            <span class="badge-pill bg-green-500/10 text-green-600 dark:text-green-400">Студент</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-sm text-mutedText">{{ user.email }}</td>
+
+                        <td class="p-4 text-sm hidden lg:table-cell">
+                            {% if user.role == 'teacher' %}
+                            {% with assignments=user.teachingassignment_set.all %}
+                            {% if assignments %}
+                            <div class="flex flex-wrap gap-1 max-w-[220px]"
+                                title="{% for a in assignments %}{{ a.subject.name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                                {% for a in assignments %}
+                                {% if forloop.counter <= 2 %}
+                                <span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] border border-primary/20 whitespace-nowrap">
+                                    {{ a.subject.name }}
+                                </span>
+                                {% endif %}
+                                {% endfor %}
+                                {% if assignments|length > 2 %}
+                                <span class="text-primary font-bold cursor-help ml-1"
+                                    title="Показати всі">...</span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-mutedText/50">—</span>
+                            {% endif %}
+                            {% endwith %}
+                            {% elif user.role == 'student' %}
+                            {% if user.group %}
+                            <span class="text-sm text-mutedText">
+                                Група: {{ user.group.name }}
+                            </span>
+                            {% else %}
+                            <span class="text-mutedText/50">Група не вказана</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-mutedText/50">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="p-4 text-center hidden lg:table-cell">
+                            {% if user.is_active %}
+                            <span class="inline-flex px-2 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-xs font-bold">Активний</span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-bold">Заблокований</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="p-4 text-center text-xs text-mutedText hidden xl:table-cell">
+                            {% if user.created_at %}
+                            <span class="block font-medium text-mainText">{{ user.created_at|date:"d.m.Y" }}</span>
+                            <span class="text-mutedText">{{ user.created_at|date:"H:i" }}</span>
+                            {% else %}
+                            <span class="text-mutedText/40">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <a href="{% url 'user_edit' pk=user.pk %}"
+                                    class="p-2 text-mutedText hover:text-primary hover:bg-primary/10 rounded-lg transition-all">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                                        <path
+                                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </a>
+                                <form method="POST" action="{% url 'user_delete' pk=user.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                        onclick="return confirm('Видалити користувача {{ user.full_name }}?')"
+                                        class="p-2 text-mutedText hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                                            <path
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="p-12 text-center text-mutedText">
+                            <div class="text-4xl mb-4 opacity-50">👥</div>
+                            <p class="font-bold text-xs uppercase tracking-widest">Користувачів не знайдено</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if page_obj.has_other_pages %}
+            <div class="flex items-center justify-between mt-4 px-2 pb-4">
+                <p class="text-sm text-mutedText">
+                    Показано {{ page_obj.start_index }}–{{ page_obj.end_index }} з {{ page_obj.paginator.count }}
+                </p>
+                <nav class="flex gap-1">
+                    {% if page_obj.has_previous %}
+                    <a href="?{% querystring page=page_obj.previous_page_number %}"
+                       class="px-3 py-1 rounded border border-border text-sm text-mutedText hover:bg-surface transition-colors">&laquo;</a>
+                    {% endif %}
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <span class="px-3 py-1 rounded border border-transparent text-sm bg-primary text-white">{{ num }}</span>
+                        {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+                        <a href="?{% querystring page=num %}"
+                           class="px-3 py-1 rounded border border-border text-sm text-mutedText hover:bg-surface transition-colors">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <a href="?{% querystring page=page_obj.next_page_number %}"
+                       class="px-3 py-1 rounded border border-border text-sm text-mutedText hover:bg-surface transition-colors">&raquo;</a>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    function toggleForm() {
+        document.getElementById('addForm').classList.toggle('hidden');
+    }
+
+    // Валідація співпадіння паролів
+    document.querySelector('#addForm form').addEventListener('submit', function(e) {
+        const pw = document.getElementById('newUserPassword').value;
+        const pwc = document.getElementById('newUserPasswordConfirm').value;
+        const msg = document.getElementById('passwordMismatch');
+        if (pw !== pwc) {
+            e.preventDefault();
+            msg.classList.remove('hidden');
+            document.getElementById('newUserPasswordConfirm').focus();
+        } else {
+            msg.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('newUserPasswordConfirm')?.addEventListener('input', function() {
+        const pw = document.getElementById('newUserPassword').value;
+        const msg = document.getElementById('passwordMismatch');
+        if (this.value && this.value !== pw) {
+            msg.classList.remove('hidden');
+        } else {
+            msg.classList.add('hidden');
+        }
+    });
+
+    function updateFormFields() {
+        const role = document.querySelector('.role-select').value;
+        document.querySelector('.group-field').style.display = (role === 'student') ? 'block' : 'none';
+        document.querySelector('.subjects-field').style.display = (role === 'teacher') ? 'block' : 'none';
+    }
+</script>
+{% endblock %}
