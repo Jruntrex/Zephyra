@@ -204,6 +204,7 @@ def get_teacher_journal_context(
     from datetime import timedelta
 
     from django.utils import timezone
+
     from main.models import BuildingAccessLog, Lesson, StudyGroup
 
     # 1. Date Range Handling (Weekly)

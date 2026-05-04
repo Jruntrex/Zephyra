@@ -3620,6 +3620,7 @@ def rfid_management_view(request: HttpRequest) -> HttpResponse:
 def api_rfid_presence(request: HttpRequest) -> JsonResponse:
     """GET /api/rfid/presence/?group=<id> — поточна присутність студентів групи."""
     import datetime as _dt
+
     from django.utils import timezone
 
     group_id = request.GET.get("group")
