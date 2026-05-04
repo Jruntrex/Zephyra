@@ -681,6 +681,10 @@ def groups_csv_import(request):
             if spec_name:
                 specialty, _ = Specialty.objects.get_or_create(name=spec_name)
 
+            course_raw = row.get("course", "").strip()
+            year_entry_raw = row.get("year_of_entry", "").strip()
+            grad_year_raw = row.get("graduation_year", "").strip()
+            is_active_raw = row.get("is_active", "1").strip()
             StudyGroup.objects.create(
                 name=name,
                 specialty=specialty,
