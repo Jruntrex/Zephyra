@@ -97,17 +97,17 @@
     <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
     <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
     <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
-    <div class="relative px-6 py-5 flex items-center justify-between">
+    <div class="relative px-4 md:px-6 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-0">
         <div>
             <div class="flex items-center gap-2 mb-1">
                 <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                 <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }}</span>
             </div>
-            <h1 class="text-4xl font-black text-white leading-tight">Журнал Викладача</h1>
+            <h1 class="text-3xl md:text-4xl font-black text-white leading-tight">Журнал Викладача</h1>
             <p class="text-white/65 text-sm mt-0.5">Оцінки, відвідуваність та заняття</p>
         </div>
-        <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
-            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <div class="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+            <svg class="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         </div>
     </div>
 </div>

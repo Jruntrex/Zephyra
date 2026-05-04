@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Сповіщення — {{ institution.name|default:"Mentorly" }}{% endblock %}
@@ -255,7 +255,7 @@
     <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
     <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
     <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
-    <div class="relative px-6 py-5 flex items-center justify-between">
+    <div class="relative px-4 md:px-6 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
         <div>
             <div class="flex items-center gap-2 mb-1">
                 <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,14 +265,14 @@
                 <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{
                     institution.name|default:"Mentorly" }}</span>
             </div>
-            <h1 class="text-4xl font-black text-white leading-tight">Сповіщення</h1>
+            <h1 class="text-3xl md:text-4xl font-black text-white leading-tight">Сповіщення</h1>
             <p class="text-white/65 text-sm mt-0.5">
                 {% if unread_total > 0 %}{{ unread_total }} непрочитан{% if unread_total == 1 %}е{% else %}их{% endif %}
                 сповіщень{% else %}Усі сповіщення прочитано{% endif %}
             </p>
         </div>
         <div
-            class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center hidden sm:flex">
+            class="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center hidden sm:flex">
             <span class="text-xl font-black text-white">{{ total_count }}</span>
             <span class="text-[10px] text-white/65 font-semibold">всього</span>
         </div>

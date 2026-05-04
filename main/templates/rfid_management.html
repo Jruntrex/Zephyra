@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
 {% block title %}RFID Картки{% endblock %}
@@ -12,12 +12,12 @@
     <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
     <div class="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white opacity-10"></div>
     <div class="absolute -bottom-10 left-10 w-52 h-52 rounded-full bg-white opacity-10"></div>
-    <div class="relative px-6 py-5 flex items-center justify-between">
+    <div class="relative px-4 md:px-6 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
         <div>
             <div class="flex items-center gap-2 mb-1">
                 <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">Управління RFID</span>
             </div>
-            <h1 class="text-4xl font-black text-white leading-tight">RFID Картки</h1>
+            <h1 class="text-3xl md:text-4xl font-black text-white leading-tight">RFID Картки</h1>
             <p class="text-white/65 text-sm mt-0.5">Прив'язка карток доступу до студентів</p>
         </div>
         <div class="flex gap-4">

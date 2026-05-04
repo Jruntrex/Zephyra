@@ -19,7 +19,7 @@
     <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
     <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
     <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
-    <div class="relative px-6 py-5 flex items-center justify-between">
+    <div class="relative px-4 md:px-6 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
         <div>
             <div class="flex items-center gap-2 mb-1">
                 <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,20 +27,20 @@
                 </svg>
                 <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }}</span>
             </div>
-            <h1 class="text-4xl font-black text-white leading-tight">Вітаємо, {{ request.user.full_name }}!</h1>
+            <h1 class="text-3xl md:text-4xl font-black text-white leading-tight">Вітаємо, {{ request.user.full_name }}!</h1>
             <p class="text-white/65 text-sm mt-0.5">Ваш персональний викладацький дашборд</p>
         </div>
-        <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+        <div class="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
             <span class="text-xl font-black text-white">{{ today_lessons|length }}</span>
             <span class="text-[10px] text-white/65 font-semibold">пар</span>
         </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 pb-10">
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pb-10">
 
     <!-- 1. Графік навантаження тижня -->
-    <div class="col-span-1 md:col-span-3 card-bento flex flex-col justify-between">
+    <div class="col-span-1 sm:col-span-2 md:col-span-3 card-bento flex flex-col justify-between">
         <div>
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-mutedText font-semibold tracking-wide uppercase text-sm">Навантаження тижня</h3>
@@ -169,7 +169,7 @@
     </div>
 
     <!-- 5. Швидкі дії + Інтерактив -->
-    <div class="col-span-1 md:col-span-4 grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="col-span-1 sm:col-span-2 md:col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
 
         <a href="{% url 'teacher_journal' %}" class="card-bento hover:translate-y-[-4px] transition-transform duration-300 group">
             <div class="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors">

@@ -66,7 +66,7 @@
 
             <div class="w-px h-10 bg-white/10 mx-1"></div>
 
-            <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center shadow-lg">
+            <div class="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center shadow-lg">
                 <span class="text-xl font-black text-white">{{ avg_score }}</span>
                 <span class="text-[10px] text-white/65 font-semibold">середній</span>
             </div>
@@ -74,10 +74,10 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 pb-10">
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pb-10">
 
     <!-- 1. Динаміка успішності (Large Tile) -->
-    <div class="col-span-1 md:col-span-3 card-bento flex flex-col justify-between min-h-[400px]">
+    <div class="col-span-1 sm:col-span-2 md:col-span-3 card-bento flex flex-col justify-between min-h-[280px] md:min-h-[400px]">
         <div>
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-mutedText font-semibold tracking-wide uppercase text-sm">Динаміка успішності</h3>
@@ -192,7 +192,7 @@
             <h3 class="label-section mb-0">Відвідуваність</h3>
             <div class="text-[10px] font-black text-primary/40 uppercase tracking-widest">Статистика семестру</div>
         </div>
-        <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16 items-center py-8 px-6">
+        <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 lg:gap-16 items-center py-4 md:py-8 px-2 md:px-6">
             <!-- Left Side: Large Chart (50%) -->
             <div class="flex justify-center md:justify-end">
                 <div class="relative w-48 h-48 lg:w-56 lg:h-56 transition-transform duration-500 group-hover:scale-105">
@@ -257,7 +257,7 @@
     </div>
 
     <!-- 5. Останні оцінки (Full Width Tile) -->
-    <div class="col-span-1 md:col-span-4 card-bento">
+    <div class="col-span-1 sm:col-span-2 md:col-span-4 card-bento">
         <h3 class="text-mutedText font-semibold tracking-wide uppercase text-sm mb-6">Останні оцінки</h3>
         <div class="overflow-x-auto">
             <table class="table-clean w-full">

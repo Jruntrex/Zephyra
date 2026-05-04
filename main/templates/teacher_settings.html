@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Налаштування викладача - {{ institution.name|default:"Mentorly" }}{% endblock %}
 
@@ -11,7 +11,7 @@
         <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
         <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
         <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
-        <div class="relative px-6 py-5 flex items-center justify-between">
+        <div class="relative px-4 md:px-6 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
             <div>
                 <div class="flex items-center gap-2 mb-1">
                     <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,7 +19,7 @@
                     </svg>
                     <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }}</span>
                 </div>
-                <h1 class="text-4xl font-black text-white leading-tight">Мої предмети та типи занять</h1>
+                <h1 class="text-3xl md:text-4xl font-black text-white leading-tight">Мої предмети та типи занять</h1>
                 <p class="text-white/65 text-sm mt-0.5">Налаштуйте типи занять та їхню вагу для кожного предмету</p>
             </div>
             <a href="{% url 'teacher_journal' %}" class="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl text-white text-sm font-bold hover:bg-white/25 transition-all">

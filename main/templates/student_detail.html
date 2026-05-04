@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
 {% block title %}{{ target_user.full_name }} — Профіль{% endblock %}
@@ -22,7 +22,7 @@
   <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
   <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
   <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
-  <div class="relative px-6 py-5 flex items-center justify-between gap-4">
+  <div class="relative px-4 md:px-6 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0 gap-4">
     <div class="flex items-center gap-4">
       <div class="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
         {% if target_user.profile_image %}

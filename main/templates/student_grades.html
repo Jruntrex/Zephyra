@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load journal_filters %}
 
 {% block title %}Мої Оцінки{% endblock %}
@@ -12,16 +12,16 @@
   <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
   <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
   <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
-  <div class="relative px-6 py-5 flex items-center justify-between">
+  <div class="relative px-4 md:px-6 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
     <div>
       <div class="flex items-center gap-2 mb-1">
         <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }}</span>
       </div>
-      <h1 class="text-4xl font-black text-white leading-tight">Журнал Оцінок</h1>
+      <h1 class="text-3xl md:text-4xl font-black text-white leading-tight">Журнал Оцінок</h1>
       <p class="text-white/65 text-sm mt-0.5">Перегляд та фільтрація оцінок</p>
     </div>
-    <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+    <div class="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
       <span class="text-xl font-black text-white">{{ grades|length }}</span>
       <span class="text-[10px] text-white/65 font-semibold">записів</span>
     </div>

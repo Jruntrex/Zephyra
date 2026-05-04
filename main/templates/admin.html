@@ -12,7 +12,7 @@
     <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
     <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
     <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
-    <div class="relative px-6 py-5 flex items-center justify-between">
+    <div class="relative px-4 md:px-6 py-4 md:py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
         <div>
             <div class="flex items-center gap-2 mb-1">
                 <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -20,17 +20,17 @@
                 </svg>
                 <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }} Admin</span>
             </div>
-            <h1 class="text-4xl font-black text-white leading-tight">Вітаємо, {{ request.user.full_name }}!</h1>
+            <h1 class="text-3xl md:text-4xl font-black text-white leading-tight">Вітаємо, {{ request.user.full_name }}!</h1>
             <p class="text-white/65 text-sm mt-0.5">Панель управління системою</p>
         </div>
-        <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+        <div class="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
             <span class="text-xl font-black text-white">{{ total_users }}</span>
             <span class="text-[10px] text-white/65 font-semibold">юзерів</span>
         </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 pb-10">
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pb-10">
 
     <!-- Stat: Всього користувачів -->
     <a href="{% url 'users_list' %}" class="card-bento hover:translate-y-[-4px] transition-transform duration-300 group">
@@ -76,12 +76,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                 </svg>
             </div>
-            <div class="flex gap-6">
+            <div class="flex flex-row gap-4 sm:gap-6">
                 <div>
                     <span class="text-violet-200 text-xs font-medium block mb-1">Предмети</span>
                     <div class="text-4xl font-black tracking-tighter">{{ subject_count|default:0 }}</div>
                 </div>
-                <div class="w-px bg-white/20"></div>
+                <div class="w-px bg-white/20 self-stretch"></div>
                 <div>
                     <span class="text-violet-200 text-xs font-medium block mb-1">Аудиторії</span>
                     <div class="text-4xl font-black tracking-tighter">{{ classroom_count|default:0 }}</div>
@@ -95,9 +95,9 @@
     </div>
 
     <!-- Швидкі дії -->
-    <div class="col-span-1 md:col-span-4 card-bento">
+    <div class="col-span-1 sm:col-span-2 md:col-span-4 card-bento">
         <h3 class="text-mutedText font-semibold tracking-wide uppercase text-sm mb-6">Швидкі дії</h3>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
 
             <a href="{% url 'users_list' %}" class="flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border border-border hover:border-violet-400/50 hover:bg-violet-500/5 transition-all group">
                 <div class="w-11 h-11 bg-violet-500/10 text-violet-500 rounded-xl flex items-center justify-center group-hover:bg-violet-500 group-hover:text-white transition-colors">

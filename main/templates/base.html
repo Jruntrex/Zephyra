@@ -80,6 +80,12 @@
         }
         /* Dark theme: dimmer blobs */
         .dark .blob { opacity: 0.18; }
+        /* Hide floating elements when mobile menu is open */
+        @media (max-width: 1023px) {
+            body.sidebar-is-open .mobile-hide-on-menu {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 
@@ -102,6 +108,14 @@
             
             <!-- Branding Section -->
             <div class="flex items-center gap-3 px-2" style="margin-bottom: 32px;">
+                <!-- Close button (mobile only, inside sidebar) -->
+                <button id="sidebar-close-btn"
+                    class="lg:hidden flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-mutedText hover:text-primary hover:bg-primary/5 transition-all -ml-1"
+                    aria-label="Закрити меню">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 <div class="flex-shrink-0">
                     {% if institution and institution.logo %}
                         <div class="w-11 h-11 bg-surface rounded-2xl flex items-center justify-center shadow-xl shadow-primary/5 border border-border">
@@ -119,7 +133,7 @@
                 </div>
             </div>
 
-            <nav class="flex-grow flex flex-col gap-3" aria-label="Навігація">
+            <nav class="flex-grow flex flex-col gap-3 overflow-y-auto min-h-0 sidebar-nav-scroll" aria-label="Навігація">
                 {% if user.role == 'admin' %}
                 <a href="{% url 'admin_panel' %}"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {% if active_page == 'admin' %}bg-primary/10 text-primary font-bold{% else %}text-mutedText hover:bg-surface hover:text-mainText{% endif %}"
@@ -384,47 +398,120 @@
 
         <div class="flex-grow w-full lg:ml-64 p-4 lg:p-6 transition-all duration-300 relative">
 
-            <button id="menu-toggle" class="lg:hidden mb-6 text-mainText" aria-label="Відкрити меню">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-            </button>
+            <!-- Mobile sidebar overlay -->
+            <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-[2px] z-40 hidden" aria-hidden="true"></div>
 
             {% block page_header %}
             <header role="banner">
 
-                <!-- Nav Buttons (fixed, after sidebar on desktop) -->
-                <div class="fixed top-4 lg:top-6 left-6 lg:left-72 z-40 flex items-center gap-2">
+                <!-- ── Mobile: Left glass panel (hamburger + optional context switcher) ── -->
+                <div class="lg:hidden fixed top-4 left-4 z-[60] mobile-hide-on-menu">
+                    <div class="glass-panel rounded-2xl p-2 flex items-center gap-1 shadow-xl">
+                        <!-- Hamburger (завжди ☰, X — всередині сайдбару) -->
+                        <button id="menu-toggle"
+                            class="w-9 h-9 flex items-center justify-center rounded-xl text-mainText hover:text-primary hover:bg-primary/5 transition-all"
+                            aria-label="Відкрити меню">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+
+                        {% if show_context_switcher %}
+                        <div class="h-6 w-px bg-border/60 mx-0.5"></div>
+                        <!-- Mobile context switcher -->
+                        <div class="relative" id="ctx-mob-container">
+                            <button onclick="toggleCtxMobile()"
+                                class="w-9 h-9 flex items-center justify-center gap-1 rounded-xl text-mainText hover:text-primary hover:bg-primary/5 transition-all">
+                                <div class="w-2 h-2 rounded-full flex-shrink-0 {% if not ctx_specialty and not ctx_course %}bg-mutedText/40{% else %}bg-primary animate-pulse{% endif %}"></div>
+                                <svg class="w-3 h-3 text-mutedText" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div id="ctx-mob-dropdown" class="hidden absolute top-full left-0 mt-3 w-80 max-w-[calc(100vw-2rem)] bg-surface border border-border shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-2xl z-50 p-6 overflow-hidden">
+                                <p class="text-[11px] font-black text-primary uppercase tracking-widest mb-5 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+                                    Налаштування контексту
+                                </p>
+                                <form action="{% url 'set_global_context' %}" method="POST" id="ctx-mob-form" class="space-y-6">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    {% if ctx_specialties %}
+                                    <div class="space-y-2.5">
+                                        <label class="text-[10px] font-black text-mainText uppercase tracking-widest">Виберіть Спеціальність</label>
+                                        <div class="relative group">
+                                            <select name="specialty_id" onchange="this.form.submit()"
+                                                class="w-full pl-3 pr-8 py-3 bg-background border border-border rounded-xl text-xs font-bold text-mainText appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20 hover:border-primary/30 transition-all">
+                                                <option value="">Всі спеціальності</option>
+                                                {% for spec in ctx_specialties %}
+                                                    <option value="{{ spec.id }}" {% if ctx_specialty.id == spec.id %}selected{% endif %}>
+                                                        {% if spec.code %}{{ spec.code }} {% endif %}{{ spec.name }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-mutedText">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    {% if ctx_courses %}
+                                    <div class="space-y-2.5">
+                                        <label class="text-[10px] font-black text-mainText uppercase tracking-widest">Виберіть Курс</label>
+                                        <div class="flex flex-wrap gap-1.5 bg-background p-1.5 rounded-xl border border-border">
+                                            <input type="hidden" name="course" id="ctx-mob-course" value="{{ ctx_course|default:'' }}">
+                                            <button type="button" onclick="setCourseContext('')"
+                                                class="flex-1 py-2 px-2 rounded-lg text-[10px] font-black transition-all {% if not ctx_course %}bg-primary text-white shadow-lg shadow-primary/20{% else %}text-mutedText hover:bg-surface hover:text-mainText{% endif %}">
+                                                ВСІ
+                                            </button>
+                                            {% for c in ctx_courses %}
+                                            <button type="button" onclick="setCourseContext('{{ c }}')"
+                                                class="w-9 h-9 flex items-center justify-center rounded-lg text-[10px] font-black transition-all {% if ctx_course == c %}bg-primary text-white shadow-lg shadow-primary/20{% else %}text-mutedText hover:bg-surface hover:text-mainText{% endif %}">
+                                                {{ c }}
+                                            </button>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </form>
+                                <div class="mt-6 pt-5 border-t border-border">
+                                    <p class="text-[10px] text-mutedText leading-relaxed">
+                                        <span class="text-primary font-bold">ℹ️ Порада:</span> Зміна контексту вплине на дані у всіх таблицях та звітах системи.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- ── Desktop: Back/Forward + Context Switcher ── -->
+                <div class="hidden lg:flex fixed top-6 left-72 z-40 items-center gap-2">
                     <button onclick="safeNavigateBack()"
-                        class="p-2.5 bg-surface/60 backdrop-blur-md border border-border/40 rounded-xl text-mutedText hover:text-primary hover:bg-surface hover:shadow-lg transition-all duration-300 group"
+                        class="p-2.5 bg-surface/60 backdrop-blur-md border border-border/40 rounded-xl text-mutedText hover:text-primary hover:bg-surface hover:shadow-lg transition-all duration-300"
                         title="Назад">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 19l-7-7 7-7" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <button onclick="safeNavigateForward()"
-                        class="p-2.5 bg-surface/60 backdrop-blur-md border border-border/40 rounded-xl text-mutedText hover:text-primary hover:bg-surface hover:shadow-lg transition-all duration-300 group"
+                        class="p-2.5 bg-surface/60 backdrop-blur-md border border-border/40 rounded-xl text-mutedText hover:text-primary hover:bg-surface hover:shadow-lg transition-all duration-300"
                         title="Вперед">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 5l7 7-7 7" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
                     </button>
 
                     {% if show_context_switcher %}
-                    <!-- Context Switcher Header Dropdown -->
                     <div class="relative" id="context-switcher-container">
                         <button onclick="toggleContextSwitcher()"
                             class="ml-2 flex items-center gap-2.5 px-4 py-2 bg-surface/60 backdrop-blur-xl border border-border/40 rounded-xl shadow-sm hover:shadow-md hover:border-primary/30 transition-all group animate-fade-in">
-                            <div class="w-2 h-2 rounded-full {% if not ctx_specialty and not ctx_course %}bg-mutedText/40{% else %}bg-primary animate-pulse{% endif %}"></div>
+                            <div class="w-2 h-2 rounded-full flex-shrink-0 {% if not ctx_specialty and not ctx_course %}bg-mutedText/40{% else %}bg-primary animate-pulse{% endif %}"></div>
                             <span class="text-[10px] font-black text-mainText uppercase tracking-widest whitespace-nowrap">
                                 {% if not ctx_specialty and not ctx_course %}
                                     🌏 Універсальний режим
                                 {% else %}
                                     {% if ctx_specialties %}
-                                        {% if ctx_specialty %}{{ ctx_specialty.code|default:ctx_specialty.name }}{% else %}Всі спец.{% endif %}
-                                        •
+                                        {% if ctx_specialty %}{{ ctx_specialty.code|default:ctx_specialty.name }}{% else %}Всі спец.{% endif %} •
                                     {% endif %}
                                     {% if ctx_course %}{{ ctx_course }} курс{% else %}Всі курси{% endif %}
                                 {% endif %}
@@ -433,53 +520,44 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
-
-                        <!-- Floating Context Panel -->
-                        <div id="context-dropdown" class="hidden absolute top-full left-0 mt-3 w-80 bg-surface border border-border shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-2xl z-50 p-6 transform origin-top-left transition-all animate-dropdownIn">
+                        <div id="context-dropdown" class="hidden absolute top-full left-0 mt-3 w-80 bg-surface border border-border shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-2xl z-50 p-6 overflow-hidden">
                             <p class="text-[11px] font-black text-primary uppercase tracking-widest mb-5 flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
                                 Налаштування контексту
                             </p>
-                            
                             <form action="{% url 'set_global_context' %}" method="POST" id="context-switcher-form" class="space-y-6">
                                 {% csrf_token %}
                                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                
-                                 {% if ctx_specialties %}
-                                 <!-- Specialty Select -->
-                                 <div class="space-y-2.5">
-                                     <label class="text-[10px] font-black text-mainText uppercase tracking-widest">Виберіть Спеціальність</label>
-                                     <div class="relative group">
-                                         <select name="specialty_id" onchange="this.form.submit()" 
-                                             class="w-full pl-3 pr-8 py-3 bg-background border border-border rounded-xl text-xs font-bold text-mainText appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20 hover:border-primary/30 transition-all">
-                                             <option value="">Всі спеціальності</option>
-                                             {% for spec in ctx_specialties %}
-                                                 <option value="{{ spec.id }}" {% if ctx_specialty.id == spec.id %}selected{% endif %}>
-                                                     {% if spec.code %}{{ spec.code }} {% endif %}{{ spec.name }}
-                                                 </option>
-                                             {% endfor %}
-                                         </select>
-                                         <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-mutedText group-hover:text-primary transition-colors">
-                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                                         </div>
-                                     </div>
-                                 </div>
-                                 {% endif %}
-
+                                {% if ctx_specialties %}
+                                <div class="space-y-2.5">
+                                    <label class="text-[10px] font-black text-mainText uppercase tracking-widest">Виберіть Спеціальність</label>
+                                    <div class="relative group">
+                                        <select name="specialty_id" onchange="this.form.submit()"
+                                            class="w-full pl-3 pr-8 py-3 bg-background border border-border rounded-xl text-xs font-bold text-mainText appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20 hover:border-primary/30 transition-all">
+                                            <option value="">Всі спеціальності</option>
+                                            {% for spec in ctx_specialties %}
+                                                <option value="{{ spec.id }}" {% if ctx_specialty.id == spec.id %}selected{% endif %}>
+                                                    {% if spec.code %}{{ spec.code }} {% endif %}{{ spec.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-mutedText group-hover:text-primary transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
                                 {% if ctx_courses %}
-                                <!-- Course Segmented Control -->
                                 <div class="space-y-2.5">
                                     <label class="text-[10px] font-black text-mainText uppercase tracking-widest">Виберіть Курс</label>
                                     <div class="flex flex-wrap gap-1.5 bg-background p-1.5 rounded-xl border border-border">
                                         <input type="hidden" name="course" id="selected-course-input" value="{{ ctx_course|default:'' }}">
-                                        
-                                        <button type="button" onclick="setCourseContext('')" 
+                                        <button type="button" onclick="setCourseContext('')"
                                             class="flex-1 py-2 px-2 rounded-lg text-[10px] font-black transition-all {% if not ctx_course %}bg-primary text-white shadow-lg shadow-primary/20{% else %}text-mutedText hover:bg-surface hover:text-mainText{% endif %}">
                                             ВСІ
                                         </button>
-                                        
                                         {% for c in ctx_courses %}
-                                        <button type="button" onclick="setCourseContext('{{ c }}')" 
+                                        <button type="button" onclick="setCourseContext('{{ c }}')"
                                             class="w-9 h-9 flex items-center justify-center rounded-lg text-[10px] font-black transition-all {% if ctx_course == c %}bg-primary text-white shadow-lg shadow-primary/20{% else %}text-mutedText hover:bg-surface hover:text-mainText{% endif %}">
                                             {{ c }}
                                         </button>
@@ -488,7 +566,6 @@
                                 </div>
                                 {% endif %}
                             </form>
-                            
                             <div class="mt-6 pt-5 border-t border-border">
                                 <p class="text-[10px] text-mutedText leading-relaxed">
                                     <span class="text-primary font-bold">ℹ️ Порада:</span> Зміна контексту вплине на дані у всіх таблицях та звітах системи.
@@ -499,23 +576,30 @@
 
                     <script>
                         function toggleContextSwitcher() {
-                            const dropdown = document.getElementById('context-dropdown');
-                            dropdown.classList.toggle('hidden');
+                            document.getElementById('context-dropdown').classList.toggle('hidden');
                         }
-
+                        function toggleCtxMobile() {
+                            document.getElementById('ctx-mob-dropdown').classList.toggle('hidden');
+                        }
                         function setCourseContext(val) {
-                            document.getElementById('selected-course-input').value = val;
-                            document.getElementById('context-switcher-form').submit();
+                            if (window.innerWidth < 1024) {
+                                document.getElementById('ctx-mob-course').value = val;
+                                document.getElementById('ctx-mob-form').submit();
+                            } else {
+                                document.getElementById('selected-course-input').value = val;
+                                document.getElementById('context-switcher-form').submit();
+                            }
                         }
-
-                        // Close when clicking outside
-                        window.addEventListener('click', function (e) {
-                            const container = document.getElementById('context-switcher-container');
-                            const dropdown  = document.getElementById('context-dropdown');
-                            if (container && !container.contains(e.target)) {
-                                if (!dropdown.classList.contains('hidden')) {
-                                    dropdown.classList.add('hidden');
-                                }
+                        window.addEventListener('click', function(e) {
+                            var deskCont = document.getElementById('context-switcher-container');
+                            var deskDrop = document.getElementById('context-dropdown');
+                            if (deskCont && deskDrop && !deskCont.contains(e.target) && !deskDrop.classList.contains('hidden')) {
+                                deskDrop.classList.add('hidden');
+                            }
+                            var mobCont = document.getElementById('ctx-mob-container');
+                            var mobDrop = document.getElementById('ctx-mob-dropdown');
+                            if (mobCont && mobDrop && !mobCont.contains(e.target) && !mobDrop.classList.contains('hidden')) {
+                                mobDrop.classList.add('hidden');
                             }
                         });
                     </script>
@@ -523,11 +607,11 @@
                 </div>
 
                 <!-- Fixed bar: user panel -->
-                <div class="fixed top-4 lg:top-6 right-4 lg:right-6 z-40">
+                <div class="fixed top-4 lg:top-6 right-4 lg:right-6 z-40 mobile-hide-on-menu">
 
                     <!-- Right Side: Floating Glass Panel Header -->
                     <div
-                        class="glass-panel rounded-2xl p-2 pr-6 flex items-center gap-4 shadow-xl hover:shadow-2xl transition-shadow duration-300">
+                        class="glass-panel rounded-2xl p-2 pr-3 sm:pr-6 flex items-center gap-2 sm:gap-4 shadow-xl hover:shadow-2xl transition-shadow duration-300">
 
                     <!-- Notifications Button -->
                     <button id="notif-btn" onclick="toggleNotifications()" title="Сповіщення"
@@ -610,11 +694,11 @@
                 </div><!-- closes right panel wrapper -->
 
                 <!-- Spacer to prevent content overlap with fixed bar -->
-                <div class="h-14 mb-2"></div>
+                <div class="h-20 mb-4"></div>
 
                 <!-- Page Title -->
                 {% block page_title_heading %}
-                <h1 class="text-4xl md:text-5xl font-black text-mainText tracking-tighter mb-10">
+                <h1 class="text-2xl sm:text-4xl md:text-5xl font-black text-mainText tracking-tighter mb-6 md:mb-10">
                     {% block header_title %}Заголовок{% endblock %}
                 </h1>
                 {% endblock %}
@@ -641,7 +725,7 @@
     </div>
 
     <!-- Notification Dropdown (fixed, outside any overflow context) -->
-    <div id="notif-dropdown" style="display:none; position:fixed; z-index:9999; width:380px; border-radius:20px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.45) inset; background:rgba(255,255,255,0.97); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);">
+    <div id="notif-dropdown" style="display:none; position:fixed; z-index:9999; width:min(380px, calc(100vw - 32px)); border-radius:20px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.45) inset; background:rgba(255,255,255,0.97); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);">
         <!-- Gradient Header -->
         <div style="background:linear-gradient(135deg,#4338ca,#5B84FF,#7c3aed); padding:16px 18px 14px; position:relative; overflow:hidden;">
             <!-- deco circles -->
@@ -678,6 +762,7 @@
 
     <!-- Scroll to top button -->
     <button id="scroll-top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})"
+        class="mobile-hide-on-menu"
         aria-label="Прокрутити догори"
         style="
             position: fixed;
@@ -716,7 +801,6 @@
         })();
     </script>
 
-    {% block extra_js %}
     <script>
         // Safe Navigation Functions - Prevents navigation to login or other user sessions
         const CURRENT_USER_ROLE = "{{ user.role }}";
@@ -797,9 +881,36 @@
         });
 
         // Menu toggle functionality
-        document.getElementById('menu-toggle').addEventListener('click', function () {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-        });
+        (function() {
+            const toggle   = document.getElementById('menu-toggle');
+            const closeBtn = document.getElementById('sidebar-close-btn');
+            const sidebar  = document.getElementById('sidebar');
+            const overlay  = document.getElementById('sidebar-overlay');
+
+            function openSidebar() {
+                sidebar.classList.remove('-translate-x-full');
+                if (overlay) overlay.classList.remove('hidden');
+                document.body.classList.add('sidebar-is-open');
+                // Close notifications if they are open
+                if (window.closeNotifDropdown) closeNotifDropdown();
+            }
+            function closeSidebar() {
+                sidebar.classList.add('-translate-x-full');
+                if (overlay) overlay.classList.add('hidden');
+                document.body.classList.remove('sidebar-is-open');
+            }
+
+            if (toggle)   toggle.addEventListener('click', openSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+            if (overlay)  overlay.addEventListener('click', closeSidebar);
+
+            // Close sidebar when a nav link is tapped on mobile
+            sidebar.querySelectorAll('a').forEach(function(link) {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 1024) closeSidebar();
+                });
+            });
+        })();
 
         // User dropdown menu functionality
         function toggleUserMenu() {
@@ -837,9 +948,22 @@
             const btn      = document.getElementById('notif-btn');
             _notifOpen = !_notifOpen;
             if (_notifOpen) {
-                const rect = btn.getBoundingClientRect();
-                dropdown.style.top   = (rect.bottom + 10) + 'px';
-                dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+                const rect   = btn.getBoundingClientRect();
+                const dropW  = Math.min(380, window.innerWidth - 32);
+                dropdown.style.width   = dropW + 'px';
+                dropdown.style.top     = (rect.bottom + 10) + 'px';
+
+                // Anchor to right of button, but clamp so left edge ≥ 16px
+                const rightVal = window.innerWidth - rect.right;
+                const leftEdge = rect.right - dropW;
+                if (leftEdge < 16) {
+                    dropdown.style.right = '';
+                    dropdown.style.left  = '16px';
+                } else {
+                    dropdown.style.left  = '';
+                    dropdown.style.right = rightVal + 'px';
+                }
+
                 dropdown.style.display = 'block';
                 dropdown.classList.add('open');
                 loadNotifications();
@@ -985,7 +1109,7 @@
         loadNotifications();
         setInterval(loadNotifications, 60000);
     </script>
-    {% endblock %}
+    {% block extra_js %}{% endblock %}
 </body>
 
 </html>
