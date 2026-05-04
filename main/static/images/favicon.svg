@@ -1,31 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-
-  <!-- feather: same orientation as site logo, larger scale, lighter colors -->
-  <g transform="translate(100,105) scale(-0.80,0.80) rotate(-45) translate(0,-169)">
-
-    <!-- spine -->
-    <path d="M0 300 C-4 220, 6 120, 0 0" fill="none" stroke="#A89FF5" stroke-width="6" stroke-linecap="round"/>
-
-    <!-- left barbs -->
-    <path d="M-1 56  C-16 44, -38 30, -50 14"    fill="none" stroke="#90AAFF" stroke-width="4.0" stroke-linecap="round"/>
-    <path d="M-1 112 C-22 92, -54 70, -70 50"    fill="none" stroke="#90AAFF" stroke-width="5.0" stroke-linecap="round"/>
-    <path d="M-1 168 C-24 140, -58 110, -76 84"  fill="none" stroke="#90AAFF" stroke-width="5.5" stroke-linecap="round"/>
-    <path d="M-1 224 C-18 196, -44 164, -58 140" fill="none" stroke="#90AAFF" stroke-width="4.5" stroke-linecap="round"/>
-    <path d="M-1 278 C-10 254, -22 228, -30 208" fill="none" stroke="#90AAFF" stroke-width="3.5" stroke-linecap="round"/>
-
-    <!-- right barbs -->
-    <path d="M1 56  C16 44,  38 30,  50 14"    fill="none" stroke="#7DE8C8" stroke-width="4.0" stroke-linecap="round"/>
-    <path d="M1 112 C22 92,  54 70,  70 50"    fill="none" stroke="#7DE8C8" stroke-width="5.0" stroke-linecap="round"/>
-    <path d="M1 168 C24 140, 58 110, 76 84"    fill="none" stroke="#7DE8C8" stroke-width="5.5" stroke-linecap="round"/>
-    <path d="M1 224 C18 196, 44 164, 58 140"   fill="none" stroke="#7DE8C8" stroke-width="4.5" stroke-linecap="round"/>
-    <path d="M1 278 C10 254, 22 228, 30 208"   fill="none" stroke="#7DE8C8" stroke-width="3.5" stroke-linecap="round"/>
-
-    <!-- tip dot -->
-    <circle cx="0" cy="0" r="7" fill="#7DE8C8"/>
-
-    <!-- calamus -->
-    <path d="M0 300 C-2 316, -1 328, 0 338" fill="none" stroke="#A89FF5" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
-
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paint0_linear" x1="0" y1="200" x2="200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5B84FF"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="48" fill="url(#paint0_linear)"/>
+  <g transform="translate(40, 40) scale(5)">
+    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-
 </svg>

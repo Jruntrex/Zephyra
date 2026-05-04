@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ target_user.full_name }} — Профіль{% endblock %}
+{% block header_title %}Профіль{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block content %}
+
+<!-- Back button -->
+<div class="mb-4">
+  <a href="javascript:history.back()" class="inline-flex items-center gap-2 text-sm text-mutedText hover:text-primary transition-colors font-bold">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    </svg>
+    Назад
+  </a>
+</div>
+
+<!-- Hero banner -->
+<div class="relative overflow-hidden rounded-2xl mb-4 shadow-lg">
+  <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+  <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+  <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+  <div class="relative px-6 py-5 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        {% if target_user.profile_image %}
+        <img src="{{ target_user.profile_image.url }}" class="w-full h-full object-cover">
+        {% else %}
+        <span class="text-3xl font-black text-white">{{ target_user.full_name|slice:":1" }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <h1 class="text-3xl font-black text-white leading-tight">{{ target_user.full_name }}</h1>
+        <div class="flex items-center gap-3 mt-1 flex-wrap">
+          <span class="text-white/60 text-xs font-semibold">{{ target_user.email }}</span>
+          {% if target_user.group %}
+          <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-bold">{{ target_user.group.name }}</span>
+          {% endif %}
+          <span class="bg-white/10 text-white/80 text-xs px-2 py-0.5 rounded-full font-bold capitalize">{{ target_user.get_role_display }}</span>
+          {% if not target_user.is_active %}
+          <span class="bg-red-500/30 text-white text-xs px-2 py-0.5 rounded-full font-bold">Заблокований</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% if target_user.role == 'student' %}
+    <div class="flex-shrink-0 flex gap-4">
+      <div class="w-20 h-20 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+        <span class="text-2xl font-black text-white">{{ avg_grade }}</span>
+        <span class="text-[10px] text-white/65 font-semibold">середній</span>
+      </div>
+      <div class="w-20 h-20 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+        <span class="text-2xl font-black text-white">{{ attendance_percent }}%</span>
+        <span class="text-[10px] text-white/65 font-semibold">присутність</span>
+      </div>
+    </div>
+    {% elif target_user.role == 'teacher' %}
+    <div class="flex-shrink-0 flex gap-4">
+      <div class="w-20 h-20 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+        <span class="text-2xl font-black text-white">{{ teacher_assignments|length }}</span>
+        <span class="text-[10px] text-white/65 font-semibold">предметів</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Profile info row (Basic) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">Телефон</span>
+    <span class="text-sm font-bold text-mainText">{{ target_user.phone|default:"—" }}</span>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">Дата народження</span>
+    <span class="text-sm font-bold text-mainText">
+      {% if target_user.date_of_birth %}{{ target_user.date_of_birth|date:"d.m.Y" }}{% else %}—{% endif %}
+    </span>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">Адреса</span>
+    <span class="text-sm font-bold text-mainText">{{ target_user.address|default:"—" }}</span>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">ID Студента / Посада</span>
+    <span class="text-sm font-bold text-mainText">
+      {% if target_user.role == 'student' %}
+        {{ target_user.student_id|default:"—" }}
+      {% else %}
+        {{ target_user.get_role_display }}
+      {% endif %}
+    </span>
+  </div>
+</div>
+
+<!-- Expanded Info Row (System) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">RFID UID</span>
+    <div class="flex items-center gap-2">
+      <span class="text-sm font-mono font-bold text-primary">{{ target_user.rfid_uid|default:"Не призначено" }}</span>
+      {% if target_user.rfid_uid %}
+      <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+      {% endif %}
+    </div>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">Дата реєстрації</span>
+    <span class="text-sm font-bold text-mainText">{{ target_user.created_at|date:"d.m.Y H:i" }}</span>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">Останнє оновлення</span>
+    <span class="text-sm font-bold text-mainText">{{ target_user.updated_at|date:"d.m.Y H:i" }}</span>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">Системні права</span>
+    <div class="flex items-center gap-2">
+      {% if target_user.is_staff %}
+      <span class="text-xs font-bold text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded-full">Staff Access</span>
+      {% endif %}
+      {% if target_user.is_superuser %}
+      <span class="text-xs font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full">Superuser</span>
+      {% endif %}
+      {% if not target_user.is_staff and not target_user.is_superuser %}
+      <span class="text-xs font-bold text-mutedText bg-muted/10 px-2 py-0.5 rounded-full">Стандартний доступ</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">Останній вхід</span>
+    <span class="text-sm font-bold text-primary">{{ target_user.last_login|date:"d.m.Y H:i"|default:"Ніколи" }}</span>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">Тема інтерфейсу</span>
+    <span class="text-sm font-bold text-mainText capitalize">{{ target_user.get_theme_display }}</span>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1 md:col-span-2">
+    <span class="text-[10px] text-mutedText font-bold uppercase tracking-wider">Додаткові нотатки</span>
+    <span class="text-sm text-mainText italic line-clamp-1">{{ target_user.notes|default:"Нотатки відсутні" }}</span>
+  </div>
+</div>
+
+<!-- STUDENT: stats + subjects + recent activity -->
+{% if target_user.role == 'student' %}
+
+<!-- Stats row -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-xs text-mutedText font-bold uppercase tracking-wider">Всього оцінок</span>
+    <span class="text-3xl font-black text-mainText">{{ grades_count }}</span>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-xs text-mutedText font-bold uppercase tracking-wider">Пропуски</span>
+    <span class="text-3xl font-black {% if total_absences > 5 %}text-red-500{% else %}text-mainText{% endif %}">{{ total_absences }}</span>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-xs text-mutedText font-bold uppercase tracking-wider">Середній бал</span>
+    <span class="text-3xl font-black
+      {% if avg_grade >= 10 %}text-green-500
+      {% elif avg_grade >= 7 %}text-blue-500
+      {% elif avg_grade >= 4 %}text-yellow-500
+      {% elif avg_grade > 0 %}text-orange-500
+      {% else %}text-mutedText{% endif %}">{{ avg_grade }}</span>
+  </div>
+  <div class="bg-surface rounded-2xl border border-border p-4 flex flex-col gap-1">
+    <span class="text-xs text-mutedText font-bold uppercase tracking-wider">Відвідуваність</span>
+    <span class="text-3xl font-black {% if attendance_percent >= 80 %}text-green-500{% elif attendance_percent >= 60 %}text-yellow-500{% else %}text-red-500{% endif %}">{{ attendance_percent }}%</span>
+  </div>
+</div>
+
+<!-- Tabbed sections -->
+<div class="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
+  <!-- Tab nav -->
+  <div class="flex border-b border-border bg-background/30 px-2 pt-2 gap-1">
+    <button id="tab-grades" onclick="switchTab('grades')"
+      class="tab-btn active-tab px-5 py-2.5 text-xs font-black uppercase tracking-wider rounded-t-xl transition-all">
+      📊 Оцінки по предметах
+      {% if subjects_data %}<span class="ml-1.5 px-1.5 py-0.5 bg-primary/10 text-primary rounded-full text-[10px]">{{ subjects_data|length }}</span>{% endif %}
+    </button>
+    <button id="tab-activity" onclick="switchTab('activity')"
+      class="tab-btn px-5 py-2.5 text-xs font-black uppercase tracking-wider rounded-t-xl transition-all">
+      🕐 Остання активність
+    </button>
+  </div>
+
+  <!-- Tab: Semester grades -->
+  <div id="panel-grades">
+    {% if subjects_data %}
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-background/50 border-b border-border">
+          <tr>
+            <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Предмет</th>
+            <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Викладач</th>
+            <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Сем.</th>
+            <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Оцінок</th>
+            <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Середній</th>
+            <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Пропуски</th>
+            <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Підсумок</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/50">
+          {% for item in subjects_data %}
+          <tr class="hover:bg-primary/5 transition-colors">
+            <td class="p-4">
+              <div class="font-bold text-mainText">{{ item.subject.name }}</div>
+              {% if item.subject.credits %}<div class="text-xs text-mutedText">{{ item.subject.credits }} кредитів ЄКТС</div>{% endif %}
+            </td>
+            <td class="p-4 text-sm text-mutedText">{{ item.teacher.full_name }}</td>
+            <td class="p-4 text-center">
+              {% if item.semester %}
+              <span class="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full font-bold">{{ item.semester }}</span>
+              {% else %}<span class="text-mutedText">—</span>{% endif %}
+            </td>
+            <td class="p-4 text-center text-sm font-bold text-mainText">{{ item.grades_count }}</td>
+            <td class="p-4 text-center">
+              <span class="font-bold
+                {% if item.avg_grade >= 10 %}text-green-600 dark:text-green-400
+                {% elif item.avg_grade >= 7 %}text-blue-600 dark:text-blue-400
+                {% elif item.avg_grade >= 4 %}text-yellow-600 dark:text-yellow-400
+                {% elif item.avg_grade > 0 %}text-orange-600 dark:text-orange-400
+                {% else %}text-mutedText{% endif %}">{{ item.avg_grade }}</span>
+            </td>
+            <td class="p-4 text-center">
+              <span class="text-sm {% if item.absences.total_absences > 0 %}text-red-500 font-bold{% else %}text-mutedText{% endif %}">
+                {{ item.absences.total_absences }}
+              </span>
+            </td>
+            <td class="p-4 text-center">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl font-black text-lg
+                {% if item.final_grade >= 10 %}bg-green-500/10 text-green-600 dark:text-green-400
+                {% elif item.final_grade >= 7 %}bg-blue-500/10 text-blue-600 dark:text-blue-400
+                {% elif item.final_grade >= 4 %}bg-yellow-500/10 text-yellow-600 dark:text-yellow-400
+                {% elif item.final_grade > 0 %}bg-orange-500/10 text-orange-600 dark:text-orange-400
+                {% else %}bg-muted/10 text-mutedText{% endif %}">
+                {{ item.final_grade }}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center text-mutedText">
+      <div class="text-4xl mb-3 opacity-40">📊</div>
+      <p class="font-bold text-xs uppercase tracking-widest">Оцінок по предметах немає</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Tab: Recent activity -->
+  <div id="panel-activity" class="hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-background/50 border-b border-border">
+          <tr>
+            <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Дата</th>
+            <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Предмет</th>
+            <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Тема</th>
+            <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Оцінка / Пропуск</th>
+            <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Коментар</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border/50">
+          {% for perf in recent_perf %}
+          <tr class="hover:bg-primary/5 transition-colors">
+            <td class="p-4 text-sm font-medium text-mainText whitespace-nowrap">{{ perf.lesson.date|date:"d.m.Y" }}</td>
+            <td class="p-4">
+              <div class="font-bold text-mainText text-sm">{{ perf.lesson.subject.name|default:"—" }}</div>
+              <div class="text-xs text-mutedText">{{ perf.lesson.teacher.full_name }}</div>
+            </td>
+            <td class="p-4 text-xs text-mutedText italic">{{ perf.lesson.topic|default:"—" }}</td>
+            <td class="p-4 text-center">
+              {% if perf.earned_points is not None %}
+              <div class="inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg
+                {% if perf.earned_points >= 10 %}bg-green-100 text-green-700
+                {% elif perf.earned_points >= 7 %}bg-blue-100 text-blue-700
+                {% elif perf.earned_points >= 4 %}bg-yellow-100 text-yellow-700
+                {% else %}bg-red-100 text-red-700{% endif %}">
+                {{ perf.earned_points|floatformat:0 }}
+              </div>
+              {% elif perf.absence %}
+              <span class="inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm bg-red-100 text-red-600">
+                {{ perf.absence.code }}
+              </span>
+              {% else %}
+              <span class="text-mutedText text-sm">—</span>
+              {% endif %}
+            </td>
+            <td class="p-4 text-sm text-mutedText italic">{{ perf.comment|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="p-12 text-center text-mutedText">
+              <div class="text-4xl mb-3 opacity-40">🕐</div>
+              <p class="font-bold text-xs uppercase tracking-widest">Записів ще немає</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+<!-- END STUDENT -->
+
+<!-- TEACHER: teaching assignments -->
+{% if target_user.role == 'teacher' %}
+{% if teacher_assignments %}
+<div class="bg-surface rounded-2xl border border-border shadow-sm mb-6 overflow-hidden">
+  <div class="px-6 py-4 border-b border-border">
+    <h2 class="text-sm font-bold text-mutedText uppercase tracking-wider">Предмети та групи викладача</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead class="bg-background/50 border-b border-border">
+        <tr>
+          <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Предмет</th>
+          <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Група</th>
+          <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Семестр</th>
+          <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Навч. рік</th>
+          <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Нотатки</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border/50">
+        {% for a in teacher_assignments %}
+        <tr class="hover:bg-primary/5 transition-colors">
+          <td class="p-4">
+            <div class="font-bold text-mainText">{{ a.subject.name }}</div>
+            {% if a.subject.credits %}<div class="text-xs text-mutedText">{{ a.subject.credits }} кредитів ЄКТС</div>{% endif %}
+          </td>
+          <td class="p-4">
+            {% if a.group %}
+            <span class="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full font-bold">{{ a.group.name }}</span>
+            {% else %}<span class="text-mutedText text-sm">—</span>{% endif %}
+          </td>
+          <td class="p-4 text-center">
+            {% if a.semester %}
+            <span class="bg-surface border border-border text-mainText text-xs px-2 py-0.5 rounded-full font-bold">{{ a.semester }}</span>
+            {% else %}<span class="text-mutedText">—</span>{% endif %}
+          </td>
+          <td class="p-4 text-center text-sm text-mutedText">{{ a.academic_year|default:"—" }}</td>
+          <td class="p-4 text-xs text-mutedText italic">{{ a.notes|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="bg-surface rounded-2xl border border-border p-10 text-center mb-6">
+  <p class="text-mutedText font-bold text-sm uppercase tracking-wider">Предметів не призначено</p>
+</div>
+{% endif %}
+{% endif %}
+<!-- END TEACHER -->
+
+<!-- ADMIN: no extra section, profile info above is enough -->
+{% if target_user.role == 'admin' %}
+<div class="bg-surface rounded-2xl border border-border p-8 flex flex-col items-center justify-center text-center">
+  <div class="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-4">
+    <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+    </svg>
+  </div>
+  <p class="font-black text-mainText text-lg mb-1">Адміністратор системи</p>
+  <p class="text-mutedText text-sm">Має повний доступ до управління системою</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<style>
+  .tab-btn {
+    color: var(--color-mutedText);
+    background: transparent;
+    border-bottom: 2px solid transparent;
+  }
+  .tab-btn:hover {
+    color: var(--color-mainText);
+    background: var(--color-surface);
+  }
+  .tab-btn.active-tab {
+    color: var(--color-primary);
+    background: var(--color-surface);
+    border-bottom: 2px solid var(--color-primary);
+    font-weight: 900;
+  }
+</style>
+<script>
+  function switchTab(tab) {
+    // hide all panels
+    document.querySelectorAll('[id^="panel-"]').forEach(p => p.classList.add('hidden'));
+    // deactivate all buttons
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+    // show selected
+    document.getElementById('panel-' + tab).classList.remove('hidden');
+    document.getElementById('tab-' + tab).classList.add('active-tab');
+  }
+</script>
+{% endblock %}

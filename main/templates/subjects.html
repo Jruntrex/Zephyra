@@ -16,7 +16,7 @@
                 <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6a2 2 0 00-2-2H5a2 2 0 00-2 2v13M13 19V3a2 2 0 00-2-2H9a2 2 0 00-2 2v16M18 19V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10"/>
                 </svg>
-                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }} Admin</span>
             </div>
             <h1 class="text-4xl font-black text-white leading-tight">Управління Предметами</h1>
             <p class="text-white/65 text-sm mt-0.5">Перегляд та редагування навчальних дисциплін</p>
@@ -29,8 +29,8 @@
     </div>
 </div>
 
-<div class="card-bento min-h-[600px] pb-10">
-    <div class="flex flex-wrap justify-end items-center gap-3 mb-8">
+<div class="card-bento !justify-start pb-6">
+    <div class="flex flex-wrap justify-end items-center gap-3 mb-4">
         <a href="{% url 'subjects_csv_export' %}"
             class="px-5 py-3 bg-surface border border-border text-mainText rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-border transition-all flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
@@ -82,9 +82,9 @@
     </div>
 
     <!-- Фільтри -->
-    <div class="bg-background/50 rounded-2xl p-6 mb-8 border border-border">
+    <div class="bg-background/50 rounded-2xl p-4 mb-6 border border-border">
         <form method="GET" action="{% url 'subjects_list' %}"
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             <div class="flex flex-col gap-1.5 lg:col-span-3">
                 <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Пошук предмета</label>
                 <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Назва або опис..."
@@ -140,7 +140,7 @@
             <table class="w-full">
                 <thead class="bg-background border-b border-border">
                     <tr>
-                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase hidden xl:table-cell">ID</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">№</th>
                         <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Назва предмета</th>
                         <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden md:table-cell">Код</th>
                         <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden lg:table-cell">
@@ -160,7 +160,7 @@
                 <tbody class="divide-y divide-border">
                     {% for subject in subjects %}
                     <tr class="hover:bg-primary/5 transition duration-150 group">
-                        <td class="p-4 text-xs font-mono text-mutedText hidden xl:table-cell">#{{ subject.id }}</td>
+                        <td class="p-4 text-center text-xs font-bold text-mutedText">{{ forloop.counter }}</td>
                         <td class="p-4">
                             <div class="flex items-center gap-3">
                                 <div
@@ -231,7 +231,14 @@
                             {% endif %}
                         </td>
                         <td class="p-4 text-right">
-                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="flex justify-end gap-2">
+                                <button onclick="openSubjectModal('{{ subject.id }}')"
+                                    class="p-2 text-mutedText hover:text-violet-500 hover:bg-violet-500/10 rounded-lg transition-all" title="Деталі">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
                                 <form method="POST" action="{% url 'subject_delete' pk=subject.pk %}"
                                     onsubmit="return confirm('Видалити предмет {{ subject.name }}?');" class="inline">
                                     {% csrf_token %}
@@ -245,6 +252,21 @@
                                         </svg>
                                     </button>
                                 </form>
+                            </div>
+
+                            <div id="subject-data-{{ subject.id }}" class="hidden">
+                                {
+                                    "name": "{{ subject.name|escapejs }}",
+                                    "code": "{{ subject.code|default:'—'|escapejs }}",
+                                    "description": "{{ subject.description|default:'Опис відсутній'|escapejs }}",
+                                    "credits": "{{ subject.credits|default:'—' }}",
+                                    "hours_total": "{{ subject.hours_total|default:'—' }}",
+                                    "hours_lectures": "{{ subject.hours_lectures|default:'—' }}",
+                                    "hours_practicals": "{{ subject.hours_practicals|default:'—' }}",
+                                    "semester": "{{ subject.semester|default:'—' }}",
+                                    "created_at": "{{ subject.created_at|date:'d.m.Y H:i' }}",
+                                    "updated_at": "{{ subject.updated_at|date:'d.m.Y H:i' }}"
+                                }
                             </div>
                         </td>
                     </tr>
@@ -261,6 +283,82 @@
         </div>
     </div>
 </div>
+
+<!-- Subject Detail Modal -->
+<div id="subjectDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md transition-all duration-300">
+    <div class="bg-surface border border-border rounded-[2.5rem] shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+        <!-- Modal Header -->
+        <div class="relative px-8 py-10 bg-gradient-to-br from-indigo-600 to-violet-600">
+            <div class="absolute top-6 right-6">
+                <button onclick="closeSubjectModal()" class="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="flex items-center gap-6">
+                <div id="modal_subject_icon" class="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-3xl font-black text-white shadow-xl">
+                    S
+                </div>
+                <div>
+                    <h3 id="modal_subject_name" class="text-3xl font-black text-white tracking-tight mb-1">Предмет</h3>
+                    <p id="modal_subject_code" class="text-white/80 font-medium"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-8 overflow-y-auto flex-grow bg-background/50">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+                <div class="bg-surface p-6 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Кредити ECTS</span>
+                    <p id="modal_credits" class="text-xl font-bold text-mainText"></p>
+                </div>
+                <div class="bg-surface p-6 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Семестр</span>
+                    <p id="modal_semester" class="text-xl font-bold text-primary"></p>
+                </div>
+                <div class="bg-surface p-6 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Всього годин</span>
+                    <p id="modal_hours_total" class="text-xl font-bold text-mainText"></p>
+                </div>
+                <div class="bg-surface p-6 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Тип</span>
+                    <p class="text-xl font-bold text-violet-500">Дисципліна</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                <div class="bg-surface p-6 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-4">Розподіл годин</span>
+                    <div class="flex items-center gap-6">
+                        <div class="flex flex-col items-center">
+                            <div id="modal_hours_lectures" class="w-12 h-12 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center font-black">0</div>
+                            <span class="text-[10px] font-bold text-mutedText mt-1">Лекції</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div id="modal_hours_practicals" class="w-12 h-12 rounded-full bg-green-500/10 text-green-600 flex items-center justify-center font-black">0</div>
+                            <span class="text-[10px] font-bold text-mutedText mt-1">Практичні</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-surface p-6 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Опис</span>
+                    <p id="modal_description" class="text-sm text-mutedText italic line-clamp-4"></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-6 border-t border-border/50">
+                <div>
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1">Додано</span>
+                    <p id="modal_created" class="text-sm font-bold text-mainText/70"></p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1">Змінено</span>
+                    <p id="modal_updated" class="text-sm font-bold text-mainText/70"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -268,6 +366,38 @@
     function toggleForm() {
         const form = document.getElementById('addForm');
         form.classList.toggle('hidden');
+    }
+
+    function openSubjectModal(subjectId) {
+        const dataJson = document.getElementById(`subject-data-${subjectId}`).textContent;
+        const data = JSON.parse(dataJson);
+        
+        document.getElementById('modal_subject_name').textContent = data.name;
+        document.getElementById('modal_subject_icon').textContent = data.name.substring(0, 1);
+        document.getElementById('modal_subject_code').textContent = data.code;
+        document.getElementById('modal_credits').textContent = data.credits;
+        document.getElementById('modal_semester').textContent = data.semester;
+        document.getElementById('modal_hours_total').textContent = data.hours_total;
+        document.getElementById('modal_hours_lectures').textContent = data.hours_lectures;
+        document.getElementById('modal_hours_practicals').textContent = data.hours_practicals;
+        document.getElementById('modal_description').textContent = data.description;
+        document.getElementById('modal_created').textContent = data.created_at;
+        document.getElementById('modal_updated').textContent = data.updated_at;
+
+        document.getElementById('subjectDetailModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSubjectModal() {
+        document.getElementById('subjectDetailModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('subjectDetailModal');
+        if (event.target == modal) {
+            closeSubjectModal();
+        }
     }
 </script>
 {% endblock %}

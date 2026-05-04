@@ -19,7 +19,6 @@ from main.models import (
     EvaluationType,
     GradeRule,
     GradingScale,
-    HomeworkSubmission,
     Lesson,
     StudentPerformance,
     Subject,
@@ -201,8 +200,10 @@ def get_teacher_journal_context(
     """
     Formulates context for teacher journal with week navigation.
     """
+    import datetime as dt
     from datetime import timedelta
 
+    from django.utils import timezone
     from main.models import BuildingAccessLog, Lesson, StudyGroup
 
     # 1. Date Range Handling (Weekly)
@@ -217,9 +218,12 @@ def get_teacher_journal_context(
     group = StudyGroup.objects.get(id=group_id)
     students = User.objects.filter(group=group, role="student").order_by("full_name")
 
-    # 3. RFID Presence (Current Day only or current week? Usually current status)
+    # 3. RFID Presence — use range to avoid MySQL timezone table issue with __date
+    _now = timezone.now()
+    _day_start = _now.replace(hour=0, minute=0, second=0, microsecond=0)
+    _day_end = _day_start + dt.timedelta(days=1)
     access_logs = BuildingAccessLog.objects.filter(
-        timestamp__date=today, student__in=students
+        timestamp__gte=_day_start, timestamp__lt=_day_end, student__in=students
     ).order_by("student", "timestamp")
 
     presence_map = {s.id: False for s in students}
@@ -346,11 +350,8 @@ def calculate_weighted_final_grade(
     Розраховує підсумкову зважену оцінку студента для навчального навантаження.
 
     Формула (12-бальна шкала):
-        - Для ДЗ-типу (is_homework_type=True):
-            avg(HomeworkSubmission.grade) × weight% / 100
-        - Для інших типів:
-            avg(StudentPerformance.earned_points де lesson.evaluation_type=type) × weight% / 100
-        - final_grade = Σ всіх внесків
+        avg(StudentPerformance.earned_points де lesson.evaluation_type=type) × weight% / 100
+        final_grade = Σ всіх внесків
 
     Returns:
         dict:
@@ -367,22 +368,13 @@ def calculate_weighted_final_grade(
         weight_pct = float(etype.weight_percent)
         total_weight += weight_pct
 
-        if etype.is_homework_type:
-            grades_qs = HomeworkSubmission.objects.filter(
-                lesson__subject=assignment.subject,
-                lesson__group=assignment.group,
-                student=student,
-                grade__isnull=False,
-                status="graded",
-            ).values_list("grade", flat=True)
-        else:
-            grades_qs = StudentPerformance.objects.filter(
-                student=student,
-                lesson__subject=assignment.subject,
-                lesson__group=assignment.group,
-                lesson__evaluation_type=etype,
-                earned_points__isnull=False,
-            ).values_list("earned_points", flat=True)
+        grades_qs = StudentPerformance.objects.filter(
+            student=student,
+            lesson__subject=assignment.subject,
+            lesson__group=assignment.group,
+            lesson__evaluation_type=etype,
+            earned_points__isnull=False,
+        ).values_list("earned_points", flat=True)
 
         grades_list = [float(g) for g in grades_qs]
         avg = sum(grades_list) / len(grades_list) if grades_list else 0.0
@@ -580,7 +572,7 @@ def save_grade(
             current_lesson.date.strftime("%d.%m.%Y") if current_lesson.date else ""
         )
         student = User.objects.only("id", "phone").get(pk=student_id)
-        lesson_link = f"/lesson/{current_lesson.id}/" if current_lesson.id else ""
+        lesson_link = "/student/grades/"
         if grade_value is not None:
             Notification.objects.create(
                 recipient_id=student_id,

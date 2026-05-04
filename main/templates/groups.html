@@ -16,7 +16,7 @@
                 <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6a2 2 0 00-2-2H5a2 2 0 00-2 2v13M13 19V3a2 2 0 00-2-2H9a2 2 0 00-2 2v16M18 19V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10"/>
                 </svg>
-                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }} Admin</span>
             </div>
             <h1 class="text-4xl font-black text-white leading-tight">Управління Групами</h1>
             <p class="text-white/65 text-sm mt-0.5">Перегляд та управління студентськими групами</p>
@@ -29,8 +29,8 @@
     </div>
 </div>
 
-<div class="card-bento min-h-[600px] pb-10">
-    <div class="flex flex-wrap justify-end items-center gap-3 mb-8">
+<div class="card-bento !justify-start pb-6">
+    <div class="flex flex-wrap justify-end items-center gap-3 mb-4">
         <a href="{% url 'groups_csv_export' %}"
             class="px-5 py-3 bg-surface border border-border text-mainText rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-border transition-all flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
@@ -83,12 +83,32 @@
     <!-- Фільтри -->
     <div class="bg-background/50 rounded-2xl p-6 mb-8 border border-border">
         <form method="GET" action="{% url 'groups_list' %}"
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
-            <div class="flex flex-col gap-1.5 lg:col-span-3">
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Пошук групи</label>
                 <input type="text" name="search" value="{{ request.GET.search }}"
-                    placeholder="Назва групи (наприклад: КН-41)..."
+                    placeholder="Назва..."
                     class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Курс</label>
+                <select name="course" class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                    <option value="">Всі курси</option>
+                    {% for c in "123456"|make_list %}
+                        <option value="{{ c }}" {% if request.GET.course == c %}selected{% endif %}>{{ c }} курс</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Спеціальність</label>
+                <select name="specialty" class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                    <option value="">Всі спеціальності</option>
+                    {% for spec in specialties %}
+                        <option value="{{ spec.id }}" {% if request.GET.specialty == spec.id|stringformat:"s" %}selected{% endif %}>{{ spec.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div class="flex items-center gap-3">
@@ -105,23 +125,53 @@
     </div>
 
     <div id="addForm" class="hidden bg-background/50 rounded-2xl p-6 mb-8 border border-primary/20 animate-slide-down">
-        <h4 class="text-xl font-black text-mainText mb-6 uppercase tracking-tighter">Створити групу</h4>
-        <form method="POST" action="{% url 'group_add' %}" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+        <h4 class="text-xl font-black text-mainText mb-6 uppercase tracking-tighter text-center md:text-left">Створити нову групу</h4>
+        <form method="POST" action="{% url 'groups_list' %}" class="space-y-6">
             {% csrf_token %}
-            <div class="space-y-1.5 md:col-span-1">
-                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Назва групи</label>
-                {% if form.name.errors %}<div class="text-red-500 text-[10px] font-bold mb-1">{{ form.name.errors }}
-                </div>{% endif %}
-                <input type="text" name="{{ form.name.name }}" placeholder="Наприклад: КН-41"
-                    value="{{ form.name.value|default:'' }}" required
-                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="space-y-1.5 md:col-span-1">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Назва групи</label>
+                    <input type="text" name="name" placeholder="Напр. КН-41" required
+                        class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                </div>
+                <div class="space-y-1.5 md:col-span-2">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Спеціальність</label>
+                    <select name="specialty_id" class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-sm text-mainText">
+                        <option value="">Оберіть спеціальність...</option>
+                        {% for spec in specialties %}
+                            <option value="{{ spec.id }}">{{ spec.code }} {{ spec.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="space-y-1.5 md:col-span-1">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Курс</label>
+                    <select name="course" class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-sm text-mainText">
+                        <option value="">Не вказано</option>
+                        {% for c in "123456"|make_list %}
+                            <option value="{{ c }}">{{ c }} курс</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Рік вступу</label>
+                    <input type="number" name="year_of_entry" placeholder="2023"
+                        class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-sm text-mainText">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Рік випуску</label>
+                    <input type="number" name="graduation_year" placeholder="2027"
+                        class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl text-sm text-mainText">
+                </div>
             </div>
 
-            <div class="md:col-span-1 flex justify-end gap-3">
+            <div class="flex justify-end gap-3 pt-4 border-t border-border/40">
                 <button type="button" onclick="toggleForm()"
                     class="px-6 py-2.5 text-xs font-black text-mutedText uppercase tracking-widest hover:bg-surface rounded-xl transition-all">Скасувати</button>
                 <button type="submit"
-                    class="px-10 py-2.5 bg-primary text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-lg">Створити</button>
+                    class="px-10 py-2.5 bg-primary text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-lg">Створити групу</button>
             </div>
         </form>
     </div>
@@ -131,7 +181,7 @@
             <table class="w-full">
                 <thead class="bg-background border-b border-border">
                     <tr>
-                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase hidden xl:table-cell">ID</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">№</th>
                         <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Назва групи</th>
                         <th class="p-4 text-left text-xs font-bold text-mutedText uppercase hidden md:table-cell">
                             Спеціальність</th>
@@ -150,7 +200,7 @@
                 <tbody class="divide-y divide-border">
                     {% for group in groups %}
                     <tr class="hover:bg-primary/5 transition duration-150 group">
-                        <td class="p-4 text-xs font-mono text-mutedText hidden xl:table-cell">#{{ group.id }}</td>
+                        <td class="p-4 text-center text-xs font-bold text-mutedText">{{ forloop.counter }}</td>
                         <td class="p-4">
                             <div class="flex items-center gap-3">
                                 <div
@@ -214,7 +264,14 @@
                             {% endif %}
                         </td>
                         <td class="p-4 text-right">
-                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="flex justify-end gap-2">
+                                <button onclick="openGroupModal('{{ group.id }}')"
+                                    class="p-2 text-mutedText hover:text-violet-500 hover:bg-violet-500/10 rounded-lg transition-all" title="Деталі">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
                                 <form method="POST" action="{% url 'group_delete' pk=group.pk %}"
                                     onsubmit="return confirm('Видалити групу {{ group.name }}?');" class="inline">
                                     {% csrf_token %}
@@ -228,6 +285,26 @@
                                         </svg>
                                     </button>
                                 </form>
+                            </div>
+
+                            <!-- Hidden Group Data for Modal -->
+                            <div id="group-data-{{ group.id }}" class="hidden">
+                                {
+                                    "name": "{{ group.name }}",
+                                    "specialty": "{{ group.specialty.name|default:'—' }}",
+                                    "specialty_code": "{{ group.specialty.code|default:'' }}",
+                                    "course": "{{ group.course|default:'—' }}",
+                                    "years": "{{ group.year_of_entry|default:'—' }} - {{ group.graduation_year|default:'—' }}",
+                                    "student_count": "{{ group.student_count }}",
+                                    "status": "{% if group.is_active %}Активна{% else %}Архів{% endif %}",
+                                    "created_at": "{{ group.created_at|date:'d.m.Y H:i' }}",
+                                    "updated_at": "{{ group.updated_at|date:'d.m.Y H:i' }}",
+                                    "students": [
+                                        {% for student in group.students.all %}
+                                        {"name": "{{ student.full_name }}", "email": "{{ student.email }}"}{% if not forloop.last %},{% endif %}
+                                        {% endfor %}
+                                    ]
+                                }
                             </div>
                         </td>
                     </tr>
@@ -244,6 +321,68 @@
         </div>
     </div>
 </div>
+
+<!-- Group Detail Modal -->
+<div id="groupDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md transition-all duration-300">
+    <div class="bg-surface border border-border rounded-[2.5rem] shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+        <!-- Modal Header -->
+        <div class="relative px-8 py-10 bg-gradient-to-br from-indigo-600 to-violet-600">
+            <div class="absolute top-6 right-6">
+                <button onclick="closeGroupModal()" class="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="flex items-center gap-6">
+                <div id="modal_group_icon" class="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-3xl font-black text-white shadow-xl">
+                    KN
+                </div>
+                <div>
+                    <h3 id="modal_group_name" class="text-4xl font-black text-white tracking-tight mb-1">Група</h3>
+                    <p id="modal_specialty" class="text-white/80 font-medium text-lg"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-8 overflow-y-auto flex-grow bg-background/50">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-surface p-6 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Курс та Роки</span>
+                    <p id="modal_course_years" class="text-xl font-bold text-mainText"></p>
+                </div>
+                <div class="bg-surface p-6 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Кількість студентів</span>
+                    <p id="modal_student_count" class="text-xl font-bold text-primary"></p>
+                </div>
+                <div class="bg-surface p-6 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Статус системи</span>
+                    <p id="modal_status" class="text-xl font-bold text-green-500"></p>
+                </div>
+            </div>
+
+            <div class="mb-10">
+                <div class="flex items-center justify-between mb-6">
+                    <h4 class="text-xs font-black text-mutedText uppercase tracking-widest">Список студентів</h4>
+                    <span id="modal_student_badge" class="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black">0 ОСІБ</span>
+                </div>
+                <div id="modal_student_list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    <!-- Students will be injected here -->
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-6 border-t border-border/50">
+                <div>
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1">Дата створення</span>
+                    <p id="modal_created" class="text-sm font-bold text-mainText/70"></p>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1">Останнє оновлення</span>
+                    <p id="modal_updated" class="text-sm font-bold text-mainText/70"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -252,5 +391,64 @@
         const form = document.getElementById('addForm');
         form.classList.toggle('hidden');
     }
+
+    function openGroupModal(groupId) {
+        const dataJson = document.getElementById(`group-data-${groupId}`).textContent;
+        const data = JSON.parse(dataJson);
+        
+        document.getElementById('modal_group_name').textContent = data.name;
+        document.getElementById('modal_group_icon').textContent = data.name.substring(0, 2);
+        document.getElementById('modal_specialty').textContent = `${data.specialty_code} ${data.specialty}`;
+        document.getElementById('modal_course_years').textContent = `${data.course} курс | ${data.years}`;
+        document.getElementById('modal_student_count').textContent = `${data.student_count} студентів`;
+        document.getElementById('modal_status').textContent = data.status;
+        document.getElementById('modal_created').textContent = data.created_at;
+        document.getElementById('modal_updated').textContent = data.updated_at;
+        document.getElementById('modal_student_badge').textContent = `${data.student_count} ОСІБ`;
+
+        const list = document.getElementById('modal_student_list');
+        list.innerHTML = '';
+        
+        if (data.students.length > 0) {
+            data.students.forEach(s => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-3 p-3 bg-surface border border-border rounded-2xl hover:border-primary/30 transition-all';
+                item.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px]">
+                        ${s.name.charAt(0)}
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold text-mainText">${s.name}</div>
+                        <div class="text-[10px] text-mutedText">${s.email}</div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        } else {
+            list.innerHTML = '<p class="col-span-full text-center py-4 text-mutedText italic text-sm">Студентів у групі немає</p>';
+        }
+
+        document.getElementById('groupDetailModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeGroupModal() {
+        document.getElementById('groupDetailModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+    
+    // Close on outside click
+    window.onclick = function(event) {
+        const modal = document.getElementById('groupDetailModal');
+        if (event.target == modal) {
+            closeGroupModal();
+        }
+    }
 </script>
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+</style>
 {% endblock %}

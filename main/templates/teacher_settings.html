@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Налаштування викладача - {{ institution.name|default:"MyBosco" }}{% endblock %}
+{% block title %}Налаштування викладача - {{ institution.name|default:"Mentorly" }}{% endblock %}
 
 {% block header_title %}Налаштування предметів та оцінювання{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-8">
+<div class="w-full py-8">
     <!-- Hero banner -->
     <div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
         <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
@@ -17,7 +17,7 @@
                     <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6a2 2 0 00-2-2H5a2 2 0 00-2 2v13M13 19V3a2 2 0 00-2-2H9a2 2 0 00-2 2v16M18 19V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10"/>
                     </svg>
-                    <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }}</span>
+                    <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }}</span>
                 </div>
                 <h1 class="text-4xl font-black text-white leading-tight">Мої предмети та типи занять</h1>
                 <p class="text-white/65 text-sm mt-0.5">Налаштуйте типи занять та їхню вагу для кожного предмету</p>

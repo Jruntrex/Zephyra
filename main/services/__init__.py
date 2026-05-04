@@ -1,5 +1,5 @@
 """
-Service Layer для Zephyra
+Service Layer для Mentorly
 
 Цей модуль містить бізнес-логіку додатку, відокремлену від views.
 """

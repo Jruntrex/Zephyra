@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Управління спеціальностями{% endblock %}
+{% block header_title %}Спеціальності{% endblock %}
+{% block page_title_heading %}{% endblock %}
+
+{% block content %}
+<!-- Hero banner -->
+<div class="relative overflow-hidden rounded-2xl mb-4 shadow-lg">
+    <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+    <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+    <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+    <div class="relative px-6 py-5 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }} Admin</span>
+            </div>
+            <h1 class="text-4xl font-black text-white leading-tight">Управління Спеціальностями</h1>
+            <p class="text-white/65 text-sm mt-0.5">Класифікація освітніх напрямів та програм</p>
+        </div>
+        <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/>
+            </svg>
+        </div>
+    </div>
+</div>
+
+<div class="card-bento !justify-start pb-6">
+    <div class="flex flex-wrap justify-end items-center gap-3 mb-4">
+        <button onclick="toggleForm()"
+            class="px-6 py-3 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-primary/90 transform hover:-translate-y-0.5 transition-all">
+            Додати спеціальність
+        </button>
+    </div>
+
+    <!-- Add Form -->
+    <div id="addForm" class="hidden bg-background/50 rounded-2xl p-6 mb-4 border border-primary/20 animate-slide-down">
+        <h4 class="text-xl font-black text-mainText mb-6 uppercase tracking-tighter">Створити спеціальність</h4>
+        <form method="POST" action="{% url 'specialties_list' %}" class="space-y-6">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="space-y-1.5 md:col-span-1">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Код (напр. 121)</label>
+                    <input type="text" name="code" placeholder="Код спеціальності"
+                        class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                </div>
+                <div class="space-y-1.5 md:col-span-2">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Назва спеціальності</label>
+                    <input type="text" name="name" required placeholder="Назва (напр. Комп'ютерні науки)"
+                        class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                </div>
+            </div>
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Опис</label>
+                <textarea name="description" rows="2" placeholder="Додаткова інформація..."
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all"></textarea>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="toggleForm()"
+                    class="px-6 py-2.5 text-xs font-black text-mutedText uppercase tracking-widest hover:bg-surface rounded-xl transition-all">Скасувати</button>
+                <button type="submit"
+                    class="px-10 py-2.5 bg-primary text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-lg">Зберегти</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Фільтри -->
+    <div class="bg-background/50 rounded-2xl p-4 mb-4 border border-border">
+        <form method="GET" action="{% url 'specialties_list' %}"
+            class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div class="flex flex-col gap-1.5 md:col-span-3">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Пошук спеціальності</label>
+                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Назва або код..."
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+            </div>
+            <div class="flex items-center gap-3">
+                <button type="submit"
+                    class="flex-grow px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all">Знайти</button>
+                <a href="{% url 'specialties_list' %}"
+                    class="p-2.5 bg-surface border border-border rounded-xl text-mutedText hover:text-red-500 transition-all shadow-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="glass-panel shadow-sm rounded-3xl p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-background border-b border-border">
+                    <tr>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">№</th>
+                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase">Спеціальність</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase hidden md:table-cell">Код</th>
+                        <th class="p-4 text-left text-xs font-bold text-mutedText uppercase hidden lg:table-cell">Опис</th>
+                        <th class="p-4 text-center text-xs font-bold text-mutedText uppercase">Груп</th>
+                        <th class="p-4 text-right text-xs font-bold text-mutedText uppercase">Керування</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% for spec in specialties %}
+                    <tr class="hover:bg-primary/5 transition duration-150 group">
+                        <td class="p-4 text-center text-xs font-bold text-mutedText">{{ forloop.counter }}</td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-xs shadow-sm">
+                                    {{ spec.code|default:"—"|slice:":3" }}
+                                </div>
+                                <span class="text-sm font-bold text-mainText">{{ spec.name }}</span>
+                            </div>
+                        </td>
+                        <td class="p-4 text-center hidden md:table-cell">
+                            {% if spec.code %}
+                            <span class="inline-flex px-3 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold">{{ spec.code }}</span>
+                            {% else %}
+                            <span class="text-mutedText/40 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-sm text-mutedText hidden lg:table-cell">
+                            <span class="line-clamp-1">{{ spec.description|default:"Опис відсутній" }}</span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <span class="inline-flex items-center justify-center min-w-[30px] h-[30px] rounded-full bg-primary/10 text-primary font-bold shadow-sm text-xs">
+                                {{ spec.group_count }}
+                            </span>
+                        </td>
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <button onclick="openSpecModal('{{ spec.id }}')"
+                                    class="p-2 text-mutedText hover:text-violet-500 hover:bg-violet-500/10 rounded-lg transition-all" title="Деталі">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <button onclick="openEditModal('{{ spec.id }}', '{{ spec.name|escapejs }}', '{{ spec.code|escapejs }}', '{{ spec.description|escapejs }}')"
+                                    class="p-2 text-mutedText hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Редагувати">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                    </svg>
+                                </button>
+                                <form method="POST" action="{% url 'specialty_delete' pk=spec.pk %}" onsubmit="return confirm('Видалити спеціальність {{ spec.name }}?')" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-2 text-mutedText hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all" title="Видалити">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Hidden data for modal -->
+                            <div id="spec-data-{{ spec.id }}" class="hidden">
+                                {
+                                    "name": "{{ spec.name|escapejs }}",
+                                    "code": "{{ spec.code|default:'—'|escapejs }}",
+                                    "description": "{{ spec.description|default:'Опис відсутній'|escapejs }}",
+                                    "group_count": "{{ spec.group_count }}",
+                                    "groups": [
+                                        {% for group in spec.groups.all %}
+                                        {"name": "{{ group.name }}", "course": "{{ group.course }}"}{% if not forloop.last %},{% endif %}
+                                        {% endfor %}
+                                    ]
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="p-12 text-center text-mutedText">
+                            <div class="text-4xl mb-4 opacity-50">🏛️</div>
+                            <p class="font-bold text-xs uppercase tracking-widest">Спеціальностей не знайдено</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md">
+    <div class="bg-surface border border-border rounded-3xl shadow-2xl p-8 w-full max-w-2xl mx-4">
+        <h3 class="text-2xl font-black text-mainText mb-6 tracking-tight uppercase">Редагувати спеціальність</h3>
+        <form id="editForm" method="POST" class="space-y-6">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="space-y-1.5 md:col-span-1">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Код</label>
+                    <input type="text" name="code" id="edit_code"
+                        class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                </div>
+                <div class="space-y-1.5 md:col-span-2">
+                    <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Назва</label>
+                    <input type="text" name="name" id="edit_name" required
+                        class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all">
+                </div>
+            </div>
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-black text-mutedText uppercase tracking-widest">Опис</label>
+                <textarea name="description" id="edit_description" rows="3"
+                    class="w-full px-4 py-2.5 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-primary text-sm font-medium text-mainText transition-all"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 mt-8">
+                <button type="button" onclick="closeEditModal()"
+                    class="px-6 py-2.5 text-xs font-black text-mutedText uppercase tracking-widest hover:bg-surface rounded-xl transition-all">Скасувати</button>
+                <button type="submit"
+                    class="px-10 py-2.5 bg-primary text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-lg">Оновити</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Spec Detail Modal -->
+<div id="specDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md transition-all duration-300">
+    <div class="bg-surface border border-border rounded-[2.5rem] shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+        <!-- Modal Header -->
+        <div class="relative px-8 py-10 bg-gradient-to-br from-indigo-600 to-violet-600">
+            <div class="absolute top-6 right-6">
+                <button onclick="closeSpecModal()" class="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="flex items-center gap-6">
+                <div id="modal_spec_icon" class="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-3xl font-black text-white shadow-xl">
+                    S
+                </div>
+                <div>
+                    <h3 id="modal_spec_name" class="text-3xl font-black text-white tracking-tight mb-1">Спеціальність</h3>
+                    <p id="modal_spec_code" class="text-white/80 font-medium text-lg"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-8 overflow-y-auto flex-grow bg-background/50">
+            <div class="mb-10">
+                <h4 class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Опис спеціальності</h4>
+                <div class="bg-surface p-6 rounded-3xl border border-border shadow-sm italic text-mainText">
+                    <p id="modal_spec_description"></p>
+                </div>
+            </div>
+
+            <div class="mb-10">
+                <div class="flex items-center justify-between mb-6">
+                    <h4 class="text-xs font-black text-mutedText uppercase tracking-widest">Академічні групи</h4>
+                    <span id="modal_group_badge" class="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black">0 ГРУП</span>
+                </div>
+                <div id="modal_group_list" class="grid grid-cols-1 md:grid-cols-3 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    <!-- Groups will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleForm() {
+        const form = document.getElementById('addForm');
+        form.classList.toggle('hidden');
+    }
+
+    function openEditModal(id, name, code, description) {
+        const modal = document.getElementById('editModal');
+        const form = document.getElementById('editForm');
+        form.action = `/specialties/edit/${id}/`;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_code').value = code;
+        document.getElementById('edit_description').value = description;
+        modal.classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+
+    function openSpecModal(specId) {
+        const dataJson = document.getElementById(`spec-data-${specId}`).textContent;
+        const data = JSON.parse(dataJson);
+        
+        document.getElementById('modal_spec_name').textContent = data.name;
+        document.getElementById('modal_spec_icon').textContent = data.code ? data.code.substring(0, 3) : 'S';
+        document.getElementById('modal_spec_code').textContent = data.code;
+        document.getElementById('modal_spec_description').textContent = data.description;
+        document.getElementById('modal_group_badge').textContent = `${data.group_count} ГРУП`;
+
+        const list = document.getElementById('modal_group_list');
+        list.innerHTML = '';
+        
+        if (data.groups.length > 0) {
+            data.groups.forEach(g => {
+                const item = document.createElement('div');
+                item.className = 'flex flex-col p-4 bg-surface border border-border rounded-2xl hover:border-primary/30 transition-all';
+                item.innerHTML = `
+                    <div class="text-sm font-bold text-mainText">${g.name}</div>
+                    <div class="text-[10px] text-mutedText mt-1">${g.course} курс</div>
+                `;
+                list.appendChild(item);
+            });
+        } else {
+            list.innerHTML = '<p class="col-span-full text-center py-4 text-mutedText italic text-sm">Груп за цією спеціальністю немає</p>';
+        }
+
+        document.getElementById('specDetailModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSpecModal() {
+        document.getElementById('specDetailModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('specDetailModal');
+        const editModal = document.getElementById('editModal');
+        if (event.target == modal) closeSpecModal();
+        if (event.target == editModal) closeEditModal();
+    }
+</script>
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+</style>
+{% endblock %}

@@ -12,6 +12,7 @@ from .models import (
     InstitutionSettings,
     Lesson,
     ScheduleTemplate,
+    Specialty,
     StudentPerformance,
     StudyGroup,
     Subject,
@@ -94,8 +95,17 @@ class UserAdmin(BaseUserAdmin):
 
 
 # ==========================================
-# 2. ГРУПИ
+# 2. ГРУПИ ТА СПЕЦІАЛЬНОСТІ
 # ==========================================
+
+
+@admin.register(Specialty)
+class SpecialtyAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "is_active", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("code", "name", "description")
+    ordering = ("code", "name")
+
 
 
 @admin.register(StudyGroup)

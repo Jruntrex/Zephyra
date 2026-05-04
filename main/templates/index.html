@@ -5,12 +5,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zephyra — Цифровий Кампус</title>
+    <title>{{ institution.name|default:"Mentorly" }} — Цифровий Кампус</title>
     {% if institution and institution.favicon %}<link rel="icon" href="{{ institution.favicon.url }}">{% else %}<link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">{% endif %}
     <link rel="stylesheet" href="{% static 'css/output.css' %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <!-- Apply dark theme BEFORE render to avoid flash -->
-    <script>(function(){var t=localStorage.getItem('mybosco_theme');if(t==='dark')document.documentElement.classList.add('dark');}());</script>
+    <script>(function(){var t=localStorage.getItem('mentorly_theme');if(t==='dark')document.documentElement.classList.add('dark');}());</script>
     <style>
         /* ─── Reset for landing ───────────────────────────────────────── */
         html { scroll-behavior: smooth; }
@@ -900,8 +900,8 @@
 <nav class="landing-nav" id="mainNav">
     <div class="nav-inner" id="navInner">
         <div class="nav-logo">
-            <img src="{% static 'images/logo.svg' %}" alt="Zephyra">
-            <span class="nav-logo-text">Zephyra</span>
+            <img src="{% static 'images/logo.svg' %}" alt="Mentorly">
+            <span class="nav-logo-text">Mentorly</span>
         </div>
         <div style="display:flex; align-items:center; gap:20px;">
             <a href="#features" style="font-size:13px; font-weight:700; color:#5E6C84; text-decoration:none; display:none;" class="sm-show" id="nav-features">Можливості</a>
@@ -942,7 +942,7 @@
         <div>
             <div class="hero-badge animate-fade-in">
                 <div class="hero-badge-dot"></div>
-                <span class="hero-badge-text">МНЗ ім. св. Івана Боско</span>
+                <span class="hero-badge-text">Mentorly</span>
             </div>
 
             <h1 class="hero-h1 animate-slide-up delay-100">
@@ -989,7 +989,7 @@
                     <div class="preview-dot" style="background:#FF6B6B;"></div>
                     <div class="preview-dot" style="background:#FFB142;"></div>
                     <div class="preview-dot" style="background:#4CAF50;"></div>
-                    <span class="preview-title">Zephyra — Журнал Викладача</span>
+                    <span class="preview-title">Mentorly — Журнал Викладача</span>
                 </div>
                 <div class="preview-body">
                     <div class="preview-stats">
@@ -1362,8 +1362,8 @@
 <footer class="landing-footer">
     <div class="footer-inner">
         <div class="footer-logo">
-            <img src="{% static 'images/logo.svg' %}" alt="Zephyra">
-            <span class="footer-copy">Zephyra &copy; 2025</span>
+            <img src="{% static 'images/logo.svg' %}" alt="Mentorly">
+            <span class="footer-copy">Mentorly &copy; 2025</span>
         </div>
         <div class="footer-links">
             <a href="#" class="footer-link">Розробка</a>
@@ -1385,10 +1385,10 @@
 
     <!-- Logo -->
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:48px;" class="animate-slide-up">
-        <img src="{% static 'images/logo.svg' %}" alt="Zephyra" style="width:64px;height:64px;">
+        <img src="{% static 'images/logo.svg' %}" alt="Mentorly" style="width:64px;height:64px;">
         <div>
-            <div style="font-size:20px;font-weight:900;color:#2F3640;letter-spacing:-0.5px;line-height:1;">Zephyra</div>
-            <div style="font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#5B84FF;margin-top:2px;">Zephyra System</div>
+            <div style="font-size:20px;font-weight:900;color:#2F3640;letter-spacing:-0.5px;line-height:1;">Mentorly</div>
+            <div style="font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#5B84FF;margin-top:2px;">Цифровий Кампус</div>
         </div>
     </div>
 
@@ -1529,7 +1529,7 @@
         const html   = document.documentElement;
         html.classList.toggle('dark');
         const isDark = html.classList.contains('dark');
-        localStorage.setItem('mybosco_theme', isDark ? 'dark' : 'light');
+        localStorage.setItem('mentorly_theme', isDark ? 'dark' : 'light');
         _syncDarkIcons(isDark);
         _syncDarkToggleBtn(isDark);
     }

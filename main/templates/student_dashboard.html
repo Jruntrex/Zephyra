@@ -22,18 +22,54 @@
     <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
     <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
     <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
-    <div class="relative px-6 py-5 flex items-center justify-between">
+    <div class="relative px-6 py-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
             <div class="flex items-center gap-2 mb-1">
                 <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }}</span>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }}</span>
             </div>
             <h1 class="text-4xl font-black text-white leading-tight">Вітаємо, {{ user.full_name }}!</h1>
-            <p class="text-white/65 text-sm mt-0.5">Ваш персональний навчальний дашборд</p>
+            <p class="text-white/70 text-sm mt-1">Ваш персональний навчальний дашборд</p>
         </div>
-        <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
-            <span class="text-xl font-black text-white">{{ avg_score }}</span>
-            <span class="text-[10px] text-white/65 font-semibold">середній</span>
+        
+        <div class="flex flex-row md:flex-row items-center md:items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+            <!-- New Prominent Status Card -->
+            <div id="rfid-status-container">
+                {% if user.rfid_uid %}
+                <div class="flex flex-col items-start md:items-end">
+                    <div id="rfid-badge" class="px-4 py-2 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-xl flex items-center gap-3 transition-all hover:bg-white/15">
+                        <div class="relative flex h-3 w-3">
+                            <span id="rfid-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full {% if in_building %}bg-green-400{% else %}bg-orange-400{% endif %} opacity-75"></span>
+                            <span id="rfid-dot" class="relative inline-flex rounded-full h-3 w-3 {% if in_building %}bg-green-500{% else %}bg-orange-500{% endif %}"></span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-white/50 font-black uppercase tracking-widest leading-none mb-0.5">RFID Статус</span>
+                            <span id="rfid-text" class="text-sm font-black text-white leading-none">
+                                {% if in_building %}Ви у закладі{% else %}Ви поза закладом{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <span id="rfid-time" class="text-[9px] text-white/40 font-bold uppercase mt-1.5 mr-1">
+                        {% if last_access %}Останній скан: {{ last_access.timestamp|date:"H:i" }}{% endif %}
+                    </span>
+                </div>
+                {% else %}
+                <div class="px-4 py-2 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 flex items-center gap-3 opacity-60">
+                    <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-white/40 font-black uppercase tracking-widest leading-none mb-0.5">RFID Статус</span>
+                        <span class="text-xs font-bold text-white/70 leading-none">Картку не видано</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="w-px h-10 bg-white/10 mx-1"></div>
+
+            <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center shadow-lg">
+                <span class="text-xl font-black text-white">{{ avg_score }}</span>
+                <span class="text-[10px] text-white/65 font-semibold">середній</span>
+            </div>
         </div>
     </div>
 </div>
@@ -124,21 +160,7 @@
             <span>Заняття скасовано{% if lesson.cancellation_reason %}: {{ lesson.cancellation_reason }}{% endif %}</span>
         </div>
         {% endif %}
-        {% if lesson.materials %}
-        <div class="mb-6 group/box relative">
-            <div class="relative px-5 py-4 bg-gray-50/50 dark:bg-white/5 border border-border/60 rounded-2xl group-hover/box:border-primary/30 transition-all">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-6 h-6 rounded-md bg-white dark:bg-black/20 flex items-center justify-center shadow-sm">
-                        <span class="text-xs">📄</span>
-                    </div>
-                    <div class="font-black uppercase tracking-widest text-[10px] text-mutedText group-hover/box:text-primary transition-colors">Матеріал уроку</div>
-                </div>
-                <div class="text-xs text-mutedText font-medium leading-relaxed line-clamp-2 italic">
-                    {{ lesson.materials|striptags|truncatechars:180 }}
-                </div>
-            </div>
-        </div>
-        {% endif %}
+
         <div class="flex items-center justify-between gap-3 pt-2">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 bg-gray-50 dark:bg-white/5 rounded-2xl border border-border flex items-center justify-center text-primary font-black text-lg">
@@ -149,14 +171,7 @@
                     <div class="text-[10px] text-mutedText font-bold uppercase tracking-wider">Викладач</div>
                 </div>
             </div>
-            <a href="/lesson/{{ lesson.id }}/"
-                class="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl text-xs font-black hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/20 active:scale-95 transition-all shadow-lg shadow-primary/10">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                </svg>
-                Урок
-            </a>
+
         </div>
         {% else %}
         <div class="flex flex-col items-center justify-center h-full text-center text-mutedText py-10 opacity-60">
@@ -399,5 +414,43 @@
             }
         }
     });
+
+    // 3. RFID Status Polling
+    function updateRFIDStatus() {
+        fetch('{% url "api_student_status" %}')
+            .then(response => response.json())
+            .then(data => {
+                const textEl = document.getElementById('rfid-text');
+                const pingEl = document.getElementById('rfid-ping');
+                const dotEl = document.getElementById('rfid-dot');
+                const timeEl = document.getElementById('rfid-time');
+
+                if (textEl && data.has_card) {
+                    const newText = data.in_building ? 'Ви у закладі' : 'Ви поза закладом';
+                    if (textEl.innerText !== newText) {
+                        textEl.innerText = newText;
+                        
+                        // Update colors
+                        if (data.in_building) {
+                            pingEl.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75';
+                            dotEl.className = 'relative inline-flex rounded-full h-3 w-3 bg-green-500';
+                        } else {
+                            pingEl.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75';
+                            dotEl.className = 'relative inline-flex rounded-full h-3 w-3 bg-orange-500';
+                        }
+                    }
+                    
+                    if (timeEl && data.last_scan) {
+                        timeEl.innerText = `Останній скан: ${data.last_scan}`;
+                    }
+                }
+            })
+            .catch(err => console.error('Error polling RFID status:', err));
+    }
+
+    // Poll every 5 seconds
+    if (document.getElementById('rfid-status-container')) {
+        setInterval(updateRFIDStatus, 5000);
+    }
 </script>
 {% endblock %}

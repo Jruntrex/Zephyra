@@ -206,7 +206,7 @@ class EvaluationTypeForm(ModelForm):
 
     class Meta:
         model = EvaluationType
-        fields = ["name", "weight_percent", "description", "order", "is_homework_type"]
+        fields = ["name", "weight_percent", "description", "order"]
         widgets = {
             "name": forms.TextInput(
                 attrs={"placeholder": "Наприклад: Лекція, Практика..."}

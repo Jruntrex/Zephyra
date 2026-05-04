@@ -18,7 +18,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
-                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }} Admin</span>
             </div>
             <h1 class="text-4xl font-black text-white leading-tight">Налаштування закладу</h1>
             <p class="text-white/65 text-sm mt-0.5">Назва, логотип та фавікон вашого закладу</p>
@@ -56,7 +56,7 @@
                         <label class="block text-xs font-bold text-mutedText uppercase tracking-wider mb-1.5">Назва закладу</label>
                         <input type="text" name="name" value="{{ obj.name }}" required
                             class="w-full px-4 py-3 rounded-xl border border-border bg-surface text-mainText text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40"
-                            placeholder="Наприклад: MyBosco">
+                            placeholder="Наприклад: Mentorly">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-mutedText uppercase tracking-wider mb-1.5">Слоган <span class="text-mutedText/50 font-normal normal-case">(необов'язково)</span></label>
@@ -133,7 +133,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <p class="text-base font-black text-mainText tracking-tighter uppercase leading-none" id="preview-name">{{ obj.name|default:"MyBosco" }}</p>
+                        <p class="text-base font-black text-mainText tracking-tighter uppercase leading-none" id="preview-name">{{ obj.name|default:"Mentorly" }}</p>
                         <p class="text-xs text-mutedText mt-0.5" id="preview-tagline">{{ obj.tagline }}</p>
                     </div>
                 </div>
@@ -165,7 +165,7 @@
 <script>
 // Live preview: name
 document.querySelector('[name="name"]').addEventListener('input', function() {
-    document.getElementById('preview-name').textContent = this.value || 'MyBosco';
+    document.getElementById('preview-name').textContent = this.value || 'Mentorly';
 });
 // Live preview: tagline
 document.querySelector('[name="tagline"]').addEventListener('input', function() {

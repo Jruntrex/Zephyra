@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load journal_filters %}
 
-{% block title %}Конструктор розкладу - {{ institution.name|default:"MyBosco" }}{% endblock %}
+{% block title %}Конструктор розкладу - {{ institution.name|default:"Mentorly" }}{% endblock %}
 {% block header_title %}Розклад{% endblock %}
 {% block page_title_heading %}{% endblock %}
 
@@ -14,7 +14,7 @@
     <div class="relative px-8 py-6 flex items-center justify-between">
         <div>
             <div class="flex items-center gap-2 mb-1">
-                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }} Admin</span>
             </div>
             <h1 class="text-4xl font-black text-white tracking-tighter">Конструктор Розкладу</h1>
             <p class="text-white/65 font-medium text-sm mt-1">Створення та налаштування розкладу занять</p>

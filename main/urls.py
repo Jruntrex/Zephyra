@@ -1,10 +1,12 @@
 # main/urls.py
 
+from django.http import HttpResponse
 from django.urls import path
 
 from . import views
 
 urlpatterns = [
+    path(".well-known/appspecific/com.chrome.devtools.json", lambda r: HttpResponse("[]", content_type="application/json")),
     # =========================
     # 1. АУТЕНТИФІКАЦІЯ
     # =========================
@@ -28,6 +30,7 @@ urlpatterns = [
         name="api_save_schedule_slot",
     ),
     # Управління Користувачами (CRUD)
+    path("users/<int:pk>/detail/", views.student_detail_view, name="student_detail"),
     path("users/edit/<int:pk>/", views.user_edit_view, name="user_edit"),
     path("users/delete/<int:pk>/", views.user_delete_view, name="user_delete"),
     path("users/export/", views.users_csv_export, name="users_csv_export"),
@@ -38,6 +41,12 @@ urlpatterns = [
     path("groups/delete/<int:pk>/", views.group_delete_view, name="group_delete"),
     path("groups/export/", views.groups_csv_export, name="groups_csv_export"),
     path("groups/import/", views.groups_csv_import, name="groups_csv_import"),
+    # Спеціальності
+    path("specialties/", views.specialties_list_view, name="specialties_list"),
+    path("specialties/delete/<int:pk>/", views.specialty_delete_view, name="specialty_delete"),
+    path("specialties/edit/<int:pk>/", views.specialty_edit_view, name="specialty_edit"),
+    # Глобальний контекст (курс/спеціальність)
+    path("context/set/", views.set_global_context_view, name="set_global_context"),
     # Управління Предметами (CRUD)
     path("subjects/", views.subjects_list_view, name="subjects_list"),
     path("subjects/add/", views.subject_add_view, name="subject_add"),
@@ -71,7 +80,6 @@ urlpatterns = [
     ),
     path("admin/reports/subjects/", views.report_subjects_view, name="report_subjects"),
     path("admin/reports/at-risk/", views.report_at_risk_view, name="report_at_risk"),
-    path("admin/reports/homework/", views.report_homework_view, name="report_homework"),
     # =========================
     # 4. ВИКЛАДАЧ ТА ЖУРНАЛ
     # =========================
@@ -94,6 +102,12 @@ urlpatterns = [
         name="api_manage_evaluation_types",
     ),
     path("api/teacher/card-scan/", views.api_card_scan, name="api_card_scan"),
+    path("api/rfid/scan/", views.api_rfid_scan, name="api_rfid_scan"),
+    path("api/rfid/status/", views.api_rfid_status, name="api_rfid_status"),
+    path("api/rfid/presence/", views.api_rfid_presence, name="api_rfid_presence"),
+    path("api/rfid/assign/", views.api_rfid_assign_card, name="api_rfid_assign"),
+    path("api/rfid/unassign/", views.api_rfid_unassign_card, name="api_rfid_unassign"),
+    path("admin/rfid/", views.rfid_management_view, name="rfid_management"),
     # Restore compat name if needed, or better:
     path(
         "teacher/save/", views.api_save_grade, name="save_journal_entries"
@@ -122,11 +136,13 @@ urlpatterns = [
     # =========================
     # 5. СТУДЕНТ
     # =========================
+    path("student/semester/", views.student_semester_grades_view, name="student_semester"),
     path("student/grades/", views.student_grades_view, name="student_grades"),
     path(
         "student/attendance/", views.student_attendance_view, name="student_attendance"
     ),
     path("student/dashboard/", views.student_dashboard_view, name="student_dashboard"),
+    path("api/student/status/", views.api_student_status, name="api_student_status"),
     path("profile/", views.profile_view, name="profile"),
     path("api/set-theme/", views.api_set_theme, name="api_set_theme"),
     # =========================
@@ -191,69 +207,7 @@ urlpatterns = [
         name="api_notifications_delete_all",
     ),
     # =========================
-    # 8. ДЕТАЛІ УРОКУ ТА ДЗ
+    # 8. ДЕТАЛІ УРОКУ
     # =========================
-    path("lessons/", views.lessons_list_view, name="lessons_list"),
-    path("lesson/<int:lesson_id>/", views.lesson_detail_view, name="lesson_detail"),
-    path(
-        "api/lesson/<int:lesson_id>/content/",
-        views.api_lesson_save_content,
-        name="api_lesson_save_content",
-    ),
-    path(
-        "api/lesson/<int:lesson_id>/upload-attachment/",
-        views.api_lesson_upload_attachment,
-        name="api_lesson_upload_attachment",
-    ),
-    path(
-        "api/lesson/<int:lesson_id>/delete-attachment/<int:attachment_id>/",
-        views.api_lesson_delete_attachment,
-        name="api_lesson_delete_attachment",
-    ),
-    path(
-        "api/lesson/<int:lesson_id>/submit-homework/",
-        views.api_lesson_submit_homework,
-        name="api_lesson_submit_homework",
-    ),
-    path(
-        "api/lesson/<int:lesson_id>/cancel-homework/",
-        views.api_lesson_cancel_homework,
-        name="api_lesson_cancel_homework",
-    ),
-    # Google Classroom-style APIs
-    path(
-        "api/lesson/<int:lesson_id>/submission/attach/",
-        views.api_submission_upload_file,
-        name="api_submission_upload_file",
-    ),
-    path(
-        "api/lesson/<int:lesson_id>/submission/delete-file/<int:attachment_id>/",
-        views.api_submission_delete_file,
-        name="api_submission_delete_file",
-    ),
-    path(
-        "api/lesson/<int:lesson_id>/turn-in/",
-        views.api_lesson_turn_in,
-        name="api_lesson_turn_in",
-    ),
-    path(
-        "api/lesson/<int:lesson_id>/save-settings/",
-        views.api_lesson_save_settings,
-        name="api_lesson_save_settings",
-    ),
-    path(
-        "api/lesson/<int:lesson_id>/student/<int:student_id>/submission/",
-        views.api_get_student_submission,
-        name="api_get_student_submission",
-    ),
-    path(
-        "api/submission/<int:submission_id>/grade/",
-        views.api_grade_submission,
-        name="api_grade_submission",
-    ),
-    path(
-        "api/submission/<int:submission_id>/comment/",
-        views.api_add_private_comment,
-        name="api_add_private_comment",
-    ),
+
 ]

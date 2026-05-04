@@ -16,6 +16,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Avg, Count, F, Max, Min, Prefetch, Q, Sum
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import (
@@ -27,23 +28,21 @@ from .forms import (
 )
 from .models import (
     AbsenceReason,
+    BuildingAccessLog,
     Classroom,
     Comment,
     EvaluationType,
     GradeRule,
     GradingScale,
-    HomeworkSubmission,
     InstitutionSettings,
     Lesson,
-    LessonAttachment,
     Notification,
     Post,
-    PrivateComment,
     ScheduleTemplate,
+    Specialty,
     StudentPerformance,
     StudyGroup,
     Subject,
-    SubmissionAttachment,
     TeachingAssignment,
     TimeSlot,
     User,
@@ -198,10 +197,24 @@ def csrf_debug_view(request: HttpRequest) -> JsonResponse:
 
 @role_required("admin")
 def admin_panel_view(request: HttpRequest) -> HttpResponse:
+    course_ctx = request.session.get("global_course")
+    specialty_ctx = request.session.get("global_specialty_id")
+    
+    users_qs = User.objects.all()
+    students_qs = User.objects.filter(role="student")
+    groups_qs = StudyGroup.objects.all()
+    
+    if course_ctx:
+        students_qs = students_qs.filter(group__course=course_ctx)
+        groups_qs = groups_qs.filter(course=course_ctx)
+    if specialty_ctx:
+        students_qs = students_qs.filter(group__specialty_id=specialty_ctx)
+        groups_qs = groups_qs.filter(specialty_id=specialty_ctx)
+
     context = {
-        "total_users": User.objects.count(),
-        "student_count": User.objects.filter(role="student").count(),
-        "group_count": StudyGroup.objects.count(),
+        "total_users": users_qs.count(),
+        "student_count": students_qs.count(),
+        "group_count": groups_qs.count(),
         "subject_count": Subject.objects.count(),
         "classroom_count": Classroom.objects.count(),
         "active_page": "admin",
@@ -236,11 +249,12 @@ def institution_settings_view(request: HttpRequest) -> HttpResponse:
 # --- USERS ---
 @role_required("admin")
 def users_list_view(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST" and request.user.role != "admin":
+        messages.error(request, "Немає прав для додавання користувачів.")
+        return redirect("users_list")
     if request.method == "POST":
         form = UserAdminForm(request.POST)
         if form.is_valid():
-            # Важливо: UserAdminForm повинен вміти хешувати пароль при збереженні,
-            # або використовуйте create_user у формі.
             form.save()
             messages.success(request, "Користувача успішно додано")
             return redirect("users_list")
@@ -270,6 +284,15 @@ def users_list_view(request: HttpRequest) -> HttpResponse:
 
     if group_filter:
         users = users.filter(group_id=group_filter)
+        
+    # Global context filters (apply to students)
+    course_ctx = request.session.get("global_course")
+    specialty_ctx = request.session.get("global_specialty_id")
+    
+    if course_ctx:
+        users = users.filter(Q(role="student", group__course=course_ctx) | ~Q(role="student"))
+    if specialty_ctx:
+        users = users.filter(Q(role="student", group__specialty_id=specialty_ctx) | ~Q(role="student"))
 
     if subject_filter:
         users = users.filter(teachingassignment__subject_id=subject_filter).distinct()
@@ -334,6 +357,101 @@ def user_edit_view(request: HttpRequest, pk: int) -> HttpResponse:
             "user_subjects": user_subjects,
         },
     )
+
+
+@role_required(["admin", "teacher"])
+def student_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
+    """Детальна сторінка користувача для адміна/викладача."""
+    from main.services.grading_service import (
+        calculate_weighted_final_grade,
+        get_student_absences_stats,
+    )
+
+    target_user = get_object_or_404(User, pk=pk)
+
+    subjects_data = []
+    if target_user.role == "student" and target_user.group:
+        assignments = (
+            TeachingAssignment.objects.filter(
+                group=target_user.group, is_active=True
+            )
+            .select_related("subject", "teacher")
+            .prefetch_related("evaluation_types")
+            .order_by("subject__name")
+        )
+        for assignment in assignments:
+            grade_data = calculate_weighted_final_grade(target_user, assignment)
+            absence_stats = get_student_absences_stats(target_user, assignment.subject)
+            avg_grade = (
+                StudentPerformance.objects.filter(
+                    student=target_user,
+                    lesson__subject=assignment.subject,
+                    earned_points__isnull=False,
+                ).aggregate(avg=Avg("earned_points"))["avg"]
+                or 0
+            )
+            grades_count = StudentPerformance.objects.filter(
+                student=target_user,
+                lesson__subject=assignment.subject,
+                earned_points__isnull=False,
+            ).count()
+            subjects_data.append(
+                {
+                    "subject": assignment.subject,
+                    "teacher": assignment.teacher,
+                    "semester": assignment.semester,
+                    "final_grade": grade_data["final_grade"],
+                    "total_weight": grade_data["total_weight"],
+                    "contributions": grade_data["contributions"],
+                    "absences": absence_stats,
+                    "grades_count": grades_count,
+                    "avg_grade": round(float(avg_grade), 1),
+                }
+            )
+
+    teacher_assignments = []
+    if target_user.role == "teacher":
+        teacher_assignments = list(
+            TeachingAssignment.objects.filter(teacher=target_user, is_active=True)
+            .select_related("subject", "group")
+            .order_by("subject__name", "group__name")
+        )
+
+    recent_perf = (
+        StudentPerformance.objects.filter(student=target_user)
+        .select_related("lesson__subject", "lesson__teacher", "absence")
+        .order_by("-lesson__date", "-lesson__start_time")[:20]
+    )
+
+    overall = StudentPerformance.objects.filter(
+        student=target_user, earned_points__isnull=False
+    ).aggregate(avg=Avg("earned_points"), count=Count("id"))
+
+    total_records = StudentPerformance.objects.filter(student=target_user).count()
+    total_absences = StudentPerformance.objects.filter(
+        student=target_user, absence__isnull=False
+    ).count()
+    attendance_percent = (
+        round((total_records - total_absences) / total_records * 100, 1)
+        if total_records > 0
+        else 0
+    )
+
+    return render(
+        request,
+        "student_detail.html",
+        {
+            "target_user": target_user,
+            "subjects_data": subjects_data,
+            "teacher_assignments": teacher_assignments,
+            "recent_perf": recent_perf,
+            "avg_grade": round(float(overall["avg"] or 0), 1),
+            "grades_count": overall["count"] or 0,
+            "attendance_percent": attendance_percent,
+            "total_absences": total_absences,
+        },
+    )
+
 
 
 @role_required("admin")
@@ -514,11 +632,11 @@ def groups_csv_export(request):
     writer.writerow(
         ["name", "specialty", "course", "year_of_entry", "graduation_year", "is_active"]
     )
-    for g in StudyGroup.objects.all().order_by("name"):
+    for g in StudyGroup.objects.select_related("specialty").all().order_by("name"):
         writer.writerow(
             [
                 g.name,
-                g.specialty or "",
+                g.specialty.name if g.specialty else "",
                 g.course or "",
                 g.year_of_entry or "",
                 g.graduation_year or "",
@@ -555,13 +673,14 @@ def groups_csv_import(request):
             if StudyGroup.objects.filter(name=name).exists():
                 skipped.append(f"Рядок {i}: '{name}' вже існує")
                 continue
-            course_raw = row.get("course", "").strip()
-            year_entry_raw = row.get("year_of_entry", "").strip()
-            grad_year_raw = row.get("graduation_year", "").strip()
-            is_active_raw = row.get("is_active", "1").strip()
+            spec_name = row.get("specialty", "").strip()
+            specialty = None
+            if spec_name:
+                specialty, _ = Specialty.objects.get_or_create(name=spec_name)
+
             StudyGroup.objects.create(
                 name=name,
-                specialty=row.get("specialty", "").strip(),
+                specialty=specialty,
                 course=int(course_raw) if course_raw.isdigit() else None,
                 year_of_entry=int(year_entry_raw) if year_entry_raw.isdigit() else None,
                 graduation_year=int(grad_year_raw) if grad_year_raw.isdigit() else None,
@@ -748,28 +867,57 @@ def classrooms_csv_import(request):
 @role_required("admin")
 def groups_list_view(request):
     if request.method == "POST":
-        form = StudyGroupForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Групу додано")
-            return redirect("groups_list")
+        name = request.POST.get("name", "").strip()
+        specialty_id = request.POST.get("specialty_id")
+        course = request.POST.get("course")
+        year_of_entry = request.POST.get("year_of_entry")
+        graduation_year = request.POST.get("graduation_year")
+        if name:
+            specialty = None
+            if specialty_id and specialty_id.isdigit():
+                specialty = Specialty.objects.filter(pk=int(specialty_id)).first()
+            StudyGroup.objects.create(
+                name=name,
+                specialty=specialty,
+                course=int(course) if course and course.isdigit() else None,
+                year_of_entry=int(year_of_entry) if year_of_entry and year_of_entry.isdigit() else None,
+                graduation_year=int(graduation_year) if graduation_year and graduation_year.isdigit() else None,
+            )
+            messages.success(request, f"Групу '{name}' додано")
         else:
-            messages.error(request, "Помилка: така група вже існує")
-    else:
-        form = StudyGroupForm()
+            messages.error(request, "Назва групи є обов'язковою")
+        return redirect("groups_list")
 
     search_query = request.GET.get("search", "")
-    groups = StudyGroup.objects.annotate(student_count=Count("students")).order_by(
-        "name"
-    )
+    
+    # GET filters take priority, session context is fallback
+    course_filter = request.GET.get("course") or request.session.get("global_course")
+    specialty_filter = request.GET.get("specialty") or request.session.get("global_specialty_id")
+
+    groups = StudyGroup.objects.select_related("specialty").prefetch_related("students").annotate(
+        student_count=Count("students")
+    ).order_by("name")
 
     if search_query:
-        groups = groups.filter(name__icontains=search_query)
+        groups = groups.filter(
+            Q(name__icontains=search_query) | Q(specialty__name__icontains=search_query)
+        )
+    if course_filter and str(course_filter).isdigit():
+        groups = groups.filter(course=int(course_filter))
+    if specialty_filter and str(specialty_filter).isdigit():
+        groups = groups.filter(specialty_id=int(specialty_filter))
+
+    specialties = Specialty.objects.all().order_by("code", "name")
 
     return render(
         request,
         "groups.html",
-        {"groups": groups, "form": form, "active_page": "groups"},
+        {
+            "groups": groups,
+            "form": StudyGroupForm(),
+            "specialties": specialties,
+            "active_page": "groups",
+        },
     )
 
 
@@ -792,6 +940,97 @@ def group_delete_view(request, pk):
     group.delete()
     messages.success(request, "Групу видалено")
     return redirect("groups_list")
+
+
+# =========================
+# GLOBAL CONTEXT SWITCHER
+# =========================
+
+@login_required
+@require_POST
+def set_global_context_view(request):
+    """Saves the selected course/specialty into the user session."""
+    course_raw = request.POST.get("course", "").strip()
+    specialty_id_raw = request.POST.get("specialty_id", "").strip()
+
+    if course_raw and course_raw.isdigit() and 1 <= int(course_raw) <= 6:
+        request.session["global_course"] = int(course_raw)
+    else:
+        request.session["global_course"] = None
+
+    if specialty_id_raw and specialty_id_raw.isdigit():
+        request.session["global_specialty_id"] = int(specialty_id_raw)
+    else:
+        request.session["global_specialty_id"] = None
+
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "/"
+    return redirect(next_url)
+
+
+# =========================
+# SPECIALTIES CRUD
+# =========================
+
+@role_required("admin")
+def specialties_list_view(request):
+    """Manage specialties (Спеціальності)."""
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        code = request.POST.get("code", "").strip()
+        description = request.POST.get("description", "").strip()
+        if name:
+            _, created = Specialty.objects.get_or_create(
+                name=name,
+                defaults={"code": code, "description": description},
+            )
+            if created:
+                messages.success(request, f"Спеціальність '«{name}»' додано")
+            else:
+                messages.warning(request, "Така спеціальність вже існує")
+        else:
+            messages.error(request, "Назва спеціальності є обов'язковою")
+        return redirect("specialties_list")
+
+    search_query = request.GET.get("search", "").strip()
+    specialties = Specialty.objects.prefetch_related("groups").annotate(group_count=Count("groups")).order_by("code", "name")
+    if search_query:
+        specialties = specialties.filter(
+            Q(name__icontains=search_query) | Q(code__icontains=search_query)
+        )
+    return render(request, "specialties.html", {
+        "specialties": specialties,
+        "active_page": "specialties",
+    })
+
+
+@role_required("admin")
+@require_POST
+def specialty_delete_view(request, pk):
+    specialty = get_object_or_404(Specialty, pk=pk)
+    if specialty.groups.exists():
+        messages.error(request, "Неможна видалити — з цією спеціальністю пов'язані групи")
+    else:
+        specialty.delete()
+        messages.success(request, "Спеціальність видалено")
+    return redirect("specialties_list")
+
+
+@role_required("admin")
+@require_POST
+def specialty_edit_view(request, pk):
+    specialty = get_object_or_404(Specialty, pk=pk)
+    name = request.POST.get("name", "").strip()
+    code = request.POST.get("code", "").strip()
+    description = request.POST.get("description", "").strip()
+    if name:
+        specialty.name = name
+        specialty.code = code
+        specialty.description = description
+        specialty.save()
+        messages.success(request, "Спеціальність оновлено")
+    else:
+        messages.error(request, "Назва бов'язкова")
+    return redirect("specialties_list")
 
 
 @role_required("admin")
@@ -1551,45 +1790,6 @@ def api_save_grade(request: HttpRequest) -> JsonResponse:
         )
 
 
-@require_POST
-def api_card_scan(request) -> JsonResponse:
-    """
-    Реєстрація сканування RFID-мітки (ESP32 → сервер).
-    Payload: { student_id, action (ENTER/EXIT) }
-    Заголовок: X-API-Key: <CARD_SCAN_API_KEY із .env>
-    """
-    from django.conf import settings
-
-    from main.models import BuildingAccessLog
-
-    # Перевірка статичного API-ключа апаратного інтерфейсу
-    expected_key = getattr(settings, "CARD_SCAN_API_KEY", "")
-    provided_key = request.headers.get("X-API-Key", "")
-    if not expected_key or provided_key != expected_key:
-        logger.warning(
-            "api_card_scan: unauthorized request from %s",
-            request.META.get("REMOTE_ADDR"),
-        )
-        return JsonResponse({"status": "error", "message": "Unauthorized"}, status=401)
-
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse(
-            {"status": "error", "message": "Невірний формат JSON"}, status=400
-        )
-
-    try:
-        student_id = data.get("student_id")
-        action = data.get("action", "ENTER")  # ENTER або EXIT
-        BuildingAccessLog.objects.create(student_id=student_id, action=action)
-        return JsonResponse({"status": "success"})
-    except Exception:
-        logger.exception("api_card_scan: failed to create BuildingAccessLog")
-        return JsonResponse(
-            {"status": "error", "message": "Внутрішня помилка сервера"}, status=500
-        )
-
 
 # =========================
 # 4. СТУДЕНТ
@@ -1683,6 +1883,55 @@ def student_attendance_view(request: HttpRequest) -> HttpResponse:
     return render(request, "student_attendance.html", context)
 
 
+@role_required("student")
+def student_semester_grades_view(request: HttpRequest) -> HttpResponse:
+    """Семестрові оцінки студента по кожному предмету (зважені)."""
+    from main.services.grading_service import calculate_weighted_final_grade
+
+    student = request.user
+
+    assignments = (
+        TeachingAssignment.objects.filter(group=student.group, is_active=True)
+        .select_related("subject", "teacher")
+        .prefetch_related("evaluation_types")
+        .order_by("subject__name")
+    )
+
+    semester_data = []
+    for assignment in assignments:
+        grade_data = calculate_weighted_final_grade(student, assignment)
+        total_lessons = StudentPerformance.objects.filter(
+            student=student, lesson__subject=assignment.subject
+        ).count()
+        total_absences = StudentPerformance.objects.filter(
+            student=student,
+            lesson__subject=assignment.subject,
+            absence__isnull=False,
+        ).count()
+        semester_data.append(
+            {
+                "subject": assignment.subject,
+                "teacher": assignment.teacher,
+                "semester": assignment.semester,
+                "academic_year": assignment.academic_year,
+                "final_grade": grade_data["final_grade"],
+                "total_weight": grade_data["total_weight"],
+                "contributions": grade_data["contributions"],
+                "total_lessons": total_lessons,
+                "total_absences": total_absences,
+            }
+        )
+
+    return render(
+        request,
+        "student_semester.html",
+        {
+            "semester_data": semester_data,
+            "active_page": "student_semester",
+        },
+    )
+
+
 @role_required("teacher")
 def teacher_dashboard_view(request):
     """
@@ -1696,10 +1945,19 @@ def teacher_dashboard_view(request):
     teacher = request.user
     today = date.today()
     now = datetime.now().time()
+    
+    course_ctx = request.session.get("global_course")
+    specialty_ctx = request.session.get("global_specialty_id")
 
     # 1. Розклад на СЬОГОДНІ
+    today_lessons_qs = Lesson.objects.filter(teacher=teacher, date=today)
+    if course_ctx:
+        today_lessons_qs = today_lessons_qs.filter(group__course=course_ctx)
+    if specialty_ctx:
+        today_lessons_qs = today_lessons_qs.filter(group__specialty_id=specialty_ctx)
+
     today_lessons = list(
-        Lesson.objects.filter(teacher=teacher, date=today)
+        today_lessons_qs
         .select_related("group", "subject", "classroom", "evaluation_type")
         .order_by("start_time")
     )
@@ -1715,9 +1973,13 @@ def teacher_dashboard_view(request):
             next_lesson = lesson
 
     # 2. "Радар Ризику"
-    my_groups = TeachingAssignment.objects.filter(teacher=teacher).values_list(
-        "group", flat=True
-    )
+    my_groups_qs = TeachingAssignment.objects.filter(teacher=teacher)
+    if course_ctx:
+        my_groups_qs = my_groups_qs.filter(group__course=course_ctx)
+    if specialty_ctx:
+        my_groups_qs = my_groups_qs.filter(group__specialty_id=specialty_ctx)
+        
+    my_groups = my_groups_qs.values_list("group", flat=True)
 
     risk_students = []
     students_in_danger = (
@@ -1924,6 +2186,10 @@ def student_dashboard_view(request: HttpRequest) -> HttpResponse:
         .order_by("-lesson__date", "-lesson__start_time")[:5]
     )
 
+    # 6. Статус входу (RFID)
+    last_access = BuildingAccessLog.objects.filter(student=student).order_by("-timestamp").first()
+    in_building = (last_access.action == "ENTER") if last_access else False
+
     context = {
         "avg_score": round(stats["avg_score"] or 0, 1),
         "attendance_percent": attendance_percent,
@@ -1939,6 +2205,8 @@ def student_dashboard_view(request: HttpRequest) -> HttpResponse:
         "current_lesson": current_lesson,
         "next_lesson": next_lesson,
         "recent_events": recent_events,
+        "in_building": in_building,
+        "last_access": last_access,
         "active_page": "student_dashboard",
     }
     return render(request, "student_dashboard.html", context)
@@ -1961,11 +2229,11 @@ def report_absences_view(request):
     date_from = request.GET.get("date_from", "")
     date_to = request.GET.get("date_to", "")
     limit = int(request.GET.get("limit", 0) or 0)
+    is_active = request.GET.get("is_active", "true")
 
-    # Нові фільтри
-    course = request.GET.get("course", "")
-    specialty = request.GET.get("specialty", "")
-    is_active = request.GET.get("is_active", "")
+    # Глобальний контекст (якщо фільтри не задані)
+    course = request.GET.get("course") or request.session.get("global_course")
+    specialty = request.GET.get("specialty") or request.session.get("global_specialty_id")
 
     students = User.objects.filter(role="student")
 
@@ -1978,7 +2246,10 @@ def report_absences_view(request):
 
     # Фільтр по спеціальності
     if specialty:
-        students = students.filter(group__specialty__icontains=specialty)
+        if str(specialty).isdigit():
+            students = students.filter(group__specialty_id=int(specialty))
+        else:
+            students = students.filter(group__specialty__name__icontains=specialty)
 
     # Фільтр по статусу активності
     if is_active:
@@ -2031,8 +2302,8 @@ def report_absences_view(request):
 
     # Отримуємо унікальні спеціальності та курси
     specialties = (
-        StudyGroup.objects.exclude(specialty="")
-        .values_list("specialty", flat=True)
+        StudyGroup.objects.exclude(specialty=None)
+        .values_list("specialty__name", flat=True)
         .distinct()
     )
     courses = (
@@ -2064,10 +2335,10 @@ def report_rating_view(request):
     date_from = request.GET.get("date_from", "")
     date_to = request.GET.get("date_to", "")
 
-    # Нові фільтри
-    course = request.GET.get("course", "")
-    specialty = request.GET.get("specialty", "")
-    is_active = request.GET.get("is_active", "")
+    # Нові фільтри (з підтримкою глобального контексту)
+    course = request.GET.get("course") or request.session.get("global_course")
+    specialty = request.GET.get("specialty") or request.session.get("global_specialty_id")
+    is_active = request.GET.get("is_active", "true")
 
     MIN_VOTES = 5
 
@@ -2111,7 +2382,10 @@ def report_rating_view(request):
     if course:
         students_query = students_query.filter(group__course=course)
     if specialty:
-        students_query = students_query.filter(group__specialty__icontains=specialty)
+        if str(specialty).isdigit():
+            students_query = students_query.filter(group__specialty_id=int(specialty))
+        else:
+            students_query = students_query.filter(group__specialty__name__icontains=specialty)
     if is_active:
         students_query = students_query.filter(is_active=(is_active == "true"))
 
@@ -2177,8 +2451,8 @@ def report_rating_view(request):
 
     # Отримуємо унікальні спеціальності та курси
     specialties = (
-        StudyGroup.objects.exclude(specialty="")
-        .values_list("specialty", flat=True)
+        StudyGroup.objects.exclude(specialty=None)
+        .values_list("specialty__name", flat=True)
         .distinct()
     )
     courses = (
@@ -2255,8 +2529,8 @@ def report_weekly_absences_view(request):
 @role_required("admin")
 def report_subjects_view(request):
     """Звіт: Успішність по предметах — середній бал, кількість студентів, відсоток успішних."""
-    course = request.GET.get("course", "")
-    specialty = request.GET.get("specialty", "")
+    course = request.GET.get("course") or request.session.get("global_course")
+    specialty = request.GET.get("specialty") or request.session.get("global_specialty_id")
 
     subjects_qs = Subject.objects.all()
     if course or specialty:
@@ -2264,7 +2538,10 @@ def report_subjects_view(request):
         if course:
             ta_filter &= Q(teachingassignment__group__course=course)
         if specialty:
-            ta_filter &= Q(teachingassignment__group__specialty__icontains=specialty)
+            if str(specialty).isdigit():
+                ta_filter &= Q(teachingassignment__group__specialty_id=int(specialty))
+            else:
+                ta_filter &= Q(teachingassignment__group__specialty__name__icontains=specialty)
         subjects_qs = subjects_qs.filter(ta_filter).distinct()
 
     report_data = []
@@ -2276,7 +2553,10 @@ def report_subjects_view(request):
         if course:
             perf_qs = perf_qs.filter(student__group__course=course)
         if specialty:
-            perf_qs = perf_qs.filter(student__group__specialty__icontains=specialty)
+            if str(specialty).isdigit():
+                perf_qs = perf_qs.filter(student__group__specialty_id=int(specialty))
+            else:
+                perf_qs = perf_qs.filter(student__group__specialty__name__icontains=specialty)
 
         stats = perf_qs.aggregate(
             avg_pts=Avg("earned_points"),
@@ -2326,8 +2606,8 @@ def report_subjects_view(request):
         )
 
     specialties = (
-        StudyGroup.objects.exclude(specialty="")
-        .values_list("specialty", flat=True)
+        StudyGroup.objects.exclude(specialty=None)
+        .values_list("specialty__name", flat=True)
         .distinct()
     )
     courses = (
@@ -2351,8 +2631,8 @@ def report_subjects_view(request):
 def report_at_risk_view(request):
     """Звіт: Студенти в зоні ризику — поєднання низьких оцінок та пропусків."""
     group_id = request.GET.get("group", "")
-    course = request.GET.get("course", "")
-    specialty = request.GET.get("specialty", "")
+    course = request.GET.get("course") or request.session.get("global_course")
+    specialty = request.GET.get("specialty") or request.session.get("global_specialty_id")
     absence_threshold = int(request.GET.get("absence_threshold", 3) or 3)
     grade_threshold = float(request.GET.get("grade_threshold", 60) or 60)
 
@@ -2362,7 +2642,10 @@ def report_at_risk_view(request):
     if course:
         students = students.filter(group__course=course)
     if specialty:
-        students = students.filter(group__specialty__icontains=specialty)
+        if str(specialty).isdigit():
+            students = students.filter(group__specialty_id=int(specialty))
+        else:
+            students = students.filter(group__specialty__name__icontains=specialty)
 
     absence_filter = Q(studentperformance__absence__isnull=False)
     unexcused_filter = absence_filter & Q(
@@ -2434,8 +2717,8 @@ def report_at_risk_view(request):
 
     groups = StudyGroup.objects.all()
     specialties = (
-        StudyGroup.objects.exclude(specialty="")
-        .values_list("specialty", flat=True)
+        StudyGroup.objects.exclude(specialty=None)
+        .values_list("specialty__name", flat=True)
         .distinct()
     )
     courses = (
@@ -2456,89 +2739,6 @@ def report_at_risk_view(request):
         "active_page": "reports",
     }
     return render(request, "report_at_risk.html", context)
-
-
-@role_required("admin")
-def report_homework_view(request):
-    """Звіт: Здача домашніх завдань — відсоток виконання по студентах."""
-    group_id = request.GET.get("group", "")
-    subject_id = request.GET.get("subject", "")
-    date_from = request.GET.get("date_from", "")
-    date_to = request.GET.get("date_to", "")
-
-    students = User.objects.filter(role="student")
-    if group_id:
-        students = students.filter(group_id=group_id)
-
-    hw_filter = Q()
-    if subject_id:
-        hw_filter &= Q(homework_submissions__lesson__subject_id=subject_id)
-    if date_from:
-        hw_filter &= Q(homework_submissions__lesson__date__gte=date_from)
-    if date_to:
-        hw_filter &= Q(homework_submissions__lesson__date__lte=date_to)
-
-    submitted_filter = hw_filter & Q(
-        homework_submissions__status__in=["turned_in", "graded"]
-    )
-
-    students = (
-        students.annotate(
-            total_hw=Count("homework_submissions", filter=hw_filter),
-            submitted_hw=Count("homework_submissions", filter=submitted_filter),
-        )
-        .filter(total_hw__gt=0)
-        .select_related("group")
-    )
-
-    report_data = []
-    for student in students:
-        completion_rate = (
-            round(student.submitted_hw / student.total_hw * 100, 1)
-            if student.total_hw
-            else 0
-        )
-        report_data.append(
-            {
-                "full_name": student.full_name,
-                "group": student.group,
-                "total_hw": student.total_hw,
-                "submitted_hw": student.submitted_hw,
-                "missing_hw": student.total_hw - student.submitted_hw,
-                "completion_rate": completion_rate,
-            }
-        )
-
-    report_data.sort(key=lambda x: x["completion_rate"])
-
-    if request.GET.get("export") == "csv":
-        rows = [
-            [
-                r["full_name"],
-                r["group"].name if r["group"] else "-",
-                r["total_hw"],
-                r["submitted_hw"],
-                f"{r['completion_rate']}%",
-            ]
-            for r in report_data
-        ]
-        return generate_csv_response(
-            f"homework_report_{date.today()}",
-            ["ПІБ", "Група", "Всього ДЗ", "Здано", "% здачі"],
-            rows,
-        )
-
-    groups = StudyGroup.objects.all()
-    all_subjects = Subject.objects.all()
-
-    context = {
-        "report_data": report_data,
-        "report_title": "Звіт: Здача домашніх завдань",
-        "groups": groups,
-        "all_subjects": all_subjects,
-        "active_page": "reports",
-    }
-    return render(request, "report_homework.html", context)
 
 
 # =========================
@@ -2716,9 +2916,6 @@ def timeline_schedule_view(request):
     if not group and request.GET.get("group_id"):
         group = get_object_or_404(StudyGroup, id=request.GET.get("group_id"))
 
-    # Отримуємо всі часові слоти
-    time_slots = TimeSlot.objects.all()
-
     # Дні тижня
     days_data = []
     days_names = {
@@ -2737,11 +2934,6 @@ def timeline_schedule_view(request):
     current_day = now_aware.weekday() + 1  # 1=Monday
 
     if group:
-        # Беремо шаблони розкладу
-        templates = ScheduleTemplate.objects.filter(group=group).select_related(
-            "subject", "teacher", "teaching_assignment"
-        )
-
         # Дні тижня для таймлайну
         today_date = now_aware.date()
         start_week = today_date - timedelta(days=today_date.weekday())
@@ -2750,17 +2942,16 @@ def timeline_schedule_view(request):
             day_lessons = []
             current_day_date = start_week + timedelta(days=day_num - 1)
 
-            # Шукаємо уроки в цей день (згенеровані)
-            lessons_in_db = Lesson.objects.filter(
-                group=group, date=current_day_date
-            ).select_related("subject", "teacher")
+            # Беремо реальні уроки з БД, відсортовані за часом початку
+            lessons_in_db = (
+                Lesson.objects.filter(group=group, date=current_day_date)
+                .select_related("subject", "teacher", "classroom")
+                .order_by("start_time")
+            )
 
-            for slot in time_slots:
-                # Мапінг слота в урок за часом
-                lesson = lessons_in_db.filter(start_time=slot.start_time).first()
-
-                start_min = slot.start_time.hour * 60 + slot.start_time.minute
-                end_min = slot.end_time.hour * 60 + slot.end_time.minute
+            for lesson_idx, lesson in enumerate(lessons_in_db, start=1):
+                start_min = lesson.start_time.hour * 60 + lesson.start_time.minute
+                end_min = lesson.end_time.hour * 60 + lesson.end_time.minute
                 duration = end_min - start_min
 
                 status = "future"
@@ -2774,12 +2965,21 @@ def timeline_schedule_view(request):
                     elif current_time_minutes >= start_min:
                         status = "current"
                         passed = current_time_minutes - start_min
-                        progress = int((passed / duration) * 100) if duration > 0 else 0
+                        progress = (
+                            int((passed / duration) * 100) if duration > 0 else 0
+                        )
+
+                # Псевдо-слот: формуємо з часів самого уроку
+                pseudo_slot = {
+                    "start_time": lesson.start_time,
+                    "end_time": lesson.end_time,
+                    "lesson_number": lesson_idx,
+                }
 
                 day_lessons.append(
                     {
-                        "slot": slot,
-                        "assignment": lesson if lesson else None,
+                        "slot": pseudo_slot,
+                        "assignment": lesson,
                         "status": status,
                         "progress": min(max(progress, 0), 100),
                         "duration": duration,
@@ -2819,8 +3019,7 @@ def api_update_lesson(request: HttpRequest) -> JsonResponse:
         lesson_id = data.get("lesson_id")
         topic = data.get("topic")
         type_id = data.get("type_id")
-        homework = data.get("homework")
-        materials = data.get("materials")
+
         is_cancelled = data.get("is_cancelled")
         cancellation_reason = data.get("cancellation_reason")
 
@@ -2845,11 +3044,7 @@ def api_update_lesson(request: HttpRequest) -> JsonResponse:
                 except (ValueError, TypeError):
                     pass
 
-        if homework is not None:
-            lesson.homework = homework
 
-        if materials is not None:
-            lesson.materials = materials
 
         if is_cancelled is not None:
             lesson.is_cancelled = bool(is_cancelled)
@@ -2870,8 +3065,7 @@ def api_update_lesson(request: HttpRequest) -> JsonResponse:
                 "type_name": etype.name if etype else "—",
                 "max_points": float(etype.weight_percent) if etype else 12,
                 "eval_weight": float(etype.weight_percent) if etype else None,
-                "homework": lesson.homework or "",
-                "materials": lesson.materials or "",
+
                 "is_cancelled": lesson.is_cancelled,
                 "cancellation_reason": lesson.cancellation_reason or "",
             }
@@ -3326,6 +3520,216 @@ def api_notifications_delete_all(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"ok": True})
 
 
+# =========================
+# RFID УПРАВЛІННЯ КАРТКАМИ
+# =========================
+
+# File-based store so multiple server processes (runserver on different interfaces) share state
+import os as _os
+
+_RFID_STATE_FILE = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), ".rfid_scan_state.json")
+
+
+def _rfid_read_state() -> dict:
+    """Read scan state from shared file."""
+    try:
+        with open(_RFID_STATE_FILE, "r", encoding="utf-8") as f:
+            return json.loads(f.read())
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {"active": False, "uid": None, "scanned_at": None}
+
+
+def _rfid_write_state(state: dict):
+    """Write scan state to shared file."""
+    try:
+        with open(_RFID_STATE_FILE, "w", encoding="utf-8") as f:
+            f.write(json.dumps(state))
+    except OSError:
+        pass
+
+
+@role_required("admin")
+def rfid_management_view(request: HttpRequest) -> HttpResponse:
+    """Сторінка управління RFID картками студентів."""
+    course_ctx = request.session.get("global_course")
+    specialty_ctx = request.session.get("global_specialty_id")
+    
+    students = User.objects.filter(role="student").select_related("group").order_by("full_name")
+    
+    if course_ctx:
+        students = students.filter(group__course=course_ctx)
+    if specialty_ctx:
+        students = students.filter(group__specialty_id=specialty_ctx)
+
+    context = {
+        "students": students,
+        "active_page": "rfid",
+    }
+    return render(request, "rfid_management.html", context)
+
+
+def api_rfid_presence(request: HttpRequest) -> JsonResponse:
+    """GET /api/rfid/presence/?group=<id> — поточна присутність студентів групи."""
+    import datetime as _dt
+    from django.utils import timezone
+    group_id = request.GET.get("group")
+    if not group_id:
+        return JsonResponse({"error": "group required"}, status=400)
+
+    now = timezone.now()
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end = day_start + _dt.timedelta(days=1)
+    students = User.objects.filter(group_id=group_id, role="student")
+
+    logs = (
+        BuildingAccessLog.objects
+        .filter(timestamp__gte=day_start, timestamp__lt=day_end, student__in=students)
+        .order_by("student_id", "timestamp")
+    )
+    last_log = {}
+    for log in logs:
+        last_log[log.student_id] = log.action
+
+    presence = {s.id: last_log.get(s.id) == "ENTER" for s in students}
+    return JsonResponse({"presence": presence})
+
+
+@csrf_exempt
+@require_POST
+def api_rfid_scan(request: HttpRequest) -> JsonResponse:
+    """
+    Endpoint для ESP32: приймає uid від зчитувача.
+    Якщо scan_mode активний — зберігає у буфер і повертає {"mode": "assign"}.
+    Інакше — стандартна логіка вхід/вихід.
+    """
+    try:
+        data = json.loads(request.body)
+        uid = data.get("uid", "").strip().upper()
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    if not uid:
+        return JsonResponse({"error": "No UID"}, status=400)
+
+    state = _rfid_read_state()
+
+    # Якщо режим призначення активний — зберігаємо UID у буфер
+    if state.get("active"):
+        state["uid"] = uid
+        state["scanned_at"] = datetime.now().isoformat()
+        _rfid_write_state(state)
+        return JsonResponse({"mode": "assign", "uid": uid, "direction": None})
+
+    # Стандартна логіка: вхід/вихід
+    try:
+        student = User.objects.get(rfid_uid=uid, role="student")
+    except User.DoesNotExist:
+        return JsonResponse({"error": "unknown_card", "uid": uid}, status=404)
+
+    last_log = BuildingAccessLog.objects.filter(student=student).order_by("-timestamp").first()
+    if last_log and last_log.action == "ENTER":
+        action = "EXIT"
+        direction = "out"
+    else:
+        action = "ENTER"
+        direction = "in"
+
+    BuildingAccessLog.objects.create(student=student, action=action)
+    return JsonResponse({
+        "mode": "attendance",
+        "direction": direction,
+        "student": student.full_name,
+        "uid": uid,
+    })
+
+
+@login_required
+def api_rfid_status(request: HttpRequest) -> JsonResponse:
+    """Повертає останній зісканований UID з буферу (polling від адмін-сторінки)."""
+    state = _rfid_read_state()
+    return JsonResponse({
+        "uid": state.get("uid"),
+        "scanned_at": state.get("scanned_at"),
+        "scan_mode": state.get("active", False),
+    })
+
+
+@role_required("admin")
+@require_POST
+def api_card_scan(request: HttpRequest) -> JsonResponse:
+    """
+    Вмикає/вимикає режим сканування картки для адмін-сторінки.
+    POST {"action": "start"} — активує режим, очищає буфер.
+    POST {"action": "stop"}  — деактивує режим.
+    """
+    try:
+        data = json.loads(request.body)
+        action = data.get("action", "")
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    if action == "start":
+        _rfid_write_state({"active": True, "uid": None, "scanned_at": None})
+        return JsonResponse({"ok": True, "scan_mode": True})
+    elif action == "stop":
+        _rfid_write_state({"active": False, "uid": None, "scanned_at": None})
+        return JsonResponse({"ok": True, "scan_mode": False})
+
+    return JsonResponse({"error": "Unknown action"}, status=400)
+
+
+@role_required("admin")
+@require_POST
+def api_rfid_assign_card(request: HttpRequest) -> JsonResponse:
+    """Прив'язує RFID картку до студента."""
+    try:
+        data = json.loads(request.body)
+        uid = data.get("uid", "").strip().upper()
+        student_id = data.get("student_id")
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    if not uid or not student_id:
+        return JsonResponse({"error": "uid та student_id обов'язкові"}, status=400)
+
+    student = get_object_or_404(User, pk=student_id, role="student")
+
+    # Перевіряємо чи UID вже не зайнятий іншим студентом
+    existing = User.objects.filter(rfid_uid=uid).exclude(pk=student.pk).first()
+    if existing:
+        return JsonResponse({
+            "error": f"Ця картка вже прив'язана до {existing.full_name}"
+        }, status=409)
+
+    student.rfid_uid = uid
+    student.save(update_fields=["rfid_uid"])
+
+    # Очищаємо буфер після успішного прив'язування
+    _rfid_write_state({"active": False, "uid": None, "scanned_at": None})
+
+    return JsonResponse({
+        "ok": True,
+        "student": student.full_name,
+        "uid": uid,
+    })
+
+
+@role_required("admin")
+@require_POST
+def api_rfid_unassign_card(request: HttpRequest) -> JsonResponse:
+    """Відв'язує RFID картку від студента."""
+    try:
+        data = json.loads(request.body)
+        student_id = data.get("student_id")
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    student = get_object_or_404(User, pk=student_id, role="student")
+    student.rfid_uid = None
+    student.save(update_fields=["rfid_uid"])
+    return JsonResponse({"ok": True, "student": student.full_name})
+
+
 @login_required
 def notifications_page_view(request: HttpRequest) -> HttpResponse:
     """Повна сторінка сповіщень з фільтрами, пагінацією та керуванням."""
@@ -3375,662 +3779,20 @@ def notifications_page_view(request: HttpRequest) -> HttpResponse:
     return render(request, "notifications.html", context)
 
 
-# =========================
-# 8. ДЕТАЛІ УРОКУ ТА ДЗ
-# =========================
-
-
 @login_required
-def lessons_list_view(request: HttpRequest) -> HttpResponse:
-    """Список всіх уроків для вчителя або студента."""
-    user = request.user
-    subject_filter = request.GET.get("subject", "")
-
-    if user.role == "teacher":
-        lessons_qs = (
-            Lesson.objects.filter(teacher=user)
-            .select_related("subject", "group", "classroom", "evaluation_type")
-            .order_by("-date", "start_time")
-        )
-        if subject_filter:
-            lessons_qs = lessons_qs.filter(subject__id=subject_filter)
-        subjects = (
-            Subject.objects.filter(lesson__teacher=user).distinct().order_by("name")
-        )
-        from datetime import date as _date
-        from datetime import timedelta as _td
-
-        _today = _date.today()
-        _week_start = _today - _td(days=_today.weekday())
-        _week_end = _week_start + _td(days=6)
-        this_week_count = lessons_qs.filter(
-            date__range=[_week_start, _week_end]
-        ).count()
-        groups_count = lessons_qs.values("group").distinct().count()
-        lessons_by_subject_group = lessons_qs.order_by(
-            "subject__name", "group__name", "-date", "start_time"
-        )
-        # ДЗ weights: {subject_id_group_id: weight_percent}
-        hw_weights = {}
-        for assignment in TeachingAssignment.objects.filter(
-            teacher=user
-        ).prefetch_related("evaluation_types"):
-            hw_type = assignment.evaluation_types.filter(is_homework_type=True).first()
-            if hw_type:
-                hw_weights[f"{assignment.subject_id}_{assignment.group_id}"] = float(
-                    hw_type.weight_percent
-                )
-        context = {
-            "lessons": lessons_qs,
-            "lessons_by_subject_group": lessons_by_subject_group,
-            "subjects": subjects,
-            "subject_filter": subject_filter,
-            "this_week_count": this_week_count,
-            "groups_count": groups_count,
-            "hw_weights": hw_weights,
-            "active_page": "lessons",
-        }
-    elif user.role == "student":
-        if not user.group:
-            context = {
-                "lessons": [],
-                "subjects": [],
-                "subject_filter": "",
-                "active_page": "lessons",
-            }
-            return render(request, "lessons_list.html", context)
-        lessons_qs = (
-            Lesson.objects.filter(group=user.group)
-            .select_related("subject", "teacher", "classroom", "evaluation_type")
-            .order_by("-date", "start_time")
-        )
-        if subject_filter:
-            lessons_qs = lessons_qs.filter(subject__id=subject_filter)
-        subjects = (
-            Subject.objects.filter(lesson__group=user.group).distinct().order_by("name")
-        )
-        # Додаємо інфо про ДЗ для кожного уроку
-        submission_lesson_ids = set(
-            HomeworkSubmission.objects.filter(student=user).values_list(
-                "lesson_id", flat=True
-            )
-        )
-        pending_hw_count = (
-            lessons_qs.filter(homework__gt="")
-            .exclude(id__in=submission_lesson_ids)
-            .count()
-        )
-        # ДЗ weights: {subject_id_group_id: weight_percent}
-        hw_weights = {}
-        for assignment in TeachingAssignment.objects.filter(
-            group=user.group
-        ).prefetch_related("evaluation_types"):
-            hw_type = assignment.evaluation_types.filter(is_homework_type=True).first()
-            if hw_type:
-                hw_weights[f"{assignment.subject_id}_{assignment.group_id}"] = float(
-                    hw_type.weight_percent
-                )
-        lessons_by_subject = lessons_qs.order_by("subject__name", "-date", "start_time")
-        context = {
-            "lessons": lessons_qs,
-            "lessons_by_subject": lessons_by_subject,
-            "subjects": subjects,
-            "subject_filter": subject_filter,
-            "submission_lesson_ids": submission_lesson_ids,
-            "pending_hw_count": pending_hw_count,
-            "hw_weights": hw_weights,
-            "active_page": "lessons",
-        }
-    else:
-        messages.error(request, "У вас немає доступу до цієї сторінки.")
-        return redirect("login")
-
-    return render(request, "lessons_list.html", context)
+def api_student_status(request: HttpRequest) -> JsonResponse:
+    """Повертає поточний статус входу для авторизованого студента."""
+    student = request.user
+    last_access = BuildingAccessLog.objects.filter(student=student).order_by("-timestamp").first()
+    in_building = (last_access.action == "ENTER") if last_access else False
+    
+    return JsonResponse({
+        "in_building": in_building,
+        "last_scan": last_access.timestamp.strftime("%H:%M") if last_access else None,
+        "has_card": bool(student.rfid_uid)
+    })
 
 
-@login_required
-def lesson_detail_view(request: HttpRequest, lesson_id: int) -> HttpResponse:
-    """Перенаправляє на відповідний шаблон залежно від ролі."""
-    user = request.user
-    lesson = get_object_or_404(Lesson, id=lesson_id)
-
-    # Перевірка доступу
-    if user.role == "teacher":
-        if lesson.teacher != user:
-            messages.error(request, "У вас немає доступу до цього уроку.")
-            return redirect("teacher_journal")
-        tab = request.GET.get("tab", "instructions")
-        attachments = lesson.attachments.all()
-        students = User.objects.filter(role="student", group=lesson.group).order_by(
-            "full_name"
-        )
-        submissions = (
-            HomeworkSubmission.objects.filter(lesson=lesson)
-            .select_related("student")
-            .prefetch_related("files")
-        )
-        submission_map = {s.student_id: s for s in submissions}
-        turned_in_count = submissions.filter(status="turned_in").count()
-        graded_count = submissions.filter(status="graded").count()
-        assigned_count = (
-            students.count() - submissions.exclude(status="missing").count()
-        )
-        context = {
-            "lesson": lesson,
-            "attachments": attachments,
-            "students": students,
-            "submissions": submissions,
-            "submission_map": submission_map,
-            "submitted_count": submissions.filter(
-                status__in=["turned_in", "graded"]
-            ).count(),
-            "turned_in_count": turned_in_count,
-            "graded_count": graded_count,
-            "assigned_count": assigned_count,
-            "total_students": students.count(),
-            "tab": tab,
-            "active_page": "lessons",
-        }
-        return render(request, "lesson_edit_teacher.html", context)
-
-    elif user.role == "student":
-        if user.group != lesson.group:
-            messages.error(request, "У вас немає доступу до цього уроку.")
-            return redirect("student_dashboard")
-        attachments = lesson.attachments.all()
-        submission = (
-            HomeworkSubmission.objects.filter(lesson=lesson, student=user)
-            .prefetch_related("files", "private_comments__author")
-            .first()
-        )
-        context = {
-            "lesson": lesson,
-            "attachments": attachments,
-            "submission": submission,
-            "active_page": "lessons",
-        }
-        return render(request, "lesson_view_student.html", context)
-
-    messages.error(request, "У вас немає доступу до цієї сторінки.")
-    return redirect("login")
 
 
-@login_required
-@require_POST
-@role_required("teacher")
-def api_lesson_save_content(request: HttpRequest, lesson_id: int) -> JsonResponse:
-    """Зберігає Rich Text контент уроку (теорія та завдання)."""
-    try:
-        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
-        data = json.loads(request.body)
-        if "materials" in data:
-            lesson.materials = data["materials"]
-        if "homework" in data:
-            lesson.homework = data["homework"]
-        if "topic" in data:
-            lesson.topic = data["topic"]
-        lesson.save(
-            update_fields=[f for f in ("materials", "homework", "topic") if f in data]
-        )
-        return JsonResponse({"status": "success"})
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
-
-@login_required
-@require_POST
-@role_required("teacher")
-def api_lesson_upload_attachment(request: HttpRequest, lesson_id: int) -> JsonResponse:
-    """Завантажує файл-вкладення до уроку."""
-    try:
-        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
-        uploaded_file = request.FILES.get("file")
-        file_type = request.POST.get("file_type", "document")
-
-        if not uploaded_file:
-            return JsonResponse(
-                {"status": "error", "message": "Файл не знайдено"}, status=400
-            )
-
-        attachment = LessonAttachment.objects.create(
-            lesson=lesson,
-            file=uploaded_file,
-            file_name=uploaded_file.name,
-            file_type=file_type,
-        )
-        return JsonResponse(
-            {
-                "status": "success",
-                "attachment": {
-                    "id": attachment.id,
-                    "file_name": attachment.file_name,
-                    "file_type": attachment.file_type,
-                    "file_url": attachment.file.url if attachment.file else "",
-                    "uploaded_at": attachment.uploaded_at.strftime("%d.%m.%Y %H:%M"),
-                },
-            }
-        )
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-@login_required
-@require_POST
-@role_required("teacher")
-def api_lesson_delete_attachment(
-    request: HttpRequest, lesson_id: int, attachment_id: int
-) -> JsonResponse:
-    """Видаляє вкладення уроку."""
-    try:
-        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
-        attachment = get_object_or_404(
-            LessonAttachment, id=attachment_id, lesson=lesson
-        )
-        if attachment.file:
-            try:
-                attachment.file.delete(save=False)
-            except Exception:
-                pass  # файл вже відсутній на диску — не блокуємо видалення запису
-        attachment.delete()
-        return JsonResponse({"status": "success"})
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-@login_required
-@require_POST
-@role_required("student")
-def api_lesson_submit_homework(request: HttpRequest, lesson_id: int) -> JsonResponse:
-    """Студент відправляє виконане домашнє завдання."""
-    try:
-        user = request.user
-        lesson = get_object_or_404(Lesson, id=lesson_id, group=user.group)
-
-        if HomeworkSubmission.objects.filter(lesson=lesson, student=user).exists():
-            return JsonResponse(
-                {"status": "error", "message": "Ви вже відправили ДЗ для цього уроку."},
-                status=400,
-            )
-
-        text_answer = request.POST.get("text_answer", "").strip()
-        attached_file = request.FILES.get("file")
-
-        if not text_answer and not attached_file:
-            return JsonResponse(
-                {"status": "error", "message": "Додайте текст або файл."}, status=400
-            )
-
-        submission = HomeworkSubmission.objects.create(
-            lesson=lesson,
-            student=user,
-            text_answer=text_answer,
-            attached_file=attached_file or "",
-            status="submitted",
-        )
-        return JsonResponse(
-            {
-                "status": "success",
-                "submission": {
-                    "id": submission.id,
-                    "status": submission.get_status_display(),
-                    "submitted_at": submission.submitted_at.strftime("%d.%m.%Y %H:%M"),
-                    "file_url": (
-                        submission.attached_file.url if submission.attached_file else ""
-                    ),
-                    "text_answer": submission.text_answer,
-                },
-            }
-        )
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-@login_required
-@require_POST
-@role_required("student")
-def api_lesson_cancel_homework(request: HttpRequest, lesson_id: int) -> JsonResponse:
-    """Студент скасовує здачу (переводить статус назад в 'assigned')."""
-    try:
-        user = request.user
-        lesson = get_object_or_404(Lesson, id=lesson_id, group=user.group)
-        submission = get_object_or_404(
-            HomeworkSubmission, lesson=lesson, student=user, status="turned_in"
-        )
-        submission.status = "assigned"
-        submission.save(update_fields=["status"])
-        return JsonResponse({"status": "success"})
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-# ============================================================
-# NEW: Google Classroom-style APIs
-# ============================================================
-
-
-@login_required
-@require_POST
-@role_required("student")
-def api_submission_upload_file(request: HttpRequest, lesson_id: int) -> JsonResponse:
-    """Студент завантажує файл до своєї здачі (створює HomeworkSubmission якщо немає)."""
-    try:
-        user = request.user
-        lesson = get_object_or_404(Lesson, id=lesson_id, group=user.group)
-        uploaded_file = request.FILES.get("file")
-        if not uploaded_file:
-            return JsonResponse(
-                {"status": "error", "message": "Файл не знайдено"}, status=400
-            )
-
-        submission, _ = HomeworkSubmission.objects.get_or_create(
-            lesson=lesson,
-            student=user,
-            defaults={"status": "assigned"},
-        )
-        if submission.status == "turned_in":
-            return JsonResponse(
-                {"status": "error", "message": "Не можна редагувати після здачі"},
-                status=400,
-            )
-
-        att = SubmissionAttachment.objects.create(
-            submission=submission,
-            file=uploaded_file,
-            file_name=uploaded_file.name,
-        )
-        return JsonResponse(
-            {
-                "status": "success",
-                "file": {
-                    "id": att.id,
-                    "file_name": att.file_name,
-                    "file_url": att.file.url,
-                },
-                "submission_id": submission.id,
-            }
-        )
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-@login_required
-@require_POST
-@role_required("student")
-def api_submission_delete_file(
-    request: HttpRequest, lesson_id: int, attachment_id: int
-) -> JsonResponse:
-    """Студент видаляє файл зі своєї здачі."""
-    try:
-        user = request.user
-        lesson = get_object_or_404(Lesson, id=lesson_id, group=user.group)
-        submission = get_object_or_404(HomeworkSubmission, lesson=lesson, student=user)
-        if submission.status == "turned_in":
-            return JsonResponse(
-                {"status": "error", "message": "Не можна редагувати після здачі"},
-                status=400,
-            )
-        att = get_object_or_404(
-            SubmissionAttachment, id=attachment_id, submission=submission
-        )
-        try:
-            att.file.delete(save=False)
-        except Exception:
-            pass
-        att.delete()
-        return JsonResponse({"status": "success"})
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-@login_required
-@require_POST
-@role_required("student")
-def api_lesson_turn_in(request: HttpRequest, lesson_id: int) -> JsonResponse:
-    """Студент здає роботу (turned_in)."""
-    try:
-        user = request.user
-        lesson = get_object_or_404(Lesson, id=lesson_id, group=user.group)
-        submission, _ = HomeworkSubmission.objects.get_or_create(
-            lesson=lesson,
-            student=user,
-            defaults={"status": "assigned"},
-        )
-        if submission.status not in ("assigned",):
-            return JsonResponse(
-                {"status": "error", "message": "Неможливо здати в поточному статусі"},
-                status=400,
-            )
-        submission.status = "turned_in"
-        submission.save(update_fields=["status"])
-
-        # --- Сповіщення викладачу про здачу ДЗ ---
-        try:
-            subject_name = lesson.subject.name if lesson.subject_id else "Предмет"
-            Notification.objects.create(
-                recipient=lesson.teacher,
-                notif_type="homework",
-                title=f"Студент здав ДЗ — {user.full_name}",
-                message=f"{subject_name} · {lesson.topic or lesson.date.strftime('%d.%m.%Y') if lesson.date else ''}",
-                link=f"/lesson/{lesson.id}/",
-                lesson=lesson,
-            )
-        except Exception:
-            logger.exception("api_lesson_turn_in: не вдалося створити сповіщення")
-
-        return JsonResponse({"status": "success", "new_status": "turned_in"})
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-@login_required
-@require_POST
-def api_add_private_comment(request: HttpRequest, submission_id: int) -> JsonResponse:
-    """Додає приватний коментар (студент або викладач)."""
-    try:
-        user = request.user
-        submission = get_object_or_404(HomeworkSubmission, id=submission_id)
-        # Access check: student who owns it, or teacher of the lesson
-        if user.role == "student" and submission.student != user:
-            return JsonResponse(
-                {"status": "error", "message": "Доступ заборонено"}, status=403
-            )
-        if user.role == "teacher" and submission.lesson.teacher != user:
-            return JsonResponse(
-                {"status": "error", "message": "Доступ заборонено"}, status=403
-            )
-
-        data = json.loads(request.body)
-        text = data.get("text", "").strip()
-        if not text:
-            return JsonResponse(
-                {"status": "error", "message": "Текст порожній"}, status=400
-            )
-
-        comment = PrivateComment.objects.create(
-            submission=submission, author=user, text=text
-        )
-
-        # --- Сповіщення іншій стороні про новий приватний коментар ---
-        try:
-            lesson = submission.lesson
-            subject_name = lesson.subject.name if lesson.subject_id else "Предмет"
-            lesson_link = f"/lesson/{lesson.id}/"
-            if user.role == "teacher":
-                # Викладач написав → сповіщення студенту
-                Notification.objects.create(
-                    recipient=submission.student,
-                    notif_type="private_chat",
-                    title=f"Нове повідомлення від викладача — {subject_name}",
-                    message=text[:120],
-                    link=lesson_link,
-                    lesson=lesson,
-                )
-            else:
-                # Студент написав → сповіщення викладачу
-                Notification.objects.create(
-                    recipient=lesson.teacher,
-                    notif_type="private_chat",
-                    title=f"Відповідь студента по ДЗ — {submission.student.full_name}",
-                    message=text[:120],
-                    link=lesson_link,
-                    lesson=lesson,
-                )
-        except Exception:
-            logger.exception("api_add_private_comment: не вдалося створити сповіщення")
-
-        return JsonResponse(
-            {
-                "status": "success",
-                "comment": {
-                    "id": comment.id,
-                    "author": user.full_name,
-                    "text": comment.text,
-                    "created_at": comment.created_at.strftime("%d.%m.%Y %H:%M"),
-                    "is_me": True,
-                },
-            }
-        )
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-@login_required
-@require_POST
-@role_required("teacher")
-def api_grade_submission(request: HttpRequest, submission_id: int) -> JsonResponse:
-    """Викладач виставляє оцінку та повертає роботу."""
-    try:
-        submission = get_object_or_404(
-            HomeworkSubmission, id=submission_id, lesson__teacher=request.user
-        )
-        data = json.loads(request.body)
-        grade = data.get("grade")
-        if grade is not None:
-            try:
-                grade_val = int(grade)
-            except (ValueError, TypeError):
-                return JsonResponse(
-                    {
-                        "status": "error",
-                        "message": "Оцінка має бути числом від 1 до 12",
-                    },
-                    status=400,
-                )
-            if not (1 <= grade_val <= 12):
-                return JsonResponse(
-                    {"status": "error", "message": "Оцінка має бути від 1 до 12"},
-                    status=400,
-                )
-            submission.grade = grade_val
-        submission.status = "graded"
-        submission.save(update_fields=["grade", "status"])
-
-        # --- Сповіщення студенту про оцінку за ДЗ ---
-        try:
-            lesson = submission.lesson
-            subject_name = lesson.subject.name if lesson.subject_id else "Предмет"
-            grade_str = str(int(grade)) if grade is not None else "—"
-            Notification.objects.create(
-                recipient=submission.student,
-                notif_type="homework",
-                title=f"Оцінено домашнє завдання — {subject_name}",
-                message=f"Оцінка: {grade_str} балів · {lesson.topic or lesson.date.strftime('%d.%m.%Y') if lesson.date else ''}",
-                link=f"/lesson/{lesson.id}/",
-                lesson=lesson,
-            )
-        except Exception:
-            logger.exception("api_grade_submission: не вдалося створити сповіщення")
-
-        return JsonResponse({"status": "success"})
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-@login_required
-@require_POST
-@role_required("teacher")
-def api_lesson_save_settings(request: HttpRequest, lesson_id: int) -> JsonResponse:
-    """Зберігає налаштування уроку: тема, max_points, deadline."""
-    try:
-        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
-        data = json.loads(request.body)
-        fields = []
-        if "topic" in data:
-            lesson.topic = data["topic"]
-            fields.append("topic")
-        if "max_points" in data:
-            lesson.max_points = int(data["max_points"])
-            fields.append("max_points")
-        if "deadline" in data:
-            from django.utils import timezone
-            from django.utils.dateparse import parse_datetime
-
-            parsed = parse_datetime(data["deadline"]) if data["deadline"] else None
-            if parsed is not None and timezone.is_naive(parsed):
-                parsed = timezone.make_aware(parsed)
-            lesson.deadline = parsed
-            fields.append("deadline")
-        if fields:
-            lesson.save(update_fields=fields)
-        return JsonResponse({"status": "success"})
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-@login_required
-@role_required("teacher")
-def api_get_student_submission(
-    request: HttpRequest, lesson_id: int, student_id: int
-) -> JsonResponse:
-    """AJAX: повертає дані здачі конкретного студента для відображення у правій панелі."""
-    try:
-        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
-        student = get_object_or_404(
-            User, id=student_id, role="student", group=lesson.group
-        )
-        submission = (
-            HomeworkSubmission.objects.filter(lesson=lesson, student=student)
-            .prefetch_related("files", "private_comments__author")
-            .first()
-        )
-        if not submission:
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "submission": None,
-                    "student": {"id": student.id, "name": student.full_name},
-                }
-            )
-        files = [
-            {"id": f.id, "file_name": f.file_name, "file_url": f.file.url}
-            for f in submission.files.all()
-        ]
-        comments = [
-            {
-                "id": c.id,
-                "author": c.author.full_name,
-                "text": c.text,
-                "created_at": c.created_at.strftime("%d.%m.%Y %H:%M"),
-                "is_teacher": c.author.role == "teacher",
-            }
-            for c in submission.private_comments.all()
-        ]
-        return JsonResponse(
-            {
-                "status": "success",
-                "student": {"id": student.id, "name": student.full_name},
-                "submission": {
-                    "id": submission.id,
-                    "status": submission.status,
-                    "status_display": submission.get_status_display(),
-                    "grade": (
-                        str(submission.grade) if submission.grade is not None else ""
-                    ),
-                    "submitted_at": submission.submitted_at.strftime("%d.%m.%Y %H:%M"),
-                    "files": files,
-                    "comments": comments,
-                },
-            }
-        )
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)

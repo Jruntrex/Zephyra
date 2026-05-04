@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Редактор розкладу - {{ institution.name|default:"MyBosco" }}{% endblock %}
+{% block title %}Редактор розкладу - {{ institution.name|default:"Mentorly" }}{% endblock %}
 {% block header_title %}Розклад{% endblock %}
 {% block page_title_heading %}{% endblock %}
 
@@ -16,7 +16,7 @@
                 <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6a2 2 0 00-2-2H5a2 2 0 00-2 2v13M13 19V3a2 2 0 00-2-2H9a2 2 0 00-2 2v16M18 19V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10"/>
                 </svg>
-                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }} Admin</span>
             </div>
             <h1 class="text-4xl font-black text-white leading-tight">
                 Редактор розкладу{% if selected_group %} — {{ selected_group.name }}{% endif %}

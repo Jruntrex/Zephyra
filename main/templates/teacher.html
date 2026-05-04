@@ -101,7 +101,7 @@
         <div>
             <div class="flex items-center gap-2 mb-1">
                 <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }}</span>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }}</span>
             </div>
             <h1 class="text-4xl font-black text-white leading-tight">Журнал Викладача</h1>
             <p class="text-white/65 text-sm mt-0.5">Оцінки, відвідуваність та заняття</p>
@@ -284,6 +284,7 @@
                             <span class="truncate max-w-[160px]" title="{% if student.name %}{{ student.name }}{% else %}—{% endif %}">{% if student.name %}{{ student.name }}{% else %}—{% endif %}</span>
                             <!-- RFID Indicator -->
                             <span class="status-dot {% if student.is_in_building %}online{% else %}offline{% endif %}"
+                                data-rfid-dot="{{ student.id }}"
                                 title="{% if student.is_in_building %}В коледжі{% else %}Відсутній в будівлі{% endif %}"></span>
                         </td>
 
@@ -428,14 +429,7 @@
             {% endif %}
             {% endfor %}
 
-            <!-- Посилання на деталі уроку (Мої Уроки) -->
-            <a id="modalLessonDetailLink" href="#"
-                class="flex items-center gap-2 px-4 py-3 bg-blue-50 border border-blue-100 rounded-2xl text-sm font-bold text-primary hover:bg-blue-100 transition-colors group">
-                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                <span>Детальне редагування Домашнього Завдання та лекції — Мої Уроки</span>
-            </a>
+
 
             <!-- Скасування заняття -->
             <div class="flex flex-col gap-2 p-4 bg-red-50 border border-red-100 rounded-2xl">
@@ -726,7 +720,7 @@
         document.getElementById('modalCancellationReason').value = cancellationReason || "";
         // Trigger weight section update
         onEvalTypeChange();
-        document.getElementById('modalLessonDetailLink').href = '/lesson/' + id + '/';
+
 
         // Reset toggle first, then apply state
         const track = document.getElementById('cancelledToggleTrack');
@@ -957,4 +951,31 @@
     }
 
 </script>
+
+{% if selected_group_id %}
+<script>
+(function () {
+    const GROUP_ID = "{{ selected_group_id }}";
+    const INTERVAL = 4000;
+
+    function refreshDots() {
+        fetch(`/api/rfid/presence/?group=${GROUP_ID}`)
+            .then(r => r.json())
+            .then(data => {
+                if (!data.presence) return;
+                Object.entries(data.presence).forEach(([studentId, isIn]) => {
+                    const dot = document.querySelector(`[data-rfid-dot="${studentId}"]`);
+                    if (!dot) return;
+                    dot.classList.toggle("online", isIn);
+                    dot.classList.toggle("offline", !isIn);
+                    dot.title = isIn ? "В коледжі" : "Відсутній в будівлі";
+                });
+            })
+            .catch(() => {});
+    }
+
+    setInterval(refreshDots, INTERVAL);
+})();
+</script>
+{% endif %}
 {% endblock %}

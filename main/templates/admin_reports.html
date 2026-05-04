@@ -18,7 +18,7 @@
                 <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6a2 2 0 00-2-2H5a2 2 0 00-2 2v13M13 19V3a2 2 0 00-2-2H9a2 2 0 00-2 2v16M18 19V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10"/>
                 </svg>
-                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"MyBosco" }} Admin</span>
+                <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">{{ institution.name|default:"Mentorly" }} Admin</span>
             </div>
             <h1 class="text-4xl font-black text-white leading-tight">Звіти та аналітика</h1>
             <p class="text-white/65 text-sm mt-0.5">Перегляд та генерація звітів системи</p>
@@ -115,23 +115,6 @@
         <div class="mt-6 flex items-center justify-between">
             <span class="text-[10px] font-bold text-mutedText uppercase tracking-widest">Переглянути →</span>
             <span class="px-2 py-1 bg-rose-500/10 text-rose-500 text-[10px] font-bold rounded-lg">CSV</span>
-        </div>
-    </a>
-
-    <!-- Звіт: Здача ДЗ -->
-    <a href="{% url 'report_homework' %}" class="card-bento hover:translate-y-[-4px] transition-transform duration-300 group flex flex-col justify-between">
-        <div>
-            <div class="w-12 h-12 bg-violet-500/10 text-violet-500 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-violet-500 group-hover:text-white transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-            </div>
-            <h3 class="text-lg font-black text-mainText group-hover:text-violet-500 transition-colors mb-1">Здача домашніх завдань</h3>
-            <p class="text-xs text-mutedText">Відсоток виконання ДЗ по студентах із фільтром по групі та предмету</p>
-        </div>
-        <div class="mt-6 flex items-center justify-between">
-            <span class="text-[10px] font-bold text-mutedText uppercase tracking-widest">Переглянути →</span>
-            <span class="px-2 py-1 bg-violet-500/10 text-violet-500 text-[10px] font-bold rounded-lg">CSV</span>
         </div>
     </a>
 
