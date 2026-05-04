@@ -6,7 +6,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path(".well-known/appspecific/com.chrome.devtools.json", lambda r: HttpResponse("[]", content_type="application/json")),
+    path(
+        ".well-known/appspecific/com.chrome.devtools.json",
+        lambda r: HttpResponse("[]", content_type="application/json"),
+    ),
     # =========================
     # 1. АУТЕНТИФІКАЦІЯ
     # =========================
@@ -17,7 +20,11 @@ urlpatterns = [
     # 2. АДМІНІСТРУВАННЯ ТА ДАШБОРДИ
     # =========================
     path("admin/", views.admin_panel_view, name="admin_panel"),
-    path("admin/institution/", views.institution_settings_view, name="institution_settings"),
+    path(
+        "admin/institution/",
+        views.institution_settings_view,
+        name="institution_settings",
+    ),
     path("users/", views.users_list_view, name="users_list"),
     path("schedule/", views.schedule_view, name="schedule_view"),
     path("schedule/timeline/", views.timeline_schedule_view, name="timeline_schedule"),
@@ -43,8 +50,14 @@ urlpatterns = [
     path("groups/import/", views.groups_csv_import, name="groups_csv_import"),
     # Спеціальності
     path("specialties/", views.specialties_list_view, name="specialties_list"),
-    path("specialties/delete/<int:pk>/", views.specialty_delete_view, name="specialty_delete"),
-    path("specialties/edit/<int:pk>/", views.specialty_edit_view, name="specialty_edit"),
+    path(
+        "specialties/delete/<int:pk>/",
+        views.specialty_delete_view,
+        name="specialty_delete",
+    ),
+    path(
+        "specialties/edit/<int:pk>/", views.specialty_edit_view, name="specialty_edit"
+    ),
     # Глобальний контекст (курс/спеціальність)
     path("context/set/", views.set_global_context_view, name="set_global_context"),
     # Управління Предметами (CRUD)
@@ -136,7 +149,9 @@ urlpatterns = [
     # =========================
     # 5. СТУДЕНТ
     # =========================
-    path("student/semester/", views.student_semester_grades_view, name="student_semester"),
+    path(
+        "student/semester/", views.student_semester_grades_view, name="student_semester"
+    ),
     path("student/grades/", views.student_grades_view, name="student_grades"),
     path(
         "student/attendance/", views.student_attendance_view, name="student_attendance"
@@ -209,5 +224,4 @@ urlpatterns = [
     # =========================
     # 8. ДЕТАЛІ УРОКУ
     # =========================
-
 ]

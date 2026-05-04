@@ -51,14 +51,14 @@ THIS_WEEK_MON = TODAY - timedelta(days=TODAY.weekday())
 PREV_WEEK_MON = THIS_WEEK_MON - timedelta(weeks=1)
 NEXT_WEEK_MON = THIS_WEEK_MON + timedelta(weeks=1)
 
-START_DATE = PREV_WEEK_MON                        # попередній пн
-END_DATE   = NEXT_WEEK_MON + timedelta(days=4)    # наступна пт
-GRADES_CUTOFF = TODAY                             # оцінки тільки до сьогодні
+START_DATE = PREV_WEEK_MON  # попередній пн
+END_DATE = NEXT_WEEK_MON + timedelta(days=4)  # наступна пт
+GRADES_CUTOFF = TODAY  # оцінки тільки до сьогодні
 
 # ── Time slots ────────────────────────────────────────────────────────────────
 TIME_MAP = {
-    1: (time(8, 0),  time(8, 50)),
-    2: (time(9, 0),  time(9, 50)),
+    1: (time(8, 0), time(8, 50)),
+    2: (time(9, 0), time(9, 50)),
     3: (time(10, 0), time(10, 50)),
     4: (time(12, 0), time(12, 50)),
     5: (time(13, 0), time(13, 50)),
@@ -67,189 +67,629 @@ LESSON_TYPE_CYCLE = ["lecture", "practical", "lab", "lecture", "practical"]
 
 # ── Absence reasons ───────────────────────────────────────────────────────────
 ABSENCE_REASONS_DATA = [
-    {"code": "Н",  "description": "Без поважної причини", "is_respectful": False, "color": "#e74c3c", "order": 1},
-    {"code": "Б",  "description": "Хвороба",              "is_respectful": True,  "color": "#3498db", "order": 2},
-    {"code": "ПП", "description": "Поважна причина",      "is_respectful": True,  "color": "#2ecc71", "order": 3},
-    {"code": "ДЛ", "description": "Дистанційне навчання", "is_respectful": True,  "color": "#9b59b6", "order": 4},
-    {"code": "В",  "description": "Відпустка",            "is_respectful": False, "color": "#f39c12", "order": 5},
+    {
+        "code": "Н",
+        "description": "Без поважної причини",
+        "is_respectful": False,
+        "color": "#e74c3c",
+        "order": 1,
+    },
+    {
+        "code": "Б",
+        "description": "Хвороба",
+        "is_respectful": True,
+        "color": "#3498db",
+        "order": 2,
+    },
+    {
+        "code": "ПП",
+        "description": "Поважна причина",
+        "is_respectful": True,
+        "color": "#2ecc71",
+        "order": 3,
+    },
+    {
+        "code": "ДЛ",
+        "description": "Дистанційне навчання",
+        "is_respectful": True,
+        "color": "#9b59b6",
+        "order": 4,
+    },
+    {
+        "code": "В",
+        "description": "Відпустка",
+        "is_respectful": False,
+        "color": "#f39c12",
+        "order": 5,
+    },
 ]
 
 # ── Classrooms ────────────────────────────────────────────────────────────────
 CLASSROOMS_DATA = [
-    {"name": "101",    "building": "Корпус А", "floor": 1, "capacity": 30, "type": "lecture"},
-    {"name": "202",    "building": "Корпус А", "floor": 2, "capacity": 25, "type": "lecture"},
-    {"name": "305",    "building": "Корпус А", "floor": 3, "capacity": 20, "type": "computer"},
-    {"name": "306",    "building": "Корпус А", "floor": 3, "capacity": 20, "type": "computer"},
-    {"name": "Лаб-1",  "building": "Корпус Б", "floor": 1, "capacity": 15, "type": "lab"},
-    {"name": "Лаб-2",  "building": "Корпус Б", "floor": 1, "capacity": 15, "type": "lab"},
-    {"name": "201",    "building": "Корпус Б", "floor": 2, "capacity": 40, "type": "lecture"},
-    {"name": "401",    "building": "Корпус В", "floor": 4, "capacity": 30, "type": "lecture"},
-    {"name": "Комп-1", "building": "Корпус В", "floor": 2, "capacity": 25, "type": "computer"},
-    {"name": "Комп-2", "building": "Корпус В", "floor": 2, "capacity": 25, "type": "computer"},
+    {
+        "name": "101",
+        "building": "Корпус А",
+        "floor": 1,
+        "capacity": 30,
+        "type": "lecture",
+    },
+    {
+        "name": "202",
+        "building": "Корпус А",
+        "floor": 2,
+        "capacity": 25,
+        "type": "lecture",
+    },
+    {
+        "name": "305",
+        "building": "Корпус А",
+        "floor": 3,
+        "capacity": 20,
+        "type": "computer",
+    },
+    {
+        "name": "306",
+        "building": "Корпус А",
+        "floor": 3,
+        "capacity": 20,
+        "type": "computer",
+    },
+    {
+        "name": "Лаб-1",
+        "building": "Корпус Б",
+        "floor": 1,
+        "capacity": 15,
+        "type": "lab",
+    },
+    {
+        "name": "Лаб-2",
+        "building": "Корпус Б",
+        "floor": 1,
+        "capacity": 15,
+        "type": "lab",
+    },
+    {
+        "name": "201",
+        "building": "Корпус Б",
+        "floor": 2,
+        "capacity": 40,
+        "type": "lecture",
+    },
+    {
+        "name": "401",
+        "building": "Корпус В",
+        "floor": 4,
+        "capacity": 30,
+        "type": "lecture",
+    },
+    {
+        "name": "Комп-1",
+        "building": "Корпус В",
+        "floor": 2,
+        "capacity": 25,
+        "type": "computer",
+    },
+    {
+        "name": "Комп-2",
+        "building": "Корпус В",
+        "floor": 2,
+        "capacity": 25,
+        "type": "computer",
+    },
 ]
 
 # ── Subjects (15) ─────────────────────────────────────────────────────────────
 SUBJECTS_DATA = [
-    {"name": "Вища математика",                    "code": "MATH-101", "credits": 5, "hours_total": 150, "semester": 1},
-    {"name": "Об'єктно-орієнтоване програмування", "code": "OOP-201",  "credits": 4, "hours_total": 120, "semester": 3},
-    {"name": "Бази даних",                         "code": "DB-202",   "credits": 4, "hours_total": 120, "semester": 3},
-    {"name": "Веб-технології",                     "code": "WEB-301",  "credits": 4, "hours_total": 120, "semester": 5},
-    {"name": "Алгоритми та структури даних",       "code": "ASD-203",  "credits": 5, "hours_total": 150, "semester": 3},
-    {"name": "Комп'ютерні мережі",                 "code": "NET-302",  "credits": 4, "hours_total": 120, "semester": 5},
-    {"name": "Комп'ютерна архітектура",            "code": "ARCH-204", "credits": 3, "hours_total": 90,  "semester": 4},
-    {"name": "Операційні системи",                 "code": "OS-303",   "credits": 4, "hours_total": 120, "semester": 5},
-    {"name": "Дискретна математика",               "code": "DM-102",   "credits": 4, "hours_total": 120, "semester": 2},
-    {"name": "Програмування мовою Python",         "code": "PY-205",   "credits": 4, "hours_total": 120, "semester": 4},
-    {"name": "Штучний інтелект та МН",             "code": "AI-401",   "credits": 5, "hours_total": 150, "semester": 7},
-    {"name": "Мобільна розробка",                  "code": "MOB-402",  "credits": 4, "hours_total": 120, "semester": 7},
-    {"name": "Безпека інформаційних систем",       "code": "SEC-403",  "credits": 4, "hours_total": 120, "semester": 7},
-    {"name": "Теорія ймовірностей та статистика",  "code": "STAT-103", "credits": 4, "hours_total": 120, "semester": 2},
-    {"name": "Системне програмування",             "code": "SYS-304",  "credits": 4, "hours_total": 120, "semester": 6},
+    {
+        "name": "Вища математика",
+        "code": "MATH-101",
+        "credits": 5,
+        "hours_total": 150,
+        "semester": 1,
+    },
+    {
+        "name": "Об'єктно-орієнтоване програмування",
+        "code": "OOP-201",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 3,
+    },
+    {
+        "name": "Бази даних",
+        "code": "DB-202",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 3,
+    },
+    {
+        "name": "Веб-технології",
+        "code": "WEB-301",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 5,
+    },
+    {
+        "name": "Алгоритми та структури даних",
+        "code": "ASD-203",
+        "credits": 5,
+        "hours_total": 150,
+        "semester": 3,
+    },
+    {
+        "name": "Комп'ютерні мережі",
+        "code": "NET-302",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 5,
+    },
+    {
+        "name": "Комп'ютерна архітектура",
+        "code": "ARCH-204",
+        "credits": 3,
+        "hours_total": 90,
+        "semester": 4,
+    },
+    {
+        "name": "Операційні системи",
+        "code": "OS-303",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 5,
+    },
+    {
+        "name": "Дискретна математика",
+        "code": "DM-102",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 2,
+    },
+    {
+        "name": "Програмування мовою Python",
+        "code": "PY-205",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 4,
+    },
+    {
+        "name": "Штучний інтелект та МН",
+        "code": "AI-401",
+        "credits": 5,
+        "hours_total": 150,
+        "semester": 7,
+    },
+    {
+        "name": "Мобільна розробка",
+        "code": "MOB-402",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 7,
+    },
+    {
+        "name": "Безпека інформаційних систем",
+        "code": "SEC-403",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 7,
+    },
+    {
+        "name": "Теорія ймовірностей та статистика",
+        "code": "STAT-103",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 2,
+    },
+    {
+        "name": "Системне програмування",
+        "code": "SYS-304",
+        "credits": 4,
+        "hours_total": 120,
+        "semester": 6,
+    },
 ]
 
 # ── Groups (4) ────────────────────────────────────────────────────────────────
 GROUPS_DATA = [
-    {"name": "КН-41", "course": 4, "year_of_entry": 2022, "graduation_year": 2026, "specialty": "Комп'ютерні науки"},
-    {"name": "КН-42", "course": 4, "year_of_entry": 2022, "graduation_year": 2026, "specialty": "Комп'ютерні науки"},
-    {"name": "КН-21", "course": 2, "year_of_entry": 2024, "graduation_year": 2028, "specialty": "Комп'ютерні науки"},
-    {"name": "КН-22", "course": 2, "year_of_entry": 2024, "graduation_year": 2028, "specialty": "Комп'ютерні науки"},
+    {
+        "name": "КН-41",
+        "course": 4,
+        "year_of_entry": 2022,
+        "graduation_year": 2026,
+        "specialty": "Комп'ютерні науки",
+    },
+    {
+        "name": "КН-42",
+        "course": 4,
+        "year_of_entry": 2022,
+        "graduation_year": 2026,
+        "specialty": "Комп'ютерні науки",
+    },
+    {
+        "name": "КН-21",
+        "course": 2,
+        "year_of_entry": 2024,
+        "graduation_year": 2028,
+        "specialty": "Комп'ютерні науки",
+    },
+    {
+        "name": "КН-22",
+        "course": 2,
+        "year_of_entry": 2024,
+        "graduation_year": 2028,
+        "specialty": "Комп'ютерні науки",
+    },
 ]
 
 # ── Teachers (12) ─────────────────────────────────────────────────────────────
 # email домен @teacher.zephyra.edu.ua — пароль = частина до @
 TEACHERS_DATA = [
-    {"full_name": "Іван Петрович Коваленко",   "email": "ivan.kovalenko@teacher.zephyra.edu.ua"},
-    {"full_name": "Олена Василівна Петренко",   "email": "olena.petrenko@teacher.zephyra.edu.ua"},
-    {"full_name": "Микола Іванович Сидоренко",  "email": "mykola.sydorenko@teacher.zephyra.edu.ua"},
-    {"full_name": "Юлія Андріївна Бондаренко",  "email": "yulia.bondarenko@teacher.zephyra.edu.ua"},
-    {"full_name": "Андрій Миколайович Мороз",   "email": "andriy.moroz@teacher.zephyra.edu.ua"},
-    {"full_name": "Катерина Олегівна Лисенко",  "email": "kateryna.lysenko@teacher.zephyra.edu.ua"},
-    {"full_name": "Василь Дмитрович Кравченко", "email": "vasyl.kravchenko@teacher.zephyra.edu.ua"},
-    {"full_name": "Наталія Юріївна Шевченко",   "email": "natalia.shevchenko@teacher.zephyra.edu.ua"},
-    {"full_name": "Дмитро Сергійович Франко",   "email": "dmytro.franko@teacher.zephyra.edu.ua"},
-    {"full_name": "Ірина Олексіївна Савченко",  "email": "iryna.savchenko@teacher.zephyra.edu.ua"},
-    {"full_name": "Сергій Михайлович Бойко",    "email": "serhiy.boyko@teacher.zephyra.edu.ua"},
-    {"full_name": "Оксана Павлівна Ткаченко",   "email": "oksana.tkachenko@teacher.zephyra.edu.ua"},
+    {
+        "full_name": "Іван Петрович Коваленко",
+        "email": "ivan.kovalenko@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Олена Василівна Петренко",
+        "email": "olena.petrenko@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Микола Іванович Сидоренко",
+        "email": "mykola.sydorenko@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Юлія Андріївна Бондаренко",
+        "email": "yulia.bondarenko@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Андрій Миколайович Мороз",
+        "email": "andriy.moroz@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Катерина Олегівна Лисенко",
+        "email": "kateryna.lysenko@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Василь Дмитрович Кравченко",
+        "email": "vasyl.kravchenko@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Наталія Юріївна Шевченко",
+        "email": "natalia.shevchenko@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Дмитро Сергійович Франко",
+        "email": "dmytro.franko@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Ірина Олексіївна Савченко",
+        "email": "iryna.savchenko@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Сергій Михайлович Бойко",
+        "email": "serhiy.boyko@teacher.zephyra.edu.ua",
+    },
+    {
+        "full_name": "Оксана Павлівна Ткаченко",
+        "email": "oksana.tkachenko@teacher.zephyra.edu.ua",
+    },
 ]
 
 # ── Students (40, 10 per group) ───────────────────────────────────────────────
 # email домен @student.zephyra.edu.ua — пароль = частина до @
 STUDENTS_DATA = [
     # КН-41 (idx 0-9)
-    {"full_name": "Олексій Вікторович Мельник",     "email": "oleksiy.melnyk@student.zephyra.edu.ua",       "group": "КН-41"},
-    {"full_name": "Анна Романівна Коваль",           "email": "anna.koval@student.zephyra.edu.ua",           "group": "КН-41"},
-    {"full_name": "Богдан Андрійович Герасименко",   "email": "bohdan.gerasymenko@student.zephyra.edu.ua",   "group": "КН-41"},
-    {"full_name": "Вікторія Сергіївна Власенко",     "email": "viktoria.vlasenko@student.zephyra.edu.ua",    "group": "КН-41"},
-    {"full_name": "Григорій Іванович Назаренко",     "email": "hryhoriy.nazarenko@student.zephyra.edu.ua",   "group": "КН-41"},
-    {"full_name": "Дарина Михайлівна Пономаренко",   "email": "daryna.ponomarenko@student.zephyra.edu.ua",   "group": "КН-41"},
-    {"full_name": "Євген Олегович Романенко",        "email": "yevhen.romanenko@student.zephyra.edu.ua",     "group": "КН-41"},
-    {"full_name": "Зоя Дмитрівна Марченко",          "email": "zoya.marchenko@student.zephyra.edu.ua",       "group": "КН-41"},
-    {"full_name": "Ігор Васильович Тимченко",        "email": "ihor.tymchenko@student.zephyra.edu.ua",       "group": "КН-41"},
-    {"full_name": "Катерина Юріївна Федоренко",      "email": "kateryna.fedorenko@student.zephyra.edu.ua",   "group": "КН-41"},
+    {
+        "full_name": "Олексій Вікторович Мельник",
+        "email": "oleksiy.melnyk@student.zephyra.edu.ua",
+        "group": "КН-41",
+    },
+    {
+        "full_name": "Анна Романівна Коваль",
+        "email": "anna.koval@student.zephyra.edu.ua",
+        "group": "КН-41",
+    },
+    {
+        "full_name": "Богдан Андрійович Герасименко",
+        "email": "bohdan.gerasymenko@student.zephyra.edu.ua",
+        "group": "КН-41",
+    },
+    {
+        "full_name": "Вікторія Сергіївна Власенко",
+        "email": "viktoria.vlasenko@student.zephyra.edu.ua",
+        "group": "КН-41",
+    },
+    {
+        "full_name": "Григорій Іванович Назаренко",
+        "email": "hryhoriy.nazarenko@student.zephyra.edu.ua",
+        "group": "КН-41",
+    },
+    {
+        "full_name": "Дарина Михайлівна Пономаренко",
+        "email": "daryna.ponomarenko@student.zephyra.edu.ua",
+        "group": "КН-41",
+    },
+    {
+        "full_name": "Євген Олегович Романенко",
+        "email": "yevhen.romanenko@student.zephyra.edu.ua",
+        "group": "КН-41",
+    },
+    {
+        "full_name": "Зоя Дмитрівна Марченко",
+        "email": "zoya.marchenko@student.zephyra.edu.ua",
+        "group": "КН-41",
+    },
+    {
+        "full_name": "Ігор Васильович Тимченко",
+        "email": "ihor.tymchenko@student.zephyra.edu.ua",
+        "group": "КН-41",
+    },
+    {
+        "full_name": "Катерина Юріївна Федоренко",
+        "email": "kateryna.fedorenko@student.zephyra.edu.ua",
+        "group": "КН-41",
+    },
     # КН-42 (idx 0-9)
-    {"full_name": "Леонід Олексійович Гриценко",     "email": "leonid.grytsenko@student.zephyra.edu.ua",     "group": "КН-42"},
-    {"full_name": "Марина Петрівна Кириленко",       "email": "maryna.kyrylenko@student.zephyra.edu.ua",     "group": "КН-42"},
-    {"full_name": "Назар Богданович Луценко",         "email": "nazar.lutsenko@student.zephyra.edu.ua",       "group": "КН-42"},
-    {"full_name": "Оксана Василівна Момот",           "email": "oksana.momot@student.zephyra.edu.ua",         "group": "КН-42"},
-    {"full_name": "Павло Андрійович Лазаренко",      "email": "pavlo.lazarenko@student.zephyra.edu.ua",      "group": "КН-42"},
-    {"full_name": "Роксолана Ігорівна Яковенко",     "email": "roksolana.yakovenko@student.zephyra.edu.ua",  "group": "КН-42"},
-    {"full_name": "Степан Михайлович Данченко",      "email": "stepan.danchenko@student.zephyra.edu.ua",     "group": "КН-42"},
-    {"full_name": "Тетяна Олегівна Карпенко",        "email": "tetyana.karpenko@student.zephyra.edu.ua",     "group": "КН-42"},
-    {"full_name": "Юрій Дмитрович Семенченко",       "email": "yuriy.semenchenko@student.zephyra.edu.ua",    "group": "КН-42"},
-    {"full_name": "Ярослава Сергіївна Захаренко",    "email": "yaroslava.zakharenko@student.zephyra.edu.ua", "group": "КН-42"},
+    {
+        "full_name": "Леонід Олексійович Гриценко",
+        "email": "leonid.grytsenko@student.zephyra.edu.ua",
+        "group": "КН-42",
+    },
+    {
+        "full_name": "Марина Петрівна Кириленко",
+        "email": "maryna.kyrylenko@student.zephyra.edu.ua",
+        "group": "КН-42",
+    },
+    {
+        "full_name": "Назар Богданович Луценко",
+        "email": "nazar.lutsenko@student.zephyra.edu.ua",
+        "group": "КН-42",
+    },
+    {
+        "full_name": "Оксана Василівна Момот",
+        "email": "oksana.momot@student.zephyra.edu.ua",
+        "group": "КН-42",
+    },
+    {
+        "full_name": "Павло Андрійович Лазаренко",
+        "email": "pavlo.lazarenko@student.zephyra.edu.ua",
+        "group": "КН-42",
+    },
+    {
+        "full_name": "Роксолана Ігорівна Яковенко",
+        "email": "roksolana.yakovenko@student.zephyra.edu.ua",
+        "group": "КН-42",
+    },
+    {
+        "full_name": "Степан Михайлович Данченко",
+        "email": "stepan.danchenko@student.zephyra.edu.ua",
+        "group": "КН-42",
+    },
+    {
+        "full_name": "Тетяна Олегівна Карпенко",
+        "email": "tetyana.karpenko@student.zephyra.edu.ua",
+        "group": "КН-42",
+    },
+    {
+        "full_name": "Юрій Дмитрович Семенченко",
+        "email": "yuriy.semenchenko@student.zephyra.edu.ua",
+        "group": "КН-42",
+    },
+    {
+        "full_name": "Ярослава Сергіївна Захаренко",
+        "email": "yaroslava.zakharenko@student.zephyra.edu.ua",
+        "group": "КН-42",
+    },
     # КН-21 (idx 0-9)
-    {"full_name": "Артем Олексійович Білоус",         "email": "artem.bilous@student.zephyra.edu.ua",         "group": "КН-21"},
-    {"full_name": "Валерія Андріївна Чорна",          "email": "valeria.chorna@student.zephyra.edu.ua",       "group": "КН-21"},
-    {"full_name": "Владислав Ігорович Орел",          "email": "vladyslav.orel@student.zephyra.edu.ua",       "group": "КН-21"},
-    {"full_name": "Галина Василівна Хоменко",         "email": "halyna.khomenko@student.zephyra.edu.ua",      "group": "КН-21"},
-    {"full_name": "Давид Сергійович Олійник",         "email": "davyd.oliynyk@student.zephyra.edu.ua",        "group": "КН-21"},
-    {"full_name": "Єлизавета Миколаївна Войтенко",   "email": "yelyzaveta.voytenko@student.zephyra.edu.ua",  "group": "КН-21"},
-    {"full_name": "Жанна Ростиславівна Гладченко",   "email": "zhanna.hladchenko@student.zephyra.edu.ua",    "group": "КН-21"},
-    {"full_name": "Іванна Тарасівна Супруненко",     "email": "ivanna.suprunenko@student.zephyra.edu.ua",    "group": "КН-21"},
-    {"full_name": "Кирило Вікторович Стець",         "email": "kyrylo.stets@student.zephyra.edu.ua",          "group": "КН-21"},
-    {"full_name": "Людмила Олегівна Приходько",      "email": "lyudmyla.prykhodko@student.zephyra.edu.ua",   "group": "КН-21"},
+    {
+        "full_name": "Артем Олексійович Білоус",
+        "email": "artem.bilous@student.zephyra.edu.ua",
+        "group": "КН-21",
+    },
+    {
+        "full_name": "Валерія Андріївна Чорна",
+        "email": "valeria.chorna@student.zephyra.edu.ua",
+        "group": "КН-21",
+    },
+    {
+        "full_name": "Владислав Ігорович Орел",
+        "email": "vladyslav.orel@student.zephyra.edu.ua",
+        "group": "КН-21",
+    },
+    {
+        "full_name": "Галина Василівна Хоменко",
+        "email": "halyna.khomenko@student.zephyra.edu.ua",
+        "group": "КН-21",
+    },
+    {
+        "full_name": "Давид Сергійович Олійник",
+        "email": "davyd.oliynyk@student.zephyra.edu.ua",
+        "group": "КН-21",
+    },
+    {
+        "full_name": "Єлизавета Миколаївна Войтенко",
+        "email": "yelyzaveta.voytenko@student.zephyra.edu.ua",
+        "group": "КН-21",
+    },
+    {
+        "full_name": "Жанна Ростиславівна Гладченко",
+        "email": "zhanna.hladchenko@student.zephyra.edu.ua",
+        "group": "КН-21",
+    },
+    {
+        "full_name": "Іванна Тарасівна Супруненко",
+        "email": "ivanna.suprunenko@student.zephyra.edu.ua",
+        "group": "КН-21",
+    },
+    {
+        "full_name": "Кирило Вікторович Стець",
+        "email": "kyrylo.stets@student.zephyra.edu.ua",
+        "group": "КН-21",
+    },
+    {
+        "full_name": "Людмила Олегівна Приходько",
+        "email": "lyudmyla.prykhodko@student.zephyra.edu.ua",
+        "group": "КН-21",
+    },
     # КН-22 (idx 0-9)
-    {"full_name": "Максим Юрійович Гончаренко",      "email": "maksym.goncharenko@student.zephyra.edu.ua",   "group": "КН-22"},
-    {"full_name": "Надія Петрівна Бондар",           "email": "nadiya.bondar@student.zephyra.edu.ua",        "group": "КН-22"},
-    {"full_name": "Олег Богданович Приймак",         "email": "oleg.pryymak@student.zephyra.edu.ua",         "group": "КН-22"},
-    {"full_name": "Поліна Андріївна Рибак",          "email": "polina.rybak@student.zephyra.edu.ua",         "group": "КН-22"},
-    {"full_name": "Руслан Дмитрович Гавриленко",    "email": "ruslan.havrylenko@student.zephyra.edu.ua",    "group": "КН-22"},
-    {"full_name": "Світлана Сергіївна Тарасенко",   "email": "svitlana.tarasenko@student.zephyra.edu.ua",   "group": "КН-22"},
-    {"full_name": "Тимур Олексійович Пилипенко",    "email": "tymur.pylypenko@student.zephyra.edu.ua",      "group": "КН-22"},
-    {"full_name": "Уляна Іванівна Костенко",        "email": "ulyana.kostenko@student.zephyra.edu.ua",      "group": "КН-22"},
-    {"full_name": "Федір Васильович Яценко",        "email": "fedir.yatsenko@student.zephyra.edu.ua",       "group": "КН-22"},
-    {"full_name": "Христина Андріївна Лук'яненко", "email": "khrystyna.lukyanenko@student.zephyra.edu.ua", "group": "КН-22"},
+    {
+        "full_name": "Максим Юрійович Гончаренко",
+        "email": "maksym.goncharenko@student.zephyra.edu.ua",
+        "group": "КН-22",
+    },
+    {
+        "full_name": "Надія Петрівна Бондар",
+        "email": "nadiya.bondar@student.zephyra.edu.ua",
+        "group": "КН-22",
+    },
+    {
+        "full_name": "Олег Богданович Приймак",
+        "email": "oleg.pryymak@student.zephyra.edu.ua",
+        "group": "КН-22",
+    },
+    {
+        "full_name": "Поліна Андріївна Рибак",
+        "email": "polina.rybak@student.zephyra.edu.ua",
+        "group": "КН-22",
+    },
+    {
+        "full_name": "Руслан Дмитрович Гавриленко",
+        "email": "ruslan.havrylenko@student.zephyra.edu.ua",
+        "group": "КН-22",
+    },
+    {
+        "full_name": "Світлана Сергіївна Тарасенко",
+        "email": "svitlana.tarasenko@student.zephyra.edu.ua",
+        "group": "КН-22",
+    },
+    {
+        "full_name": "Тимур Олексійович Пилипенко",
+        "email": "tymur.pylypenko@student.zephyra.edu.ua",
+        "group": "КН-22",
+    },
+    {
+        "full_name": "Уляна Іванівна Костенко",
+        "email": "ulyana.kostenko@student.zephyra.edu.ua",
+        "group": "КН-22",
+    },
+    {
+        "full_name": "Федір Васильович Яценко",
+        "email": "fedir.yatsenko@student.zephyra.edu.ua",
+        "group": "КН-22",
+    },
+    {
+        "full_name": "Христина Андріївна Лук'яненко",
+        "email": "khrystyna.lukyanenko@student.zephyra.edu.ua",
+        "group": "КН-22",
+    },
 ]
 
 # ── Teaching assignments ──────────────────────────────────────────────────────
 # (teacher_email_prefix, subject_name, group_name)
 TEACHING_ASSIGNMENTS_DATA = [
     # КН-41 — 4-й курс, поглиблені предмети (8 предметів)
-    ("ivan.kovalenko",    "Алгоритми та структури даних",        "КН-41"),
-    ("olena.petrenko",    "Об'єктно-орієнтоване програмування",  "КН-41"),
-    ("mykola.sydorenko",  "Бази даних",                          "КН-41"),
-    ("yulia.bondarenko",  "Комп'ютерні мережі",                  "КН-41"),
-    ("yulia.bondarenko",  "Безпека інформаційних систем",        "КН-41"),
-    ("vasyl.kravchenko",  "Штучний інтелект та МН",              "КН-41"),
-    ("vasyl.kravchenko",  "Мобільна розробка",                   "КН-41"),
-    ("dmytro.franko",     "Веб-технології",                      "КН-41"),
+    ("ivan.kovalenko", "Алгоритми та структури даних", "КН-41"),
+    ("olena.petrenko", "Об'єктно-орієнтоване програмування", "КН-41"),
+    ("mykola.sydorenko", "Бази даних", "КН-41"),
+    ("yulia.bondarenko", "Комп'ютерні мережі", "КН-41"),
+    ("yulia.bondarenko", "Безпека інформаційних систем", "КН-41"),
+    ("vasyl.kravchenko", "Штучний інтелект та МН", "КН-41"),
+    ("vasyl.kravchenko", "Мобільна розробка", "КН-41"),
+    ("dmytro.franko", "Веб-технології", "КН-41"),
     # КН-42 — 4-й курс, поглиблені предмети (8 предметів)
-    ("ivan.kovalenko",    "Алгоритми та структури даних",        "КН-42"),
-    ("olena.petrenko",    "Програмування мовою Python",           "КН-42"),
-    ("mykola.sydorenko",  "Бази даних",                          "КН-42"),
-    ("yulia.bondarenko",  "Комп'ютерні мережі",                  "КН-42"),
-    ("yulia.bondarenko",  "Безпека інформаційних систем",        "КН-42"),
-    ("vasyl.kravchenko",  "Штучний інтелект та МН",              "КН-42"),
-    ("vasyl.kravchenko",  "Мобільна розробка",                   "КН-42"),
-    ("andriy.moroz",      "Системне програмування",              "КН-42"),
+    ("ivan.kovalenko", "Алгоритми та структури даних", "КН-42"),
+    ("olena.petrenko", "Програмування мовою Python", "КН-42"),
+    ("mykola.sydorenko", "Бази даних", "КН-42"),
+    ("yulia.bondarenko", "Комп'ютерні мережі", "КН-42"),
+    ("yulia.bondarenko", "Безпека інформаційних систем", "КН-42"),
+    ("vasyl.kravchenko", "Штучний інтелект та МН", "КН-42"),
+    ("vasyl.kravchenko", "Мобільна розробка", "КН-42"),
+    ("andriy.moroz", "Системне програмування", "КН-42"),
     # КН-21 — 2-й курс, фундаментальні предмети (7 предметів)
-    ("ivan.kovalenko",    "Вища математика",                     "КН-21"),
-    ("olena.petrenko",    "Об'єктно-орієнтоване програмування",  "КН-21"),
-    ("kateryna.lysenko",  "Дискретна математика",                "КН-21"),
-    ("kateryna.lysenko",  "Теорія ймовірностей та статистика",   "КН-21"),
-    ("oksana.tkachenko",  "Бази даних",                          "КН-21"),
-    ("serhiy.boyko",      "Програмування мовою Python",           "КН-21"),
-    ("dmytro.franko",     "Веб-технології",                      "КН-21"),
+    ("ivan.kovalenko", "Вища математика", "КН-21"),
+    ("olena.petrenko", "Об'єктно-орієнтоване програмування", "КН-21"),
+    ("kateryna.lysenko", "Дискретна математика", "КН-21"),
+    ("kateryna.lysenko", "Теорія ймовірностей та статистика", "КН-21"),
+    ("oksana.tkachenko", "Бази даних", "КН-21"),
+    ("serhiy.boyko", "Програмування мовою Python", "КН-21"),
+    ("dmytro.franko", "Веб-технології", "КН-21"),
     # КН-22 — 2-й курс, фундаментальні предмети (7 предметів)
-    ("ivan.kovalenko",    "Вища математика",                     "КН-22"),
-    ("kateryna.lysenko",  "Дискретна математика",                "КН-22"),
-    ("kateryna.lysenko",  "Теорія ймовірностей та статистика",   "КН-22"),
-    ("iryna.savchenko",   "Алгоритми та структури даних",        "КН-22"),
-    ("natalia.shevchenko","Комп'ютерна архітектура",              "КН-22"),
-    ("andriy.moroz",      "Операційні системи",                  "КН-22"),
-    ("serhiy.boyko",      "Програмування мовою Python",           "КН-22"),
+    ("ivan.kovalenko", "Вища математика", "КН-22"),
+    ("kateryna.lysenko", "Дискретна математика", "КН-22"),
+    ("kateryna.lysenko", "Теорія ймовірностей та статистика", "КН-22"),
+    ("iryna.savchenko", "Алгоритми та структури даних", "КН-22"),
+    ("natalia.shevchenko", "Комп'ютерна архітектура", "КН-22"),
+    ("andriy.moroz", "Операційні системи", "КН-22"),
+    ("serhiy.boyko", "Програмування мовою Python", "КН-22"),
 ]
 
 # ── Schedule: (day_of_week, lesson_number) per group ─────────────────────────
 # unique_together на ScheduleTemplate: (group, day_of_week, lesson_number)
 GROUP_SCHEDULE_SLOTS = {
     "КН-41": [
-        (1,1),(1,2),(1,3),
-        (2,1),(2,2),(2,3),(2,4),
-        (3,1),(3,2),(3,3),
-        (4,1),(4,2),(4,3),(4,4),
-        (5,1),(5,2),(5,3),
+        (1, 1),
+        (1, 2),
+        (1, 3),
+        (2, 1),
+        (2, 2),
+        (2, 3),
+        (2, 4),
+        (3, 1),
+        (3, 2),
+        (3, 3),
+        (4, 1),
+        (4, 2),
+        (4, 3),
+        (4, 4),
+        (5, 1),
+        (5, 2),
+        (5, 3),
     ],
     "КН-42": [
-        (1,1),(1,2),(1,3),(1,4),
-        (2,1),(2,2),(2,3),
-        (3,1),(3,2),(3,3),(3,4),
-        (4,1),(4,2),(4,3),
-        (5,1),(5,2),
+        (1, 1),
+        (1, 2),
+        (1, 3),
+        (1, 4),
+        (2, 1),
+        (2, 2),
+        (2, 3),
+        (3, 1),
+        (3, 2),
+        (3, 3),
+        (3, 4),
+        (4, 1),
+        (4, 2),
+        (4, 3),
+        (5, 1),
+        (5, 2),
     ],
     "КН-21": [
-        (1,1),(1,2),(1,3),
-        (2,1),(2,2),
-        (3,1),(3,2),(3,3),
-        (4,1),(4,2),(4,3),
-        (5,1),(5,2),
+        (1, 1),
+        (1, 2),
+        (1, 3),
+        (2, 1),
+        (2, 2),
+        (3, 1),
+        (3, 2),
+        (3, 3),
+        (4, 1),
+        (4, 2),
+        (4, 3),
+        (5, 1),
+        (5, 2),
     ],
     "КН-22": [
-        (1,1),(1,2),(1,3),
-        (2,2),(2,3),(2,4),
-        (3,1),(3,2),(3,3),
-        (4,2),(4,3),(4,4),
-        (5,1),(5,2),
+        (1, 1),
+        (1, 2),
+        (1, 3),
+        (2, 2),
+        (2, 3),
+        (2, 4),
+        (3, 1),
+        (3, 2),
+        (3, 3),
+        (4, 2),
+        (4, 3),
+        (4, 4),
+        (5, 1),
+        (5, 2),
     ],
 }
 
@@ -394,16 +834,16 @@ CANCELLATION_REASONS = [
 # ── Student grade profiles (index in group, 0-based) ─────────────────────────
 # (profile_label, grade_weights[1..12], absence_probability)
 STUDENT_PROFILES = {
-    0: ("відмінник",  [0,0,0,0,0,0,1,2,5,8,12,12], 0.03),
-    1: ("відмінник",  [0,0,0,0,0,0,1,2,5,8,12,12], 0.03),
-    2: ("хорошист",   [0,0,0,0,1,2,4,8,10,8,4,2],  0.07),
-    3: ("хорошист",   [0,0,0,0,1,2,4,8,10,8,4,2],  0.07),
-    4: ("хорошист",   [0,0,0,0,1,2,4,8,10,8,4,2],  0.07),
-    5: ("середняк",   [1,2,3,5,8,10,8,5,3,2,1,0],  0.10),
-    6: ("середняк",   [1,2,3,5,8,10,8,5,3,2,1,0],  0.10),
-    7: ("середняк",   [1,2,3,5,8,10,8,5,3,2,1,0],  0.10),
-    8: ("двієчник",   [8,10,10,8,5,3,2,1,1,0,0,0], 0.15),
-    9: ("прогульник", [1,2,3,4,6,8,8,5,3,2,1,1],   0.40),
+    0: ("відмінник", [0, 0, 0, 0, 0, 0, 1, 2, 5, 8, 12, 12], 0.03),
+    1: ("відмінник", [0, 0, 0, 0, 0, 0, 1, 2, 5, 8, 12, 12], 0.03),
+    2: ("хорошист", [0, 0, 0, 0, 1, 2, 4, 8, 10, 8, 4, 2], 0.07),
+    3: ("хорошист", [0, 0, 0, 0, 1, 2, 4, 8, 10, 8, 4, 2], 0.07),
+    4: ("хорошист", [0, 0, 0, 0, 1, 2, 4, 8, 10, 8, 4, 2], 0.07),
+    5: ("середняк", [1, 2, 3, 5, 8, 10, 8, 5, 3, 2, 1, 0], 0.10),
+    6: ("середняк", [1, 2, 3, 5, 8, 10, 8, 5, 3, 2, 1, 0], 0.10),
+    7: ("середняк", [1, 2, 3, 5, 8, 10, 8, 5, 3, 2, 1, 0], 0.10),
+    8: ("двієчник", [8, 10, 10, 8, 5, 3, 2, 1, 1, 0, 0, 0], 0.15),
+    9: ("прогульник", [1, 2, 3, 4, 6, 8, 8, 5, 3, 2, 1, 1], 0.40),
 }
 
 COMMENTS_POOL = [
@@ -430,18 +870,20 @@ class Command(BaseCommand):
         self.stdout.write(self.style.WARNING("=" * 65))
         self.stdout.write(self.style.WARNING("  RESET AND SEED — Zephyra EduTrack"))
         self.stdout.write(self.style.WARNING(f"  Сьогодні: {TODAY}"))
-        self.stdout.write(self.style.WARNING(
-            f"  Діапазон: {START_DATE} → {END_DATE}  |  Оцінки до: {GRADES_CUTOFF}"
-        ))
+        self.stdout.write(
+            self.style.WARNING(
+                f"  Діапазон: {START_DATE} → {END_DATE}  |  Оцінки до: {GRADES_CUTOFF}"
+            )
+        )
         self.stdout.write(self.style.WARNING("=" * 65))
 
-        absence_reasons      = self._step1_clear_and_static()
-        groups               = self._step2_groups()
-        teachers             = self._step3_teachers()
-        students_by_group    = self._step4_students(groups)
-        tas                  = self._step5_teaching_assignments(teachers, groups)
+        absence_reasons = self._step1_clear_and_static()
+        groups = self._step2_groups()
+        teachers = self._step3_teachers()
+        students_by_group = self._step4_students(groups)
+        tas = self._step5_teaching_assignments(teachers, groups)
         self._step6_evaluation_types(tas)
-        group_templates      = self._step7_schedule_templates(tas, groups)
+        group_templates = self._step7_schedule_templates(tas, groups)
         self._step8_lessons(group_templates, tas)
         self._step9_grades(absence_reasons, students_by_group)
 
@@ -531,11 +973,11 @@ class Command(BaseCommand):
         counters = {name: 0 for name in groups}
 
         for d in STUDENTS_DATA:
-            email    = d["email"]
+            email = d["email"]
             password = email.split("@")[0]
-            gname    = d["group"]
-            group    = groups[gname]
-            idx      = counters[gname]
+            gname = d["group"]
+            group = groups[gname]
+            idx = counters[gname]
             counters[gname] += 1
 
             student = User.objects.create_user(
@@ -549,7 +991,9 @@ class Command(BaseCommand):
             students_by_group[gname].append(student)
 
         total = sum(len(v) for v in students_by_group.values())
-        self.stdout.write(f"  Студентів: {total}  ({', '.join(f'{k}:{len(v)}' for k,v in students_by_group.items())})")
+        self.stdout.write(
+            f"  Студентів: {total}  ({', '.join(f'{k}:{len(v)}' for k,v in students_by_group.items())})"
+        )
         self.stdout.write(self.style.SUCCESS("  OK"))
         return students_by_group
 
@@ -564,12 +1008,14 @@ class Command(BaseCommand):
         for teacher_prefix, subject_name, group_name in TEACHING_ASSIGNMENTS_DATA:
             teacher = teachers.get(teacher_prefix)
             subject = subject_map.get(subject_name)
-            group   = groups.get(group_name)
+            group = groups.get(group_name)
 
             if not all([teacher, subject, group]):
-                self.stdout.write(self.style.ERROR(
-                    f"  SKIP: teacher={teacher_prefix}, subject={subject_name}, group={group_name}"
-                ))
+                self.stdout.write(
+                    self.style.ERROR(
+                        f"  SKIP: teacher={teacher_prefix}, subject={subject_name}, group={group_name}"
+                    )
+                )
                 continue
 
             ta = TeachingAssignment.objects.create(
@@ -594,9 +1040,9 @@ class Command(BaseCommand):
     def _step6_evaluation_types(self, tas):
         self.stdout.write("\n[6/9] Creating evaluation types...")
         et_data = [
-            ("Лекція",       Decimal("50.00"), 1),
-            ("Практика",     Decimal("30.00"), 2),
-            ("Лабораторна",  Decimal("20.00"), 3),
+            ("Лекція", Decimal("50.00"), 1),
+            ("Практика", Decimal("30.00"), 2),
+            ("Лабораторна", Decimal("20.00"), 3),
         ]
         for ta in tas:
             for name, weight, order in et_data:
@@ -619,16 +1065,18 @@ class Command(BaseCommand):
 
         group_templates = {}
         for group_name, slots in GROUP_SCHEDULE_SLOTS.items():
-            group_obj  = groups[group_name]
-            group_tas  = group_ta_map.get(group_name, [])
+            group_obj = groups[group_name]
+            group_tas = group_ta_map.get(group_name, [])
             if not group_tas:
                 continue
 
             tmpl_list = []
             for i, (day, lesson_num) in enumerate(slots):
-                ta        = group_tas[i % len(group_tas)]
+                ta = group_tas[i % len(group_tas)]
                 start_t, end_t = TIME_MAP[lesson_num]
-                duration  = (end_t.hour * 60 + end_t.minute) - (start_t.hour * 60 + start_t.minute)
+                duration = (end_t.hour * 60 + end_t.minute) - (
+                    start_t.hour * 60 + start_t.minute
+                )
                 classroom = random.choice(classrooms) if classrooms else None
 
                 try:
@@ -646,9 +1094,11 @@ class Command(BaseCommand):
                     )
                     tmpl_list.append((tmpl, ta))
                 except Exception as exc:
-                    self.stdout.write(self.style.ERROR(
-                        f"  Template ERR {group_name} day={day} slot={lesson_num}: {exc}"
-                    ))
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f"  Template ERR {group_name} day={day} slot={lesson_num}: {exc}"
+                        )
+                    )
 
             group_templates[group_name] = tmpl_list
             self.stdout.write(f"  {group_name}: {len(tmpl_list)} templates")
@@ -667,14 +1117,14 @@ class Command(BaseCommand):
         for ta in tas:
             ets = {et.name: et for et in ta.evaluation_types.all()}
             ta_et[ta.id] = {
-                "lecture":   ets.get("Лекція"),
+                "lecture": ets.get("Лекція"),
                 "practical": ets.get("Практика"),
-                "lab":       ets.get("Лабораторна"),
+                "lab": ets.get("Лабораторна"),
             }
 
         topic_counters = {}
-        type_counters  = {}
-        lessons_batch  = []
+        type_counters = {}
+        lessons_batch = []
 
         current = START_DATE
         while current <= END_DATE:
@@ -685,13 +1135,13 @@ class Command(BaseCommand):
                         if tmpl.day_of_week != dow:
                             continue
 
-                        key        = (ta.group_id, ta.subject_id)
+                        key = (ta.group_id, ta.subject_id)
                         topic_list = TOPICS.get(ta.subject.name, DEFAULT_TOPICS)
-                        t_idx      = topic_counters.get(key, 0)
-                        topic      = topic_list[t_idx % len(topic_list)]
+                        t_idx = topic_counters.get(key, 0)
+                        topic = topic_list[t_idx % len(topic_list)]
                         topic_counters[key] = t_idx + 1
 
-                        l_idx       = type_counters.get(key, 0)
+                        l_idx = type_counters.get(key, 0)
                         lesson_type = LESSON_TYPE_CYCLE[l_idx % len(LESSON_TYPE_CYCLE)]
                         type_counters[key] = l_idx + 1
 
@@ -699,33 +1149,37 @@ class Command(BaseCommand):
                         start_t, end_t = TIME_MAP[tmpl.lesson_number]
 
                         # Скасовані уроки: 2% минулих, 5% майбутніх
-                        is_cancelled  = False
+                        is_cancelled = False
                         cancel_reason = ""
                         threshold = 0.05 if current > TODAY else 0.02
                         if random.random() < threshold:
-                            is_cancelled  = True
+                            is_cancelled = True
                             cancel_reason = random.choice(CANCELLATION_REASONS)
 
-                        lessons_batch.append(Lesson(
-                            group=ta.group,
-                            subject=ta.subject,
-                            teacher=ta.teacher,
-                            date=current,
-                            start_time=start_t,
-                            end_time=end_t,
-                            topic=topic,
-                            classroom=tmpl.classroom,
-                            max_points=12,
-                            evaluation_type=eval_type,
-                            template_source=tmpl,
-                            is_cancelled=is_cancelled,
-                            cancellation_reason=cancel_reason,
-                        ))
+                        lessons_batch.append(
+                            Lesson(
+                                group=ta.group,
+                                subject=ta.subject,
+                                teacher=ta.teacher,
+                                date=current,
+                                start_time=start_t,
+                                end_time=end_t,
+                                topic=topic,
+                                classroom=tmpl.classroom,
+                                max_points=12,
+                                evaluation_type=eval_type,
+                                template_source=tmpl,
+                                is_cancelled=is_cancelled,
+                                cancellation_reason=cancel_reason,
+                            )
+                        )
 
             current += timedelta(days=1)
 
         created = Lesson.objects.bulk_create(lessons_batch, ignore_conflicts=True)
-        self.stdout.write(f"  Уроків створено: {len(created)}  ({START_DATE} → {END_DATE})")
+        self.stdout.write(
+            f"  Уроків створено: {len(created)}  ({START_DATE} → {END_DATE})"
+        )
         cancelled = sum(1 for l in lessons_batch if l.is_cancelled)
         self.stdout.write(f"  З них скасованих: {cancelled}")
         self.stdout.write(self.style.SUCCESS("  OK"))
@@ -744,19 +1198,19 @@ class Command(BaseCommand):
             ).select_related("group", "subject", "teacher")
         )
 
-        all_absence  = list(absence_reasons.values())
-        excused      = [ar for ar in all_absence if ar.is_respectful]
-        unexcused    = absence_reasons.get("Н", all_absence[0])
+        all_absence = list(absence_reasons.values())
+        excused = [ar for ar in all_absence if ar.is_respectful]
+        unexcused = absence_reasons.get("Н", all_absence[0])
 
-        perf_batch   = []
+        perf_batch = []
         total_absent = 0
-        total_bonus  = 0
+        total_bonus = 0
 
         for lesson in lessons:
-            students   = students_by_group.get(lesson.group.name, [])
-            graded_by  = lesson.teacher
+            students = students_by_group.get(lesson.group.name, [])
+            graded_by = lesson.teacher
             grade_hour = min(lesson.start_time.hour + 1, 23)
-            graded_at  = timezone.make_aware(
+            graded_at = timezone.make_aware(
                 datetime.combine(lesson.date, time(grade_hour, 30))
             )
 
@@ -769,45 +1223,63 @@ class Command(BaseCommand):
                     # ── Пропуск ──────────────────────────────────────────────
                     if idx % 10 == 8:
                         # двієчник — 70% неповажних
-                        ar = unexcused if random.random() < 0.7 else random.choice(excused or [unexcused])
+                        ar = (
+                            unexcused
+                            if random.random() < 0.7
+                            else random.choice(excused or [unexcused])
+                        )
                     elif idx % 10 == 9:
                         # прогульник — рівномірно всі типи
                         ar = random.choice(all_absence)
                     else:
                         # решта — переважно поважні
-                        ar = random.choice(excused) if excused and random.random() < 0.7 else unexcused
+                        ar = (
+                            random.choice(excused)
+                            if excused and random.random() < 0.7
+                            else unexcused
+                        )
 
-                    perf_batch.append(StudentPerformance(
-                        lesson=lesson,
-                        student=student,
-                        absence=ar,
-                        earned_points=None,
-                        comment=random.choice(COMMENTS_POOL) if random.random() < 0.25 else "",
-                        graded_by=graded_by,
-                        graded_at=graded_at,
-                    ))
+                    perf_batch.append(
+                        StudentPerformance(
+                            lesson=lesson,
+                            student=student,
+                            absence=ar,
+                            earned_points=None,
+                            comment=(
+                                random.choice(COMMENTS_POOL)
+                                if random.random() < 0.25
+                                else ""
+                            ),
+                            graded_by=graded_by,
+                            graded_at=graded_at,
+                        )
+                    )
                     total_absent += 1
 
                 else:
                     # ── Оцінка ───────────────────────────────────────────────
-                    pts      = random.choices(range(1, 13), weights=weights)[0]
+                    pts = random.choices(range(1, 13), weights=weights)[0]
                     is_bonus = random.random() < 0.05
-                    comment  = random.choice(COMMENTS_POOL) if random.random() < 0.12 else ""
+                    comment = (
+                        random.choice(COMMENTS_POOL) if random.random() < 0.12 else ""
+                    )
                     if is_bonus:
                         comment = "Бонус за активну роботу на занятті."
                         total_bonus += 1
 
-                    perf_batch.append(StudentPerformance(
-                        lesson=lesson,
-                        student=student,
-                        absence=None,
-                        earned_points=pts,
-                        is_bonus=is_bonus,
-                        comment=comment,
-                        graded_by=graded_by,
-                        graded_at=graded_at,
-                        version=1,
-                    ))
+                    perf_batch.append(
+                        StudentPerformance(
+                            lesson=lesson,
+                            student=student,
+                            absence=None,
+                            earned_points=pts,
+                            is_bonus=is_bonus,
+                            comment=comment,
+                            graded_by=graded_by,
+                            graded_at=graded_at,
+                            version=1,
+                        )
+                    )
 
         StudentPerformance.objects.bulk_create(perf_batch, ignore_conflicts=True)
         self.stdout.write(
@@ -824,17 +1296,27 @@ class Command(BaseCommand):
         self.stdout.write("─" * 65)
         self.stdout.write(f"  Груп:      {StudyGroup.objects.count()}")
         self.stdout.write(f"  Викладачів:{len(teachers)}")
-        self.stdout.write(f"  Студентів: {sum(len(v) for v in students_by_group.values())}")
+        self.stdout.write(
+            f"  Студентів: {sum(len(v) for v in students_by_group.values())}"
+        )
         self.stdout.write(f"  Предметів: {Subject.objects.count()}")
-        self.stdout.write(f"  Уроків:    {Lesson.objects.count()}  (з них скасованих: {Lesson.objects.filter(is_cancelled=True).count()})")
+        self.stdout.write(
+            f"  Уроків:    {Lesson.objects.count()}  (з них скасованих: {Lesson.objects.filter(is_cancelled=True).count()})"
+        )
         self.stdout.write(f"  Оцінок/Пропусків: {StudentPerformance.objects.count()}")
         self.stdout.write("")
         self.stdout.write("ЛОГІН / ПАРОЛЬ:")
         self.stdout.write("  Суперадмін: (не змінено)")
-        self.stdout.write("  Викладач:   ivan.kovalenko@teacher.zephyra.edu.ua  /  ivan.kovalenko")
-        self.stdout.write("  Студент:    anna.koval@student.zephyra.edu.ua      /  anna.koval")
+        self.stdout.write(
+            "  Викладач:   ivan.kovalenko@teacher.zephyra.edu.ua  /  ivan.kovalenko"
+        )
+        self.stdout.write(
+            "  Студент:    anna.koval@student.zephyra.edu.ua      /  anna.koval"
+        )
         self.stdout.write("")
         self.stdout.write("ПРОФІЛІ СТУДЕНТІВ (позиція у групі):")
-        self.stdout.write("  0,1  — відмінник  |  2,3,4 — хорошист  |  5,6,7 — середняк")
+        self.stdout.write(
+            "  0,1  — відмінник  |  2,3,4 — хорошист  |  5,6,7 — середняк"
+        )
         self.stdout.write("  8    — двієчник   |  9     — прогульник")
         self.stdout.write("─" * 65)

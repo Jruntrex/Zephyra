@@ -26,7 +26,7 @@ def global_context(request):
         "ctx_courses": [],
         "show_context_switcher": False,
     }
-    
+
     if not request.user.is_authenticated or request.user.role == "student":
         return ctx
 
@@ -39,7 +39,7 @@ def global_context(request):
         elif request.user.role == "teacher":
             # For teachers, specialty is not needed as per request
             ctx["ctx_specialties"] = []
-            
+
             # Teachers get full course selection (1-6) just like admins
             ctx["ctx_courses"] = list(range(1, 7))
             ctx["show_context_switcher"] = True
@@ -47,10 +47,15 @@ def global_context(request):
         # 2. Get current active context from session
         ctx["ctx_course"] = request.session.get("global_course")
         specialty_id = request.session.get("global_specialty_id")
-        
+
         if specialty_id:
             # Verify teacher still has access to this specialty if they switched roles or assignments
-            if request.user.role == "admin" or Specialty.objects.filter(id=specialty_id, id__in=[s.id for s in ctx["ctx_specialties"]]).exists():
+            if (
+                request.user.role == "admin"
+                or Specialty.objects.filter(
+                    id=specialty_id, id__in=[s.id for s in ctx["ctx_specialties"]]
+                ).exists()
+            ):
                 ctx["ctx_specialty"] = Specialty.objects.filter(pk=specialty_id).first()
             else:
                 # Reset invalid context
@@ -64,5 +69,5 @@ def global_context(request):
 
     except Exception:
         pass
-    
+
     return ctx

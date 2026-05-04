@@ -107,7 +107,6 @@ class SpecialtyAdmin(admin.ModelAdmin):
     ordering = ("code", "name")
 
 
-
 @admin.register(StudyGroup)
 class StudyGroupAdmin(admin.ModelAdmin):
     list_display = (

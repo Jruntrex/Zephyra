@@ -199,11 +199,11 @@ def csrf_debug_view(request: HttpRequest) -> JsonResponse:
 def admin_panel_view(request: HttpRequest) -> HttpResponse:
     course_ctx = request.session.get("global_course")
     specialty_ctx = request.session.get("global_specialty_id")
-    
+
     users_qs = User.objects.all()
     students_qs = User.objects.filter(role="student")
     groups_qs = StudyGroup.objects.all()
-    
+
     if course_ctx:
         students_qs = students_qs.filter(group__course=course_ctx)
         groups_qs = groups_qs.filter(course=course_ctx)
@@ -243,7 +243,9 @@ def institution_settings_view(request: HttpRequest) -> HttpResponse:
         messages.success(request, "Налаштування закладу збережено")
         return redirect("institution_settings")
 
-    return render(request, "institution_settings.html", {"obj": obj, "active_page": "institution"})
+    return render(
+        request, "institution_settings.html", {"obj": obj, "active_page": "institution"}
+    )
 
 
 # --- USERS ---
@@ -284,15 +286,19 @@ def users_list_view(request: HttpRequest) -> HttpResponse:
 
     if group_filter:
         users = users.filter(group_id=group_filter)
-        
+
     # Global context filters (apply to students)
     course_ctx = request.session.get("global_course")
     specialty_ctx = request.session.get("global_specialty_id")
-    
+
     if course_ctx:
-        users = users.filter(Q(role="student", group__course=course_ctx) | ~Q(role="student"))
+        users = users.filter(
+            Q(role="student", group__course=course_ctx) | ~Q(role="student")
+        )
     if specialty_ctx:
-        users = users.filter(Q(role="student", group__specialty_id=specialty_ctx) | ~Q(role="student"))
+        users = users.filter(
+            Q(role="student", group__specialty_id=specialty_ctx) | ~Q(role="student")
+        )
 
     if subject_filter:
         users = users.filter(teachingassignment__subject_id=subject_filter).distinct()
@@ -372,9 +378,7 @@ def student_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
     subjects_data = []
     if target_user.role == "student" and target_user.group:
         assignments = (
-            TeachingAssignment.objects.filter(
-                group=target_user.group, is_active=True
-            )
+            TeachingAssignment.objects.filter(group=target_user.group, is_active=True)
             .select_related("subject", "teacher")
             .prefetch_related("evaluation_types")
             .order_by("subject__name")
@@ -451,7 +455,6 @@ def student_detail_view(request: HttpRequest, pk: int) -> HttpResponse:
             "total_absences": total_absences,
         },
     )
-
 
 
 @role_required("admin")
@@ -880,8 +883,16 @@ def groups_list_view(request):
                 name=name,
                 specialty=specialty,
                 course=int(course) if course and course.isdigit() else None,
-                year_of_entry=int(year_of_entry) if year_of_entry and year_of_entry.isdigit() else None,
-                graduation_year=int(graduation_year) if graduation_year and graduation_year.isdigit() else None,
+                year_of_entry=(
+                    int(year_of_entry)
+                    if year_of_entry and year_of_entry.isdigit()
+                    else None
+                ),
+                graduation_year=(
+                    int(graduation_year)
+                    if graduation_year and graduation_year.isdigit()
+                    else None
+                ),
             )
             messages.success(request, f"Групу '{name}' додано")
         else:
@@ -889,14 +900,19 @@ def groups_list_view(request):
         return redirect("groups_list")
 
     search_query = request.GET.get("search", "")
-    
+
     # GET filters take priority, session context is fallback
     course_filter = request.GET.get("course") or request.session.get("global_course")
-    specialty_filter = request.GET.get("specialty") or request.session.get("global_specialty_id")
+    specialty_filter = request.GET.get("specialty") or request.session.get(
+        "global_specialty_id"
+    )
 
-    groups = StudyGroup.objects.select_related("specialty").prefetch_related("students").annotate(
-        student_count=Count("students")
-    ).order_by("name")
+    groups = (
+        StudyGroup.objects.select_related("specialty")
+        .prefetch_related("students")
+        .annotate(student_count=Count("students"))
+        .order_by("name")
+    )
 
     if search_query:
         groups = groups.filter(
@@ -946,6 +962,7 @@ def group_delete_view(request, pk):
 # GLOBAL CONTEXT SWITCHER
 # =========================
 
+
 @login_required
 @require_POST
 def set_global_context_view(request):
@@ -971,6 +988,7 @@ def set_global_context_view(request):
 # SPECIALTIES CRUD
 # =========================
 
+
 @role_required("admin")
 def specialties_list_view(request):
     """Manage specialties (Спеціальності)."""
@@ -992,15 +1010,23 @@ def specialties_list_view(request):
         return redirect("specialties_list")
 
     search_query = request.GET.get("search", "").strip()
-    specialties = Specialty.objects.prefetch_related("groups").annotate(group_count=Count("groups")).order_by("code", "name")
+    specialties = (
+        Specialty.objects.prefetch_related("groups")
+        .annotate(group_count=Count("groups"))
+        .order_by("code", "name")
+    )
     if search_query:
         specialties = specialties.filter(
             Q(name__icontains=search_query) | Q(code__icontains=search_query)
         )
-    return render(request, "specialties.html", {
-        "specialties": specialties,
-        "active_page": "specialties",
-    })
+    return render(
+        request,
+        "specialties.html",
+        {
+            "specialties": specialties,
+            "active_page": "specialties",
+        },
+    )
 
 
 @role_required("admin")
@@ -1008,7 +1034,9 @@ def specialties_list_view(request):
 def specialty_delete_view(request, pk):
     specialty = get_object_or_404(Specialty, pk=pk)
     if specialty.groups.exists():
-        messages.error(request, "Неможна видалити — з цією спеціальністю пов'язані групи")
+        messages.error(
+            request, "Неможна видалити — з цією спеціальністю пов'язані групи"
+        )
     else:
         specialty.delete()
         messages.success(request, "Спеціальність видалено")
@@ -1790,7 +1818,6 @@ def api_save_grade(request: HttpRequest) -> JsonResponse:
         )
 
 
-
 # =========================
 # 4. СТУДЕНТ
 # =========================
@@ -1945,7 +1972,7 @@ def teacher_dashboard_view(request):
     teacher = request.user
     today = date.today()
     now = datetime.now().time()
-    
+
     course_ctx = request.session.get("global_course")
     specialty_ctx = request.session.get("global_specialty_id")
 
@@ -1957,9 +1984,9 @@ def teacher_dashboard_view(request):
         today_lessons_qs = today_lessons_qs.filter(group__specialty_id=specialty_ctx)
 
     today_lessons = list(
-        today_lessons_qs
-        .select_related("group", "subject", "classroom", "evaluation_type")
-        .order_by("start_time")
+        today_lessons_qs.select_related(
+            "group", "subject", "classroom", "evaluation_type"
+        ).order_by("start_time")
     )
 
     # Поточна або наступна пара
@@ -1978,7 +2005,7 @@ def teacher_dashboard_view(request):
         my_groups_qs = my_groups_qs.filter(group__course=course_ctx)
     if specialty_ctx:
         my_groups_qs = my_groups_qs.filter(group__specialty_id=specialty_ctx)
-        
+
     my_groups = my_groups_qs.values_list("group", flat=True)
 
     risk_students = []
@@ -2187,7 +2214,9 @@ def student_dashboard_view(request: HttpRequest) -> HttpResponse:
     )
 
     # 6. Статус входу (RFID)
-    last_access = BuildingAccessLog.objects.filter(student=student).order_by("-timestamp").first()
+    last_access = (
+        BuildingAccessLog.objects.filter(student=student).order_by("-timestamp").first()
+    )
     in_building = (last_access.action == "ENTER") if last_access else False
 
     context = {
@@ -2233,7 +2262,9 @@ def report_absences_view(request):
 
     # Глобальний контекст (якщо фільтри не задані)
     course = request.GET.get("course") or request.session.get("global_course")
-    specialty = request.GET.get("specialty") or request.session.get("global_specialty_id")
+    specialty = request.GET.get("specialty") or request.session.get(
+        "global_specialty_id"
+    )
 
     students = User.objects.filter(role="student")
 
@@ -2337,7 +2368,9 @@ def report_rating_view(request):
 
     # Нові фільтри (з підтримкою глобального контексту)
     course = request.GET.get("course") or request.session.get("global_course")
-    specialty = request.GET.get("specialty") or request.session.get("global_specialty_id")
+    specialty = request.GET.get("specialty") or request.session.get(
+        "global_specialty_id"
+    )
     is_active = request.GET.get("is_active", "true")
 
     MIN_VOTES = 5
@@ -2385,7 +2418,9 @@ def report_rating_view(request):
         if str(specialty).isdigit():
             students_query = students_query.filter(group__specialty_id=int(specialty))
         else:
-            students_query = students_query.filter(group__specialty__name__icontains=specialty)
+            students_query = students_query.filter(
+                group__specialty__name__icontains=specialty
+            )
     if is_active:
         students_query = students_query.filter(is_active=(is_active == "true"))
 
@@ -2530,7 +2565,9 @@ def report_weekly_absences_view(request):
 def report_subjects_view(request):
     """Звіт: Успішність по предметах — середній бал, кількість студентів, відсоток успішних."""
     course = request.GET.get("course") or request.session.get("global_course")
-    specialty = request.GET.get("specialty") or request.session.get("global_specialty_id")
+    specialty = request.GET.get("specialty") or request.session.get(
+        "global_specialty_id"
+    )
 
     subjects_qs = Subject.objects.all()
     if course or specialty:
@@ -2541,7 +2578,9 @@ def report_subjects_view(request):
             if str(specialty).isdigit():
                 ta_filter &= Q(teachingassignment__group__specialty_id=int(specialty))
             else:
-                ta_filter &= Q(teachingassignment__group__specialty__name__icontains=specialty)
+                ta_filter &= Q(
+                    teachingassignment__group__specialty__name__icontains=specialty
+                )
         subjects_qs = subjects_qs.filter(ta_filter).distinct()
 
     report_data = []
@@ -2556,7 +2595,9 @@ def report_subjects_view(request):
             if str(specialty).isdigit():
                 perf_qs = perf_qs.filter(student__group__specialty_id=int(specialty))
             else:
-                perf_qs = perf_qs.filter(student__group__specialty__name__icontains=specialty)
+                perf_qs = perf_qs.filter(
+                    student__group__specialty__name__icontains=specialty
+                )
 
         stats = perf_qs.aggregate(
             avg_pts=Avg("earned_points"),
@@ -2632,7 +2673,9 @@ def report_at_risk_view(request):
     """Звіт: Студенти в зоні ризику — поєднання низьких оцінок та пропусків."""
     group_id = request.GET.get("group", "")
     course = request.GET.get("course") or request.session.get("global_course")
-    specialty = request.GET.get("specialty") or request.session.get("global_specialty_id")
+    specialty = request.GET.get("specialty") or request.session.get(
+        "global_specialty_id"
+    )
     absence_threshold = int(request.GET.get("absence_threshold", 3) or 3)
     grade_threshold = float(request.GET.get("grade_threshold", 60) or 60)
 
@@ -2965,9 +3008,7 @@ def timeline_schedule_view(request):
                     elif current_time_minutes >= start_min:
                         status = "current"
                         passed = current_time_minutes - start_min
-                        progress = (
-                            int((passed / duration) * 100) if duration > 0 else 0
-                        )
+                        progress = int((passed / duration) * 100) if duration > 0 else 0
 
                 # Псевдо-слот: формуємо з часів самого уроку
                 pseudo_slot = {
@@ -3044,8 +3085,6 @@ def api_update_lesson(request: HttpRequest) -> JsonResponse:
                 except (ValueError, TypeError):
                     pass
 
-
-
         if is_cancelled is not None:
             lesson.is_cancelled = bool(is_cancelled)
             if lesson.is_cancelled and cancellation_reason is not None:
@@ -3065,7 +3104,6 @@ def api_update_lesson(request: HttpRequest) -> JsonResponse:
                 "type_name": etype.name if etype else "—",
                 "max_points": float(etype.weight_percent) if etype else 12,
                 "eval_weight": float(etype.weight_percent) if etype else None,
-
                 "is_cancelled": lesson.is_cancelled,
                 "cancellation_reason": lesson.cancellation_reason or "",
             }
@@ -3527,7 +3565,10 @@ def api_notifications_delete_all(request: HttpRequest) -> JsonResponse:
 # File-based store so multiple server processes (runserver on different interfaces) share state
 import os as _os
 
-_RFID_STATE_FILE = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), ".rfid_scan_state.json")
+_RFID_STATE_FILE = _os.path.join(
+    _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+    ".rfid_scan_state.json",
+)
 
 
 def _rfid_read_state() -> dict:
@@ -3553,9 +3594,13 @@ def rfid_management_view(request: HttpRequest) -> HttpResponse:
     """Сторінка управління RFID картками студентів."""
     course_ctx = request.session.get("global_course")
     specialty_ctx = request.session.get("global_specialty_id")
-    
-    students = User.objects.filter(role="student").select_related("group").order_by("full_name")
-    
+
+    students = (
+        User.objects.filter(role="student")
+        .select_related("group")
+        .order_by("full_name")
+    )
+
     if course_ctx:
         students = students.filter(group__course=course_ctx)
     if specialty_ctx:
@@ -3572,6 +3617,7 @@ def api_rfid_presence(request: HttpRequest) -> JsonResponse:
     """GET /api/rfid/presence/?group=<id> — поточна присутність студентів групи."""
     import datetime as _dt
     from django.utils import timezone
+
     group_id = request.GET.get("group")
     if not group_id:
         return JsonResponse({"error": "group required"}, status=400)
@@ -3581,11 +3627,9 @@ def api_rfid_presence(request: HttpRequest) -> JsonResponse:
     day_end = day_start + _dt.timedelta(days=1)
     students = User.objects.filter(group_id=group_id, role="student")
 
-    logs = (
-        BuildingAccessLog.objects
-        .filter(timestamp__gte=day_start, timestamp__lt=day_end, student__in=students)
-        .order_by("student_id", "timestamp")
-    )
+    logs = BuildingAccessLog.objects.filter(
+        timestamp__gte=day_start, timestamp__lt=day_end, student__in=students
+    ).order_by("student_id", "timestamp")
     last_log = {}
     for log in logs:
         last_log[log.student_id] = log.action
@@ -3626,7 +3670,9 @@ def api_rfid_scan(request: HttpRequest) -> JsonResponse:
     except User.DoesNotExist:
         return JsonResponse({"error": "unknown_card", "uid": uid}, status=404)
 
-    last_log = BuildingAccessLog.objects.filter(student=student).order_by("-timestamp").first()
+    last_log = (
+        BuildingAccessLog.objects.filter(student=student).order_by("-timestamp").first()
+    )
     if last_log and last_log.action == "ENTER":
         action = "EXIT"
         direction = "out"
@@ -3635,23 +3681,27 @@ def api_rfid_scan(request: HttpRequest) -> JsonResponse:
         direction = "in"
 
     BuildingAccessLog.objects.create(student=student, action=action)
-    return JsonResponse({
-        "mode": "attendance",
-        "direction": direction,
-        "student": student.full_name,
-        "uid": uid,
-    })
+    return JsonResponse(
+        {
+            "mode": "attendance",
+            "direction": direction,
+            "student": student.full_name,
+            "uid": uid,
+        }
+    )
 
 
 @login_required
 def api_rfid_status(request: HttpRequest) -> JsonResponse:
     """Повертає останній зісканований UID з буферу (polling від адмін-сторінки)."""
     state = _rfid_read_state()
-    return JsonResponse({
-        "uid": state.get("uid"),
-        "scanned_at": state.get("scanned_at"),
-        "scan_mode": state.get("active", False),
-    })
+    return JsonResponse(
+        {
+            "uid": state.get("uid"),
+            "scanned_at": state.get("scanned_at"),
+            "scan_mode": state.get("active", False),
+        }
+    )
 
 
 @role_required("admin")
@@ -3697,9 +3747,9 @@ def api_rfid_assign_card(request: HttpRequest) -> JsonResponse:
     # Перевіряємо чи UID вже не зайнятий іншим студентом
     existing = User.objects.filter(rfid_uid=uid).exclude(pk=student.pk).first()
     if existing:
-        return JsonResponse({
-            "error": f"Ця картка вже прив'язана до {existing.full_name}"
-        }, status=409)
+        return JsonResponse(
+            {"error": f"Ця картка вже прив'язана до {existing.full_name}"}, status=409
+        )
 
     student.rfid_uid = uid
     student.save(update_fields=["rfid_uid"])
@@ -3707,11 +3757,13 @@ def api_rfid_assign_card(request: HttpRequest) -> JsonResponse:
     # Очищаємо буфер після успішного прив'язування
     _rfid_write_state({"active": False, "uid": None, "scanned_at": None})
 
-    return JsonResponse({
-        "ok": True,
-        "student": student.full_name,
-        "uid": uid,
-    })
+    return JsonResponse(
+        {
+            "ok": True,
+            "student": student.full_name,
+            "uid": uid,
+        }
+    )
 
 
 @role_required("admin")
@@ -3783,16 +3835,17 @@ def notifications_page_view(request: HttpRequest) -> HttpResponse:
 def api_student_status(request: HttpRequest) -> JsonResponse:
     """Повертає поточний статус входу для авторизованого студента."""
     student = request.user
-    last_access = BuildingAccessLog.objects.filter(student=student).order_by("-timestamp").first()
+    last_access = (
+        BuildingAccessLog.objects.filter(student=student).order_by("-timestamp").first()
+    )
     in_building = (last_access.action == "ENTER") if last_access else False
-    
-    return JsonResponse({
-        "in_building": in_building,
-        "last_scan": last_access.timestamp.strftime("%H:%M") if last_access else None,
-        "has_card": bool(student.rfid_uid)
-    })
 
-
-
-
-
+    return JsonResponse(
+        {
+            "in_building": in_building,
+            "last_scan": (
+                last_access.timestamp.strftime("%H:%M") if last_access else None
+            ),
+            "has_card": bool(student.rfid_uid),
+        }
+    )

@@ -17,7 +17,9 @@ from django.db import models
 class Specialty(models.Model):
     """Спеціальність (напр. 121 - Інженерія програмного забезпечення)"""
 
-    name = models.CharField(max_length=200, unique=True, verbose_name="Назва спеціальності")
+    name = models.CharField(
+        max_length=200, unique=True, verbose_name="Назва спеціальності"
+    )
     code = models.CharField(max_length=20, blank=True, verbose_name="Код спеціальності")
     description = models.TextField(blank=True, verbose_name="Опис")
 
@@ -140,7 +142,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         max_length=50, blank=True, verbose_name="№ студентського квитка"
     )
     rfid_uid = models.CharField(
-        max_length=50, blank=True, null=True, unique=True, verbose_name="RFID UID картки"
+        max_length=50,
+        blank=True,
+        null=True,
+        unique=True,
+        verbose_name="RFID UID картки",
     )
     notes = models.TextField(blank=True, verbose_name="Примітки")
 
@@ -583,8 +589,6 @@ class Lesson(models.Model):
         verbose_name="Джерело (шаблон)",
     )
 
-
-
     # Статус
     is_cancelled = models.BooleanField(default=False, verbose_name="Скасований")
     cancellation_reason = models.TextField(
@@ -832,9 +836,6 @@ class Notification(models.Model):
         return f"[{self.notif_type}] {self.recipient.full_name}: {self.title}"
 
 
-
-
-
 class BuildingAccessLog(models.Model):
     """
     Лог доступу до будівлі (Турнікет).
@@ -869,9 +870,6 @@ class BuildingAccessLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.student.full_name} - {self.get_action_display()} at {self.timestamp}"
-
-
-
 
 
 class InstitutionSettings(models.Model):
