@@ -1,12 +1,16 @@
 import csv
+import hashlib
+import hmac
 import json
 import logging
+import time as _time
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -3643,6 +3647,38 @@ def api_rfid_presence(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"presence": presence})
 
 
+def _verify_device_hmac(request: HttpRequest, uid: str) -> bool:
+    """
+    Перевіряє HMAC-SHA256 підпис від ESP32.
+    Очікує заголовки X-Timestamp і X-Signature.
+    Підписане повідомлення: "UID:timestamp"
+    Часове вікно: ±30 секунд від поточного часу (захист від replay-атак).
+    """
+    secret = getattr(settings, "CARD_SCAN_API_KEY", "")
+    if not secret:
+        logger.error("CARD_SCAN_API_KEY не задано — запити з плати будуть відхилені")
+        return False
+
+    timestamp_str = request.headers.get("X-Timestamp", "")
+    received_sig  = request.headers.get("X-Signature", "")
+
+    if not timestamp_str or not received_sig:
+        return False
+
+    try:
+        ts = int(timestamp_str)
+    except ValueError:
+        return False
+
+    if abs(_time.time() - ts) > 30:
+        logger.warning("RFID: запит відхилено — мітка часу поза допустимим вікном (%s)", timestamp_str)
+        return False
+
+    message  = f"{uid}:{timestamp_str}".encode()
+    expected = hmac.new(secret.encode(), message, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, received_sig.lower())
+
+
 @csrf_exempt
 @require_POST
 def api_rfid_scan(request: HttpRequest) -> JsonResponse:
@@ -3659,6 +3695,11 @@ def api_rfid_scan(request: HttpRequest) -> JsonResponse:
 
     if not uid:
         return JsonResponse({"error": "No UID"}, status=400)
+
+    if not _verify_device_hmac(request, uid):
+        logger.warning("RFID: відхилено запит з невірним підписом (UID=%s, IP=%s)",
+                       uid, request.META.get("REMOTE_ADDR"))
+        return JsonResponse({"error": "Forbidden"}, status=403)
 
     state = _rfid_read_state()
 
