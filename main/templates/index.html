@@ -97,59 +97,6 @@
             transform: translateY(-2px) scale(1.03);
             box-shadow: 0 10px 28px rgba(91,132,255,0.45);
         }
-        /* ─── Mobile Adaptation (Global) ────────────────────────────── */
-        @media (max-width: 768px) {
-            .section { padding: 60px 20px; }
-            .section-header { margin-bottom: 40px; text-align: center; }
-            .section-subtitle { margin: 0 auto; }
-            
-            .roles-grid { gap: 20px; }
-            .bento-grid { gap: 16px; }
-            .bento-card { padding: 24px; }
-            
-            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 30px; }
-            
-            .footer-inner { flex-direction: column; text-align: center; gap: 30px; }
-            .footer-links { justify-content: center; width: 100%; }
-        }
-
-        @media (max-width: 480px) {
-            .landing-nav { padding: 12px 16px; }
-            .nav-inner { padding: 8px 12px; }
-            .nav-logo { gap: 6px; }
-            .nav-logo img { width: 32px; height: 32px; }
-            .nav-logo-text { font-size: 16px; letter-spacing: -0.2px; }
-            .nav-logo-badge { display: none; }
-            .btn-nav-login { padding: 8px 14px; font-size: 11px; }
-            #navInner > div:last-child { gap: 8px !important; }
-            #darkToggle { width: 36px !important; height: 36px !important; }
-            
-            .hero { padding-top: 100px; text-align: center; }
-            .hero-badge { margin-bottom: 20px; }
-            .hero-p { margin: 0 auto 30px; font-size: 16px; }
-            .hero-trust { justify-content: center; flex-direction: column; }
-            
-            .btn-hero-primary, .btn-cta, .btn-hero-ghost { 
-                padding: 14px 24px; 
-                font-size: 14px; 
-                border-radius: 14px; 
-                width: 100%; 
-                justify-content: center;
-            }
-            .btn-hero-ghost { padding: 10px; border: 1px solid rgba(0,0,0,0.05); }
-            .hero-cta { flex-direction: column; align-items: stretch; gap: 12px; }
-
-            .stats-grid { grid-template-columns: 1fr; gap: 40px; }
-            .stat-number { font-size: 48px; }
-            
-            .bento-card-6 > div { grid-template-columns: 1fr !important; gap: 30px !important; text-align: center; }
-            .bento-card-6 .bento-icon { margin-left: auto; margin-right: auto; }
-            
-            .cta-card { padding: 50px 24px; border-radius: 30px; }
-            .cta-title { font-size: 32px; }
-            
-            #authPanel { padding: 40px 24px; }
-        }
 
         /* ─── Hero ────────────────────────────────────────────────────── */
         .hero {
@@ -186,7 +133,7 @@
         }
         .hero-badge-text { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #5B84FF; }
         .hero-h1 {
-            font-size: clamp(42px, 6vw, 76px);
+            font-size: clamp(32px, 6vw, 76px);
             font-weight: 900; color: #2F3640;
             letter-spacing: -2px; line-height: 1;
             margin-bottom: 24px;
@@ -369,7 +316,7 @@
             margin-bottom: 12px;
         }
         .section-title {
-            font-size: clamp(30px, 4vw, 50px);
+            font-size: clamp(22px, 4vw, 50px);
             font-weight: 900; color: #2F3640;
             letter-spacing: -1.5px; line-height: 1.1;
             margin-bottom: 16px;
@@ -933,6 +880,211 @@
         html.dark #authPanel input:focus {
             border-color: #818cf8 !important;
             box-shadow: 0 0 0 4px rgba(129,140,248,0.12) !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           📱 RESPONSIVE — після всіх базових стилів, щоб реально працювало
+           ═══════════════════════════════════════════════════════════════ */
+
+        /* ── Laptop Medium (901 – 1200px) ─────────────────────────────── */
+        @media (min-width: 901px) and (max-width: 1200px) {
+            .hero { padding: 108px 32px 68px; }
+            .hero-content { gap: 44px; }
+            .section { padding: 84px 32px; }
+            .cta-card { padding: 72px 52px; }
+            .role-card { padding: 30px; }
+            .bento-card { padding: 26px; }
+            .step-card { padding: 30px 24px; }
+        }
+
+        /* ── Tablet / Small Laptop (≤900px) ──────────────────────────── */
+        @media (max-width: 900px) {
+            .section { padding: 64px 20px; }
+            .section-header { margin-bottom: 40px; text-align: center; }
+            .section-subtitle { margin: 0 auto; }
+            .role-card { padding: 26px; }
+            .bento-card { padding: 24px; }
+            .step-card { padding: 26px 20px; }
+            .cta-card { padding: 60px 40px; border-radius: 32px; }
+            .cta-desc { font-size: 16px; }
+        }
+
+        /* ── Mobile (≤768px) ──────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            /* blobs — менші для продуктивності */
+            .blob-1 { width: 280px; height: 280px; top: -100px; left: -80px; }
+            .blob-2 { width: 240px; height: 240px; }
+            .blob-3 { width: 200px; height: 200px; }
+
+            /* nav */
+            .landing-nav { padding: 12px 16px; }
+            .nav-inner { padding: 9px 14px; border-radius: 16px; }
+            .nav-logo img { width: 36px; height: 36px; }
+            .nav-logo-text { font-size: 16px; }
+            .nav-logo-badge { display: none; }
+            .btn-nav-login { padding: 9px 18px; font-size: 12px; letter-spacing: 0.4px; border-radius: 12px; }
+
+            /* hero */
+            .hero { padding: 94px 20px 50px; }
+            .hero-h1 { font-size: clamp(28px, 8vw, 44px) !important; letter-spacing: -1.5px; margin-bottom: 16px; }
+            .hero-p { font-size: 15px; line-height: 1.65; margin-bottom: 28px; }
+            .hero-trust { margin-top: 28px; }
+            .hero-badge { margin-bottom: 16px; }
+            .btn-hero-primary { padding: 14px 26px; font-size: 14px; border-radius: 14px; }
+            .btn-hero-ghost { font-size: 13px; }
+
+            /* sections */
+            .section { padding: 54px 16px; }
+            .section-header { margin-bottom: 30px; text-align: center; }
+            .section-subtitle { margin: 0 auto; font-size: 15px; }
+            .section-title { font-size: clamp(20px, 6vw, 30px) !important; letter-spacing: -0.8px; }
+            .section-label { font-size: 9px; }
+
+            /* roles */
+            .roles-grid { gap: 12px; }
+            .role-card { padding: 22px; border-radius: 20px; }
+            .role-icon { width: 48px; height: 48px; border-radius: 14px; font-size: 22px; margin-bottom: 16px; }
+            .role-title { font-size: 18px; margin-bottom: 6px; }
+            .role-desc { font-size: 13px; margin-bottom: 16px; }
+            .role-features { gap: 8px; }
+            .role-feature { font-size: 12px; }
+
+            /* bento */
+            .bento-grid { gap: 10px; }
+            .bento-card { padding: 20px; border-radius: 18px; }
+            .bento-icon { width: 44px; height: 44px; border-radius: 13px; margin-bottom: 14px; }
+            .bento-title { font-size: 16px; margin-bottom: 6px; }
+            .bento-desc { font-size: 13px; }
+            .rfid-ring-wrap { height: 100px; }
+            .mini-schedule { margin-top: 14px; gap: 5px; }
+            .mini-lesson { padding: 8px 12px; border-radius: 10px; }
+            .mini-lesson-name { font-size: 11px; }
+            .notif-list { margin-top: 12px; gap: 6px; }
+            .notif-item { padding: 9px 12px; border-radius: 10px; }
+            .notif-title { font-size: 12px; }
+
+            /* stats */
+            .stats-section { padding: 60px 16px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+
+            /* steps */
+            .step-card { padding: 22px 18px; border-radius: 18px; }
+            .step-num { width: 44px; height: 44px; font-size: 18px; margin-bottom: 16px; }
+            .step-title { font-size: 16px; }
+            .step-desc { font-size: 13px; }
+
+            /* cta */
+            .cta-section { padding: 56px 16px; }
+            .cta-card { padding: 48px 24px; border-radius: 24px; }
+            .cta-title { font-size: clamp(24px, 6vw, 40px) !important; }
+            .cta-desc { font-size: 14px; }
+            .btn-cta { padding: 14px 30px; font-size: 14px; border-radius: 14px; }
+
+            /* footer */
+            .landing-footer { padding: 32px 16px; }
+            .footer-inner { flex-direction: column; text-align: center; gap: 20px; }
+            .footer-links { justify-content: center; width: 100%; gap: 20px; }
+        }
+
+        /* ── Phone (≤480px) ───────────────────────────────────────────── */
+        @media (max-width: 480px) {
+            /* nav */
+            .landing-nav { padding: 10px 12px; }
+            .nav-inner { padding: 7px 11px; border-radius: 14px; }
+            .nav-logo { gap: 7px; }
+            .nav-logo img { width: 30px; height: 30px; }
+            .nav-logo-text { font-size: 15px; }
+            .btn-nav-login { padding: 7px 13px; font-size: 11px; border-radius: 10px; }
+            #navInner > div:last-child { gap: 6px !important; }
+            #darkToggle { width: 32px !important; height: 32px !important; border-radius: 10px !important; }
+
+            /* hero */
+            .hero { padding: 76px 16px 38px; text-align: center; }
+            .hero-badge { margin-bottom: 12px; }
+            .hero-h1 { font-size: clamp(26px, 9vw, 36px) !important; letter-spacing: -1.5px; margin-bottom: 14px; line-height: 1.08; }
+            .hero-p { font-size: 14px; margin: 0 auto 20px; max-width: 320px; }
+            .hero-trust { justify-content: center; flex-direction: column; gap: 8px; margin-top: 20px; }
+            .trust-text { font-size: 12px; }
+            .trust-avatars { justify-content: center; }
+            .btn-hero-primary { padding: 14px 22px; font-size: 14px; border-radius: 14px; width: 100%; justify-content: center; }
+            .btn-hero-ghost {
+                padding: 12px 16px; font-size: 13px; justify-content: center;
+                border-radius: 14px; width: 100%;
+                border: 1.5px solid rgba(91,132,255,0.2);
+                background: rgba(91,132,255,0.06); color: #5B84FF !important;
+            }
+            .hero-cta { flex-direction: column; align-items: stretch; gap: 10px; }
+
+            /* sections */
+            .section { padding: 42px 14px; }
+            .section-title { font-size: clamp(20px, 7vw, 26px) !important; }
+            .section-subtitle { font-size: 14px; }
+            .section-header { margin-bottom: 26px; }
+
+            /* roles */
+            .roles-grid { gap: 10px; }
+            .role-card { padding: 18px 16px; border-radius: 18px; }
+            .role-icon { width: 44px; height: 44px; font-size: 20px; margin-bottom: 12px; border-radius: 13px; }
+            .role-title { font-size: 17px; }
+            .role-desc { font-size: 12px; margin-bottom: 14px; }
+            .role-feature { font-size: 12px; gap: 8px; }
+            .role-feature-dot { width: 5px; height: 5px; }
+
+            /* bento */
+            .bento-grid { gap: 8px; }
+            .bento-card { padding: 16px; border-radius: 16px; }
+            .bento-icon { width: 40px; height: 40px; border-radius: 12px; margin-bottom: 12px; }
+            .bento-title { font-size: 15px; }
+            .bento-desc { font-size: 12px; }
+            .bento-card-6 > div { grid-template-columns: 1fr !important; gap: 16px !important; text-align: center; }
+            .bento-card-6 .bento-icon { margin-left: auto; margin-right: auto; }
+            .bento-card-6 .bento-title { font-size: 20px !important; }
+            .bento-card-6 .bento-desc { font-size: 13px !important; max-width: 100% !important; }
+            .rfid-ring-wrap { height: 84px; }
+            .mini-lesson { padding: 7px 10px; }
+            .notif-item { padding: 8px 10px; }
+
+            /* stats */
+            .stats-section { padding: 46px 14px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+            .stat-number { font-size: 38px !important; }
+            .stat-label { font-size: 9px; letter-spacing: 1.5px; }
+
+            /* steps */
+            .steps-grid { gap: 10px; }
+            .step-card { padding: 18px 14px; border-radius: 16px; }
+            .step-num { width: 42px; height: 42px; font-size: 17px; margin-bottom: 14px; border-radius: 12px; }
+            .step-title { font-size: 15px; margin-bottom: 8px; }
+            .step-desc { font-size: 12px; }
+
+            /* cta */
+            .cta-section { padding: 42px 14px; }
+            .cta-card { padding: 38px 20px !important; border-radius: 22px; }
+            .cta-title { font-size: 26px !important; letter-spacing: -1px; }
+            .cta-desc { font-size: 13px; max-width: 100% !important; }
+            .btn-cta { padding: 14px 24px; font-size: 14px; border-radius: 14px; width: 100%; justify-content: center; }
+            .cta-tag { font-size: 9px; padding: 5px 14px; }
+
+            /* auth panel */
+            #authPanel { padding: 40px 20px; }
+
+            /* scroll to top */
+            #scrollTopBtn { width: 40px !important; height: 40px !important; bottom: 1.2rem !important; right: 1.2rem !important; }
+        }
+
+        /* ── Tiny Phone (≤360px) ──────────────────────────────────────── */
+        @media (max-width: 360px) {
+            .hero { padding: 72px 12px 34px; }
+            .hero-h1 { font-size: 26px !important; }
+            .nav-logo-text { font-size: 14px; }
+            .btn-nav-login { padding: 6px 10px; font-size: 10px; }
+            .role-card { padding: 14px 12px; }
+            .bento-card { padding: 14px 12px; }
+            .section { padding: 36px 12px; }
+            .cta-card { padding: 30px 16px !important; }
+            .cta-title { font-size: 22px !important; }
+            .stat-number { font-size: 32px !important; }
+            .step-card { padding: 16px 12px; }
         }
     </style>
 </head>

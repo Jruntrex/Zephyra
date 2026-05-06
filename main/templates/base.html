@@ -396,7 +396,7 @@
             </div>
         </div>
 
-        <div class="flex-grow w-full lg:ml-64 p-4 lg:p-6 transition-all duration-300 relative">
+        <div class="flex-grow w-full lg:ml-64 p-4 pt-2 lg:p-6 transition-all duration-300 relative">
 
             <!-- Mobile sidebar overlay -->
             <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-[2px] z-40 hidden" aria-hidden="true"></div>
@@ -405,7 +405,7 @@
             <header role="banner">
 
                 <!-- ── Mobile: Left glass panel (hamburger + optional context switcher) ── -->
-                <div class="lg:hidden fixed top-4 left-4 z-[60] mobile-hide-on-menu">
+                <div class="lg:hidden fixed top-3 left-4 z-[60] mobile-hide-on-menu">
                     <div class="glass-panel rounded-2xl p-2 flex items-center gap-1 shadow-xl">
                         <!-- Hamburger (завжди ☰, X — всередині сайдбару) -->
                         <button id="menu-toggle"
@@ -607,7 +607,7 @@
                 </div>
 
                 <!-- Fixed bar: user panel -->
-                <div class="fixed top-4 lg:top-6 right-4 lg:right-6 z-40 mobile-hide-on-menu">
+                <div class="fixed top-3 lg:top-6 right-4 lg:right-6 z-40 mobile-hide-on-menu">
 
                     <!-- Right Side: Floating Glass Panel Header -->
                     <div
@@ -694,7 +694,7 @@
                 </div><!-- closes right panel wrapper -->
 
                 <!-- Spacer to prevent content overlap with fixed bar -->
-                <div class="h-20 mb-4"></div>
+                <div class="h-10 lg:h-14 mb-0"></div>
 
                 <!-- Page Title -->
                 {% block page_title_heading %}
