@@ -1,6 +1,7 @@
 #include <Wire.h>
 #include <Adafruit_PN532.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <time.h>
@@ -17,8 +18,8 @@ const char* WIFI_SSID     = "TP-Link_C4BE";
 const char* WIFI_PASSWORD = "49909210";
 
 // --- СЕРВЕР (DigitalOcean) ---
-const char* SERVER_HOST = "138.197.190.195";
-const int   SERVER_PORT = 80;
+const char* SERVER_HOST = "mentorly.space";
+const int   SERVER_PORT = 443;
 const char* ENDPOINT    = "/api/rfid/scan/";
 
 // --- БЕЗПЕКА: HMAC-SHA256 ключ ---
@@ -174,9 +175,11 @@ void loop() {
   Serial.printf("Timestamp: %s | Signature: %s\n",
     timestamp.c_str(), signature.c_str());
 
+  WiFiClientSecure client;
+  client.setInsecure();  // skip cert verification — HMAC guards authenticity
   HTTPClient http;
-  String url = String("http://") + SERVER_HOST + ":" + SERVER_PORT + ENDPOINT;
-  http.begin(url);
+  String url = String("https://") + SERVER_HOST + ":" + SERVER_PORT + ENDPOINT;
+  http.begin(client, url);
   http.addHeader("Content-Type",  "application/json");
   http.addHeader("X-Timestamp",   timestamp);
   http.addHeader("X-Signature",   signature);
