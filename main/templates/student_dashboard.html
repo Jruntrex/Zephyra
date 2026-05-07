@@ -18,7 +18,8 @@
 {% block content %}
 
 <!-- Hero banner -->
-<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+<div class="max-w-[1400px] mx-auto">
+    <div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
     <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
     <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
     <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
@@ -74,10 +75,10 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pb-10">
+<div class="max-w-[1400px] mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pb-10">
 
     <!-- 1. Динаміка успішності (Large Tile) -->
-    <div class="col-span-1 sm:col-span-2 md:col-span-3 card-bento flex flex-col justify-between min-h-[280px] md:min-h-[400px]">
+    <div class="col-span-1 sm:col-span-2 md:col-span-3 card-bento flex flex-col justify-between min-h-[280px] md:min-h-[340px]">
         <div>
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-mainText font-black tracking-tight uppercase text-[11px] opacity-70">Динаміка успішності</h3>
@@ -299,6 +300,7 @@
         </div>
     </div>
 
+</div>
 </div>
 {% endblock %}
 

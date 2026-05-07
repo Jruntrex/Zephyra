@@ -13,9 +13,18 @@
 #define LED_PIN 10
 #define BUZZ_PIN 7
 
-// --- НАЛАШТУВАННЯ МЕРЕЖІ ---
-const char* WIFI_SSID     = "TP-Link_C4BE";
-const char* WIFI_PASSWORD = "49909210";
+// --- НАЛАШТУВАННЯ МЕРЕЖІ (Каскад з 3-х роутерів) ---
+struct WifiNetwork {
+  const char* ssid;
+  const char* password;
+};
+
+WifiNetwork networks[] = {
+  {"UKrtelecom_433750", "SS3q9tbC"},
+  {"Boscolviv", "Boscolviv"},
+  {"SSID_3", "PASS_3"}
+};
+const int networkCount = sizeof(networks) / sizeof(networks[0]);
 
 // --- СЕРВЕР (DigitalOcean) ---
 const char* SERVER_HOST = "mentorly.space";
@@ -91,29 +100,35 @@ void beepError() {
   digitalWrite(BUZZ_PIN, LOW);
 }
 
-// --- WiFi підключення ---
+// --- WiFi підключення (Каскадне) ---
 void connectWiFi() {
-  Serial.printf("\nПідключення до %s...", WIFI_SSID);
-  WiFi.disconnect(true);
-  delay(1000);
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+  
+  for (int i = 0; i < networkCount; i++) {
+    Serial.printf("\nСпроба підключення до мережі %d: %s...", i + 1, networks[i].ssid);
+    WiFi.disconnect(true);
     delay(500);
-    Serial.print(".");
-    attempts++;
+    WiFi.begin(networks[i].ssid, networks[i].password);
+
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) { // ~10 секунд на кожну мережу
+      delay(500);
+      Serial.print(".");
+      attempts++;
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.printf("\nWiFi OK — IP: %s (Мережа: %s)\n", WiFi.localIP().toString().c_str(), networks[i].ssid);
+      beepSuccess(3);
+      syncTime();
+      return; // Успішно підключено, виходимо з функції
+    } else {
+      Serial.printf("\n[!] Не вдалося підключитися до %s. Перехід до наступної...", networks[i].ssid);
+    }
   }
 
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("\nWiFi OK — IP: %s\n", WiFi.localIP().toString().c_str());
-    beepSuccess(3);
-    syncTime();
-  } else {
-    Serial.println("\n[ПОМИЛКА] WiFi не підключено.");
-    beepError();
-  }
+  Serial.println("\n[ПОМИЛКА] Жодна з мереж не доступна.");
+  beepError();
 }
 
 // -------------------------------------------------------
