@@ -13,9 +13,11 @@ urlpatterns = [
     # =========================
     # 1. АУТЕНТИФІКАЦІЯ
     # =========================
-    path("", views.login_view, name="login"),
-    path("login/", views.login_process, name="login_process"),
+    path("", views.landing_view, name="landing"),           # Лендінг на root
+    path("login/", views.login_view, name="login"),         # Логін переїхав на /login/
+    path("login/process/", views.login_process, name="login_process"),
     path("logout/", views.logout_view, name="logout"),
+
     # =========================
     # 2. АДМІНІСТРУВАННЯ ТА ДАШБОРДИ
     # =========================

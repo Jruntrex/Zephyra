@@ -18,7 +18,7 @@
 {% block content %}
 
 <!-- Hero banner -->
-<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg reveal">
     <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
     <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
     <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
@@ -76,7 +76,7 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pb-10">
 
     <!-- 1. Динаміка успішності (Large Tile) -->
-    <div class="col-span-1 sm:col-span-2 md:col-span-3 card-bento flex flex-col justify-between min-h-[280px] md:min-h-[340px]">
+    <div class="col-span-1 sm:col-span-2 md:col-span-3 card-bento flex flex-col justify-between min-h-[280px] md:min-h-[340px] reveal reveal-delay-1">
         <div>
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-mainText font-black tracking-tight uppercase text-[11px] opacity-70">Динаміка успішності</h3>
@@ -98,7 +98,7 @@
 
     <!-- 2. Середній бал (Accent Tile) -->
     <div
-        class="col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-xl p-8 flex flex-col justify-between">
+        class="col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-xl p-8 flex flex-col justify-between reveal reveal-delay-2">
         <div>
             <div class="bg-blue-400/30 w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +115,7 @@
     </div>
 
     <!-- 3. Наступна пара (Premium Info Tile) -->
-    <div class="col-span-1 md:col-span-2 card-bento bg-surface flex flex-col justify-between relative overflow-hidden group">
+    <div class="col-span-1 md:col-span-2 card-bento bg-surface flex flex-col justify-between relative overflow-hidden group reveal reveal-delay-2">
         {% with lesson=current_lesson|default:next_lesson %}
         {% if lesson %}
         <div class="absolute -top-4 -right-4 p-6 opacity-5 group-hover:opacity-10 transition-opacity duration-500 transform group-hover:scale-110">
@@ -186,7 +186,7 @@
     </div>
 
     <!-- 4. Відвідуваність (Premium Stats Tile) -->
-    <div class="col-span-1 md:col-span-2 card-bento bg-surface flex flex-col justify-between relative overflow-hidden group">
+    <div class="col-span-1 md:col-span-2 card-bento bg-surface flex flex-col justify-between relative overflow-hidden group reveal reveal-delay-3">
         <div class="flex items-center justify-between mb-2">
             <h3 class="label-section mb-0">Відвідуваність</h3>
             <div class="text-[10px] font-black text-primary/40 uppercase tracking-widest">Статистика семестру</div>
@@ -256,7 +256,7 @@
     </div>
 
     <!-- 5. Останні оцінки (Full Width Tile) -->
-    <div class="col-span-1 sm:col-span-2 md:col-span-4 card-bento">
+    <div class="col-span-1 sm:col-span-2 md:col-span-4 card-bento reveal reveal-delay-4">
         <h3 class="text-mutedText font-semibold tracking-wide uppercase text-sm mb-6">Останні оцінки</h3>
         <div class="overflow-x-auto">
             <table class="table-clean w-full">

@@ -15,7 +15,7 @@
 {% block content %}
 
 <!-- Hero banner -->
-<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+<div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg reveal">
     <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
     <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
     <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
@@ -40,7 +40,7 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pb-10">
 
     <!-- 1. Графік навантаження тижня -->
-    <div class="col-span-1 sm:col-span-2 md:col-span-3 card-bento flex flex-col justify-between">
+    <div class="col-span-1 sm:col-span-2 md:col-span-3 card-bento flex flex-col justify-between reveal reveal-delay-1">
         <div>
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-mutedText font-semibold tracking-wide uppercase text-sm">Навантаження тижня</h3>
@@ -57,7 +57,7 @@
     </div>
 
     <!-- 2. Тижневе навантаження (accent card) -->
-    <div class="col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-xl p-8 flex flex-col justify-between">
+    <div class="col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-xl p-8 flex flex-col justify-between reveal reveal-delay-2">
         <div>
             <div class="bg-blue-400/30 w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +73,7 @@
     </div>
 
     <!-- 3. Поточна / Наступна пара -->
-    <div class="col-span-1 md:col-span-2 card-bento flex flex-col justify-between relative overflow-hidden">
+    <div class="col-span-1 md:col-span-2 card-bento flex flex-col justify-between relative overflow-hidden reveal reveal-delay-2">
         {% with lesson=current_lesson|default:next_lesson %}
         {% if lesson %}
         <div class="absolute top-0 right-0 p-6 opacity-5">
@@ -135,7 +135,7 @@
     </div>
 
     <!-- 4. Радар ризику -->
-    <div class="col-span-1 md:col-span-2 card-bento flex flex-col">
+    <div class="col-span-1 md:col-span-2 card-bento flex flex-col reveal reveal-delay-3">
         <div class="flex justify-between items-center mb-6">
             <h3 class="text-mutedText font-semibold tracking-wide uppercase text-sm">Радар ризику</h3>
             {% if risk_students %}
@@ -169,7 +169,7 @@
     </div>
 
     <!-- 5. Швидкі дії + Інтерактив -->
-    <div class="col-span-1 sm:col-span-2 md:col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+    <div class="col-span-1 sm:col-span-2 md:col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 reveal reveal-delay-4">
 
         <a href="{% url 'teacher_journal' %}" class="card-bento hover:translate-y-[-4px] transition-transform duration-300 group">
             <div class="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors">

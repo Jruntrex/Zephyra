@@ -120,6 +120,23 @@ def generate_csv_response(filename, header, rows):
 # =========================
 
 
+def landing_view(request: HttpRequest) -> HttpResponse:
+    """Публічна landing-сторінка. Авторизований юзер одразу отримує редірект."""
+    if request.user.is_authenticated:
+        role = request.user.role
+        if role == "admin":
+            return redirect("admin_panel")
+        if role == "teacher":
+            return redirect("teacher_dashboard")
+        if role == "student":
+            return redirect("student_dashboard")
+    response = render(request, "index.html")
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    response["Expires"] = "0"
+    return response
+
+
 def login_view(request: HttpRequest) -> HttpResponse:
     """Сторінка входу."""
     if request.user.is_authenticated:
@@ -131,11 +148,7 @@ def login_view(request: HttpRequest) -> HttpResponse:
         if role == "student":
             return redirect("student_dashboard")
 
-    response = render(request, "index.html")
-    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    response["Pragma"] = "no-cache"
-    response["Expires"] = "0"
-    return response
+    return redirect("landing")
 
 
 @require_POST
