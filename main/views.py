@@ -2241,16 +2241,23 @@ def student_dashboard_view(request: HttpRequest) -> HttpResponse:
     )
     in_building = (last_access.action == "ENTER") if last_access else False
 
+    respectful_count = absence_stats["respectful"] or 0
+    unrespectful_count = absence_stats["unrespectful"] or 0
+    present_pct = round(present_count / total_lessons_count * 100, 1) if total_lessons_count > 0 else 0
+    respectful_pct = round(respectful_count / total_lessons_count * 100, 1) if total_lessons_count > 0 else 0
+    unrespectful_pct = round(unrespectful_count / total_lessons_count * 100, 1) if total_lessons_count > 0 else 0
+
+    attendance_data = {
+        "present": present_pct,
+        "respectful": respectful_pct,
+        "unrespectful": unrespectful_pct,
+    }
+
     context = {
         "avg_score": round(stats["avg_score"] or 0, 1),
         "attendance_percent": attendance_percent,
-        "attendance_json": json.dumps(
-            {
-                "present": present_count,
-                "respectful": absence_stats["respectful"] or 0,
-                "unrespectful": absence_stats["unrespectful"] or 0,
-            }
-        ),
+        "attendance_data": attendance_data,
+        "attendance_json": json.dumps(attendance_data),
         "graph_labels_json": json.dumps(graph_labels),
         "graph_points_json": json.dumps(graph_points),
         "current_lesson": current_lesson,

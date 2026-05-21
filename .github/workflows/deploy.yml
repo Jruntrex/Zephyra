@@ -1,0 +1,17 @@
+name: Deploy to mentorly.space
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: mentorly.space
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: /root/Mentorly/deploy.sh
