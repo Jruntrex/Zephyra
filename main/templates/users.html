@@ -427,127 +427,90 @@
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     USER QUICK-VIEW MODAL
-═══════════════════════════════════════════════════════ -->
-<div id="userDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md transition-all duration-300">
-    <div class="bg-surface border border-border rounded-[2.5rem] shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+<!-- USER QUICK-VIEW MODAL -->
+<div id="userDetailModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md">
+    <div class="bg-surface border border-border rounded-[2.5rem] shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
 
-        <!-- Modal Header (gradient changes by role via JS) -->
+        <!-- Header -->
         <div id="modal_header" class="relative px-8 py-8 bg-gradient-to-br from-indigo-600 to-violet-600 flex-shrink-0">
-            <button onclick="closeUserModal()" class="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
+            <div class="absolute top-5 right-5">
+                <button onclick="closeUserModal()" class="p-2 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
             <div class="flex items-center gap-5">
-                <div id="modal_avatar"
-                    class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-2xl font-black text-white shadow-xl flex-shrink-0">
-                    ?
-                </div>
+                <div id="modal_avatar" class="w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-3xl font-black text-white shadow-xl flex-shrink-0">?</div>
                 <div class="min-w-0">
-                    <div class="flex items-center gap-2 mb-1 flex-wrap">
-                        <span id="modal_role_badge"
-                            class="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-black uppercase tracking-wider">Роль</span>
-                        <span id="modal_status_badge"
-                            class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-green-500/25 text-green-200">Статус</span>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <span id="modal_role_badge" class="px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-black uppercase tracking-wider">Роль</span>
+                        <span id="modal_status_badge" class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-green-500/25 text-green-200">Статус</span>
                     </div>
-                    <h3 id="modal_name" class="text-2xl font-black text-white leading-tight truncate">Ім'я</h3>
-                    <p id="modal_email" class="text-white/70 text-sm mt-0.5 truncate">email@example.com</p>
+                    <h3 id="modal_name" class="text-3xl font-black text-white tracking-tight leading-tight">Ім'я</h3>
+                    <p id="modal_email" class="text-white/70 text-sm mt-1">email@example.com</p>
                 </div>
             </div>
         </div>
 
-        <!-- Modal Body -->
-        <div class="p-6 overflow-y-auto flex-grow bg-background/50 custom-scrollbar">
+        <!-- Body -->
+        <div class="p-8 overflow-y-auto flex-grow bg-background/50 custom-scrollbar">
 
-            <!-- Stats row (Vertical) -->
-            <div class="flex flex-col gap-3 mb-5">
-                <div class="bg-surface rounded-2xl border border-border p-4 flex items-center justify-between group hover:border-primary/30 transition-all">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                        </div>
-                        <span class="text-[10px] text-mutedText font-black uppercase tracking-widest">Телефон</span>
-                    </div>
-                    <span id="modal_phone" class="text-sm font-bold text-mainText">—</span>
+            <!-- Stats cards -->
+            <div class="grid grid-cols-3 gap-4 mb-8">
+                <div class="bg-surface p-5 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Телефон</span>
+                    <p id="modal_phone" class="text-base font-bold text-mainText">—</p>
                 </div>
-
-                <div class="bg-surface rounded-2xl border border-border p-4 flex items-center justify-between group hover:border-primary/30 transition-all">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                        </div>
-                        <span class="text-[10px] text-mutedText font-black uppercase tracking-widest">Призначення</span>
-                    </div>
-                    <span id="modal_assignment" class="text-sm font-bold text-mainText truncate">—</span>
+                <div class="bg-surface p-5 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">Призначення</span>
+                    <p id="modal_assignment" class="text-base font-bold text-primary">—</p>
                 </div>
-
-                <div class="bg-surface rounded-2xl border border-border p-4 flex items-center justify-between group hover:border-primary/30 transition-all">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-violet-500/10 text-violet-500 flex items-center justify-center">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                        </div>
-                        <span class="text-[10px] text-mutedText font-black uppercase tracking-widest">RFID UID</span>
-                    </div>
-                    <span id="modal_rfid" class="text-xs font-mono font-bold text-primary truncate">—</span>
+                <div class="bg-surface p-5 rounded-3xl border border-border shadow-sm">
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-2">RFID</span>
+                    <p id="modal_rfid" class="text-sm font-bold font-mono text-primary truncate">—</p>
                 </div>
             </div>
 
-            <!-- Detail list (Vertical) -->
-            <div class="flex flex-col gap-1 mb-5">
-                <div class="flex items-center justify-between p-2">
-                    <span class="text-[10px] text-mutedText font-black uppercase tracking-widest">Дата народження</span>
-                    <span id="modal_dob" class="text-sm font-bold text-mainText">—</span>
-                </div>
-                <div class="w-full h-px bg-border/40"></div>
-                
-                <div class="flex items-center justify-between p-2">
-                    <span class="text-[10px] text-mutedText font-black uppercase tracking-widest">Останній вхід</span>
-                    <span id="modal_last_login" class="text-sm font-bold text-primary">—</span>
-                </div>
-                <div class="w-full h-px bg-border/40"></div>
-
-                <div class="flex items-center justify-between p-2">
-                    <span class="text-[10px] text-mutedText font-black uppercase tracking-widest">Реєстрація</span>
-                    <span id="modal_created" class="text-sm font-bold text-mainText">—</span>
-                </div>
-                <div class="w-full h-px bg-border/40"></div>
-
-                <div class="flex items-center justify-between p-2">
-                    <span class="text-[10px] text-mutedText font-black uppercase tracking-widest">Адреса</span>
-                    <span id="modal_address" class="text-sm font-bold text-mainText line-clamp-1">—</span>
-                </div>
-            </div>
-
-            <!-- Subjects list (teachers only, shown via JS) -->
-            <div id="modal_subjects_section" class="mb-5 hidden">
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-[10px] font-black text-mutedText uppercase tracking-widest">Предмети викладача</h4>
-                    <span id="modal_subjects_badge"
-                        class="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black">0</span>
+            <!-- Subjects (teachers only) -->
+            <div id="modal_subjects_section" class="hidden mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-xs font-black text-mutedText uppercase tracking-widest">Предмети викладача</h4>
+                    <span id="modal_subjects_badge" class="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black">0</span>
                 </div>
                 <div id="modal_subjects_list" class="flex flex-wrap gap-2"></div>
             </div>
 
-            <!-- Footer actions (Vertical) -->
-            <div class="flex flex-col gap-3 pt-6 border-t border-border/40">
+            <!-- Detail rows -->
+            <div class="grid grid-cols-2 gap-6 pt-6 border-t border-border/50">
+                <div>
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1">Дата народження</span>
+                    <p id="modal_dob" class="text-sm font-bold text-mainText">—</p>
+                </div>
+                <div>
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1">Останній вхід</span>
+                    <p id="modal_last_login" class="text-sm font-bold text-primary">—</p>
+                </div>
+                <div>
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1">Реєстрація</span>
+                    <p id="modal_created" class="text-sm font-bold text-mainText">—</p>
+                </div>
+                <div>
+                    <span class="text-[10px] font-black text-mutedText uppercase tracking-widest block mb-1">Адреса</span>
+                    <p id="modal_address" class="text-sm font-bold text-mainText truncate">—</p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3 mt-8 pt-6 border-t border-border/50">
                 <a id="modal_full_link" href="#"
-                    class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-primary text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                    </svg>
-                    <span>ПЕРЕГЛЯНУТИ ПОВНИЙ ПРОФІЛЬ</span>
+                    class="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    Переглянути профіль
                 </a>
                 {% if request.user.role == 'admin' %}
                 <a id="modal_edit_link" href="#"
-                    class="w-full flex items-center justify-center gap-3 px-6 py-3.5 border border-border text-mainText rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-surface transition-all">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                    </svg>
-                    <span>РЕДАГУВАТИ КОРИСТУВАЧА</span>
+                    class="flex items-center justify-center gap-2 px-6 py-3.5 border border-border text-mainText rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-surface transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    Редагувати
                 </a>
                 {% endif %}
             </div>
@@ -602,9 +565,9 @@
 
     /* ═══ User Quick-View Modal ═══ */
     const ROLE_GRADIENTS = {
-        admin:   'from-purple-700 to-indigo-700',
-        teacher: 'from-indigo-600 to-blue-600',
-        student: 'from-blue-600 to-violet-600',
+        admin:   ['from-purple-700', 'to-indigo-700'],
+        teacher: ['from-blue-700',   'to-cyan-600'],
+        student: ['from-indigo-600', 'to-violet-600'],
     };
     const ROLE_LABELS = {
         admin:   'Адміністратор',
@@ -618,11 +581,10 @@
 
         // Header gradient by role
         const header = document.getElementById('modal_header');
-        header.className = header.className
-            .replace(/from-\S+ to-\S+/g, '')
-            .trim();
-        const grad = ROLE_GRADIENTS[d.role] || 'from-indigo-600 to-violet-600';
-        header.classList.add(...grad.split(' '));
+        const allGrad = ['from-purple-700','to-indigo-700','from-blue-700','to-cyan-600','from-indigo-600','to-violet-600'];
+        header.classList.remove(...allGrad);
+        const grad = ROLE_GRADIENTS[d.role] || ROLE_GRADIENTS.student;
+        header.classList.add(...grad);
 
         // Avatar & name
         document.getElementById('modal_avatar').textContent = d.full_name.charAt(0).toUpperCase();
@@ -631,49 +593,48 @@
 
         // Badges
         document.getElementById('modal_role_badge').textContent = ROLE_LABELS[d.role] || d.role_display;
-        const statusBadge = document.getElementById('modal_status_badge');
+        const sb = document.getElementById('modal_status_badge');
         if (d.is_active) {
-            statusBadge.textContent = 'Активний';
-            statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-green-500/25 text-green-200';
+            sb.textContent = 'Активний';
+            sb.style.background = 'rgba(74,222,128,0.25)';
+            sb.style.color = '#bbf7d0';
         } else {
-            statusBadge.textContent = 'Заблокований';
-            statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/25 text-red-200';
+            sb.textContent = 'Заблокований';
+            sb.style.background = 'rgba(248,113,113,0.25)';
+            sb.style.color = '#fecaca';
         }
 
-        // Stats row
-        document.getElementById('modal_phone').textContent = d.phone;
+        // Info fields
+        document.getElementById('modal_phone').textContent = d.phone || '—';
         document.getElementById('modal_rfid').textContent = d.rfid_uid || 'Не призначено';
+        document.getElementById('modal_dob').textContent = d.date_of_birth || '—';
+        document.getElementById('modal_last_login').textContent = d.last_login || '—';
+        document.getElementById('modal_address').textContent = d.address || '—';
 
-        // Assignment (group for students, subject count for teachers)
+        // Assignment
         if (d.role === 'student') {
             document.getElementById('modal_assignment').textContent = d.group !== '—' ? `Група: ${d.group}` : '—';
         } else if (d.role === 'teacher') {
-            document.getElementById('modal_assignment').textContent = `${d.subjects.length} предм.`;
+            document.getElementById('modal_assignment').textContent = d.subjects.length ? `${d.subjects.length} предм.` : '—';
         } else {
-            document.getElementById('modal_assignment').textContent = 'Адмін';
+            document.getElementById('modal_assignment').textContent = 'Адміністратор';
         }
 
-        // Detail cards
-        document.getElementById('modal_dob').textContent = d.date_of_birth;
-        document.getElementById('modal_last_login').textContent = d.last_login;
-        document.getElementById('modal_created').textContent = d.created_at;
-        document.getElementById('modal_address').textContent = d.address;
-
-        // Subjects section (teachers)
+        // Subjects (teachers)
         const subSection = document.getElementById('modal_subjects_section');
         if (d.role === 'teacher' && d.subjects.length > 0) {
-            subSection.classList.remove('hidden');
-            document.getElementById('modal_subjects_badge').textContent = `${d.subjects.length} ПРЕДМ.`;
+            subSection.style.display = 'block';
+            document.getElementById('modal_subjects_badge').textContent = d.subjects.length;
             const list = document.getElementById('modal_subjects_list');
             list.innerHTML = '';
             d.subjects.forEach(s => {
                 const tag = document.createElement('span');
-                tag.className = 'px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-[11px] font-bold';
+                tag.style.cssText = 'padding:4px 12px; border-radius:999px; background:#eff3ff; color:#5b84ff; border:1px solid #c7d7ff; font-size:11px; font-weight:700;';
                 tag.textContent = s.name;
                 list.appendChild(tag);
             });
         } else {
-            subSection.classList.add('hidden');
+            subSection.style.display = 'none';
         }
 
         // Links
@@ -681,14 +642,14 @@
         const editLink = document.getElementById('modal_edit_link');
         if (editLink) editLink.href = `/users/${userId}/edit/`;
 
-        // Show
+        // Show modal
         document.getElementById('userDetailModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
 
     function closeUserModal() {
         document.getElementById('userDetailModal').classList.add('hidden');
-        document.body.style.overflow = 'auto';
+        document.body.style.overflow = '';
     }
 
     // Close on backdrop click
