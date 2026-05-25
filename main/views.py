@@ -3652,13 +3652,34 @@ _RFID_STATE_FILE = _os.path.join(
 )
 
 
+_RFID_ASSIGN_MODE_TIMEOUT_SECONDS = 300  # Assign mode auto-expires after 5 minutes
+
+
 def _rfid_read_state() -> dict:
-    """Read scan state from shared file."""
+    """Read scan state from shared file. Auto-expires active state after timeout."""
     try:
         with open(_RFID_STATE_FILE, "r", encoding="utf-8") as f:
-            return json.loads(f.read())
+            state = json.loads(f.read())
     except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return {"active": False, "uid": None, "scanned_at": None}
+        return {"active": False, "uid": None, "scanned_at": None, "started_at": None}
+
+    if state.get("active"):
+        started_at = state.get("started_at")
+        # If started_at is missing (old state) or expired → auto-reset
+        if not started_at:
+            expired = {"active": False, "uid": None, "scanned_at": None, "started_at": None}
+            _rfid_write_state(expired)
+            return expired
+        try:
+            started = datetime.fromisoformat(started_at)
+            if (datetime.now() - started).total_seconds() > _RFID_ASSIGN_MODE_TIMEOUT_SECONDS:
+                expired = {"active": False, "uid": None, "scanned_at": None, "started_at": None}
+                _rfid_write_state(expired)
+                return expired
+        except (ValueError, TypeError):
+            pass
+
+    return state
 
 
 def _rfid_write_state(state: dict):
@@ -3838,10 +3859,10 @@ def api_card_scan(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
     if action == "start":
-        _rfid_write_state({"active": True, "uid": None, "scanned_at": None})
+        _rfid_write_state({"active": True, "uid": None, "scanned_at": None, "started_at": datetime.now().isoformat()})
         return JsonResponse({"ok": True, "scan_mode": True})
     elif action == "stop":
-        _rfid_write_state({"active": False, "uid": None, "scanned_at": None})
+        _rfid_write_state({"active": False, "uid": None, "scanned_at": None, "started_at": None})
         return JsonResponse({"ok": True, "scan_mode": False})
 
     return JsonResponse({"error": "Unknown action"}, status=400)
@@ -3874,7 +3895,7 @@ def api_rfid_assign_card(request: HttpRequest) -> JsonResponse:
     student.save(update_fields=["rfid_uid"])
 
     # Очищаємо буфер після успішного прив'язування
-    _rfid_write_state({"active": False, "uid": None, "scanned_at": None})
+    _rfid_write_state({"active": False, "uid": None, "scanned_at": None, "started_at": None})
 
     return JsonResponse(
         {

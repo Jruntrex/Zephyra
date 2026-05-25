@@ -13,7 +13,7 @@
 #define LED_PIN 10
 #define BUZZ_PIN 7
 
-// --- НАЛАШТУВАННЯ МЕРЕЖІ (Каскад з 3-х роутерів) ---
+// --- НАЛАШТУВАННЯ МЕРЕЖІ ---
 struct WifiNetwork {
   const char* ssid;
   const char* password;
@@ -32,14 +32,60 @@ const int   SERVER_PORT = 443;
 const char* ENDPOINT    = "/api/rfid/scan/";
 
 // --- БЕЗПЕКА: HMAC-SHA256 ключ ---
-// Має точно збігатись зі значенням CARD_SCAN_API_KEY у файлі .env на сервері
 const char* HMAC_SECRET = "807067887ba3c4bb067eacb82275aec4f1632dcec41616e93414b6d24d942454";
+
+// --- Лічильник послідовних невдач HTTP ---
+int consecutiveFailures = 0;
+const int MAX_FAILURES  = 3;
 
 // -------------------------------------------------------
 
 Adafruit_PN532 nfc(I2C_SDA, I2C_SCL);
 
-// --- NTP синхронізація часу ---
+// --- Базові функції LED ---
+inline void ledOn()  { digitalWrite(LED_PIN, HIGH); }
+inline void ledOff() { digitalWrite(LED_PIN, LOW);  }
+
+// --- Звукові та світлові сигнали ---
+
+// Миттєвий відгук при зчитуванні картки
+void beepScan() {
+  ledOn(); digitalWrite(BUZZ_PIN, HIGH);
+  delay(80);
+  ledOff(); digitalWrite(BUZZ_PIN, LOW);
+}
+
+// Сигнал успішного підключення до мережі: 3× (LED вимк → бізк+спалах)
+// Перед викликом LED має бути ввімкнений (горів під час пошуку)
+void beepConnected() {
+  for (int i = 0; i < 3; i++) {
+    ledOff();
+    delay(350);
+    ledOn(); digitalWrite(BUZZ_PIN, HIGH);
+    delay(200);
+    ledOff(); digitalWrite(BUZZ_PIN, LOW);
+    delay(100);
+  }
+}
+
+// 1 або 2 коротких сигнали (вхід / вихід)
+void beepDirection(int count) {
+  for (int i = 0; i < count; i++) {
+    ledOn(); digitalWrite(BUZZ_PIN, HIGH);
+    delay(120);
+    ledOff(); digitalWrite(BUZZ_PIN, LOW);
+    if (i < count - 1) delay(120);
+  }
+}
+
+// Один довгий сигнал — помилка
+void beepError() {
+  ledOn(); digitalWrite(BUZZ_PIN, HIGH);
+  delay(1000);
+  ledOff(); digitalWrite(BUZZ_PIN, LOW);
+}
+
+// --- NTP синхронізація ---
 void syncTime() {
   configTime(0, 0, "pool.ntp.org", "time.nist.gov");
   Serial.print("Синхронізація NTP...");
@@ -54,12 +100,11 @@ void syncTime() {
   if (now > 1000000000UL) {
     Serial.printf("\nЧас синхронізовано: %lu\n", (unsigned long)now);
   } else {
-    Serial.println("\n[ПОПЕРЕДЖЕННЯ] Час не синхронізовано — сервер відхилятиме запити!");
+    Serial.println("\n[ПОПЕРЕДЖЕННЯ] NTP не синхронізовано — сервер відхилятиме запити!");
   }
 }
 
-// --- HMAC-SHA256 підпис повідомлення ---
-// Повертає hex-рядок підпису довжиною 64 символи
+// --- HMAC-SHA256 підпис ---
 String computeHMAC(const String& message, const String& key) {
   unsigned char hmacResult[32];
   mbedtls_md_context_t ctx;
@@ -80,55 +125,42 @@ String computeHMAC(const String& message, const String& key) {
   return result;
 }
 
-// --- Звукові сигнали ---
-void beepSuccess(int count) {
-  for (int i = 0; i < count; i++) {
-    digitalWrite(LED_PIN, HIGH);
-    digitalWrite(BUZZ_PIN, HIGH);
-    delay(120);
-    digitalWrite(LED_PIN, LOW);
-    digitalWrite(BUZZ_PIN, LOW);
-    if (i < count - 1) delay(120);
-  }
-}
-
-void beepError() {
-  digitalWrite(LED_PIN, HIGH);
-  digitalWrite(BUZZ_PIN, HIGH);
-  delay(1000);
-  digitalWrite(LED_PIN, LOW);
-  digitalWrite(BUZZ_PIN, LOW);
-}
-
-// --- WiFi підключення (Каскадне) ---
+// --- WiFi підключення (каскадне по 3 роутерах) ---
+// LED горить суцільно весь час пошуку — gасне або змінюється лише після з'єднання
 void connectWiFi() {
   WiFi.mode(WIFI_STA);
-  
+  ledOn();  // Суцільне світіння: йде пошук мережі
+
   for (int i = 0; i < networkCount; i++) {
-    Serial.printf("\nСпроба підключення до мережі %d: %s...", i + 1, networks[i].ssid);
+    Serial.printf("\nСпроба підключення до мережі %d: %s", i + 1, networks[i].ssid);
     WiFi.disconnect(true);
     delay(500);
     WiFi.begin(networks[i].ssid, networks[i].password);
 
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) { // ~10 секунд на кожну мережу
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {  // ~10 с на мережу
       delay(500);
       Serial.print(".");
       attempts++;
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-      Serial.printf("\nWiFi OK — IP: %s (Мережа: %s)\n", WiFi.localIP().toString().c_str(), networks[i].ssid);
-      beepSuccess(3);
+      Serial.printf("\nWiFi OK — IP: %s (Мережа: %s)\n",
+        WiFi.localIP().toString().c_str(), networks[i].ssid);
+      beepConnected();  // 3 спалахи з бізком — підключено
       syncTime();
-      return; // Успішно підключено, виходимо з функції
-    } else {
-      Serial.printf("\n[!] Не вдалося підключитися до %s. Перехід до наступної...", networks[i].ssid);
+      ledOff();         // Готовий до роботи
+      return;
     }
+
+    Serial.printf("\n[!] %s недоступна. Перехід...", networks[i].ssid);
   }
 
-  Serial.println("\n[ПОМИЛКА] Жодна з мереж не доступна.");
+  // Жодна мережа не підключилась
+  Serial.println("\n[ПОМИЛКА] Жодна мережа недоступна. Перезавантаження...");
   beepError();
+  delay(3000);
+  ESP.restart();
 }
 
 // -------------------------------------------------------
@@ -137,6 +169,8 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
   pinMode(BUZZ_PIN, OUTPUT);
+
+  ledOn();  // Живлення подано, ще не підключено — суцільне світіння без мигання
 
   connectWiFi();
 
@@ -151,6 +185,13 @@ void setup() {
 }
 
 void loop() {
+  // --- Перевірка WiFi: якщо впало — перепідключитись ---
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[WiFi] З'єднання втрачено, перепідключення...");
+    connectWiFi();
+    return;
+  }
+
   uint8_t uid[7] = {0};
   uint8_t uidLength;
 
@@ -166,24 +207,12 @@ void loop() {
   uidStr.toUpperCase();
   Serial.printf("\nЗчитано UID: %s\n", uidStr.c_str());
 
-  // Миттєвий відгук на зчитування
-  digitalWrite(LED_PIN, HIGH);
-  digitalWrite(BUZZ_PIN, HIGH);
-  delay(80);
-  digitalWrite(LED_PIN, LOW);
-  digitalWrite(BUZZ_PIN, LOW);
+  beepScan();  // Миттєвий відгук на зчитування
 
-  if (WiFi.status() != WL_CONNECTED) {
-    connectWiFi();
-    return;
-  }
-
-  // --- Формуємо підписаний запит ---
+  // --- Підписаний запит ---
   time_t now;
   time(&now);
   String timestamp = String((unsigned long)now);
-
-  // Підписуємо: "UID:timestamp"
   String message   = uidStr + ":" + timestamp;
   String signature = computeHMAC(message, String(HMAC_SECRET));
 
@@ -191,24 +220,28 @@ void loop() {
     timestamp.c_str(), signature.c_str());
 
   WiFiClientSecure client;
-  client.setInsecure();  // skip cert verification — HMAC guards authenticity
+  client.setInsecure();  // skip cert — HMAC guards authenticity
   HTTPClient http;
   String url = String("https://") + SERVER_HOST + ":" + SERVER_PORT + ENDPOINT;
   http.begin(client, url);
-  http.addHeader("Content-Type",  "application/json");
-  http.addHeader("X-Timestamp",   timestamp);
-  http.addHeader("X-Signature",   signature);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("X-Timestamp",  timestamp);
+  http.addHeader("X-Signature",  signature);
 
   String jsonBody = "{\"uid\":\"" + uidStr + "\"}";
   int httpCode = http.POST(jsonBody);
 
   if (httpCode > 0) {
+    consecutiveFailures = 0;  // Успішний HTTP — скидаємо лічильник
     String response = http.getString();
     Serial.printf("HTTP %d: %s\n", httpCode, response.c_str());
 
     if (httpCode == 403) {
-      // Сервер відхилив — невірний ключ або час не синхронізовано
       Serial.println("[БЕЗПЕКА] Підпис відхилено сервером.");
+      beepError();
+    } else if (httpCode == 404) {
+      // Картка не прив'язана до жодного студента
+      Serial.println("[!] Невідома картка.");
       beepError();
     } else {
       StaticJsonDocument<256> doc;
@@ -216,21 +249,31 @@ void loop() {
         String direction = doc["direction"] | "";
         if (direction == "in") {
           delay(100);
-          beepSuccess(1);  // 1 сигнал — ВХІД
+          beepDirection(1);  // 1 сигнал — ВХІД
         } else if (direction == "out") {
           delay(100);
-          beepSuccess(2);  // 2 сигнали — ВИХІД
+          beepDirection(2);  // 2 сигнали — ВИХІД
         } else {
-          beepSuccess(1);
+          beepDirection(1);  // Інший режим (напр. assign)
         }
       } else {
-        beepSuccess(1);
+        beepDirection(1);
       }
     }
   } else {
+    // HTTP-запит повністю не вдався (немає з'єднання тощо)
     Serial.printf("[ПОМИЛКА] Запит не вдався: %s\n",
       http.errorToString(httpCode).c_str());
     beepError();
+
+    consecutiveFailures++;
+    Serial.printf("[ПОМИЛКА] Невдач підряд: %d / %d\n", consecutiveFailures, MAX_FAILURES);
+
+    if (consecutiveFailures >= MAX_FAILURES) {
+      Serial.println("[ПЕРЕЗАПУСК] Занадто багато невдач — перезавантаження...");
+      delay(1500);
+      ESP.restart();  // Повний рестарт → setup() → connectWiFi()
+    }
   }
 
   http.end();
