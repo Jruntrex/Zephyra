@@ -106,55 +106,77 @@
         </div>
     </div>
 
+    <!-- ── Stats strip ── -->
+    <div class="flex gap-3 flex-wrap" id="statsStrip">
+        <div class="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-2xl text-sm font-bold text-mainText">
+            <span class="w-2 h-2 rounded-full bg-success"></span>
+            Присутні: <span id="statPresent" class="text-success">0</span>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-2xl text-sm font-bold text-mainText">
+            <span class="w-2 h-2 rounded-full bg-error"></span>
+            Відсутні: <span id="statAbsent" class="text-error">0</span>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-2xl text-sm font-bold text-mainText">
+            <span class="w-2 h-2 rounded-full bg-primary"></span>
+            Оцінок: <span id="statGraded" class="text-primary">0</span>
+        </div>
+    </div>
+
     <!-- ── Students Grid ── -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5" id="studentsGrid">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2" id="studentsGrid">
         {% for student in student_list %}
         <div id="student-card-{{ student.user.id }}"
-            class="student-card card-bento !p-5 cursor-pointer hover:border-primary/40 hover:!-translate-y-2"
+            class="student-card relative flex items-center gap-3 px-4 py-3 rounded-2xl border cursor-pointer transition-all
+                {% if student.is_absent %}bg-error/5 border-error/25{% else %}bg-surface border-border hover:border-primary/30{% endif %}"
+            data-absent="{{ student.is_absent|yesno:'true,false' }}"
             data-comment="{{ student.comment }}"
             onclick="openGradeModal('{{ student.user.id }}', '{{ student.user.full_name }}')">
 
-            <!-- Absent overlay -->
-            <div id="overlay-{{ student.user.id }}"
-                class="absolute inset-0 bg-surface/90 backdrop-blur-sm rounded-3xl flex flex-col items-center justify-center z-10 transition-all duration-400 {% if not student.is_absent %}hidden opacity-0 scale-95{% endif %}">
-                <span class="text-error font-black text-[10px] uppercase tracking-widest mb-2 px-3 py-1 bg-error/10 text-error rounded-full">Відсутній</span>
-                <button onclick="event.stopPropagation(); toggleAbsence('{{ student.user.id }}')"
-                    class="px-4 py-1.5 bg-mainText text-white text-xs font-bold rounded-xl hover:bg-primary transition mt-1">
-                    Повернути
-                </button>
+            <!-- Initials circle + RFID dot -->
+            <div class="relative flex-shrink-0">
+                <div id="avatar-{{ student.user.id }}"
+                    class="w-11 h-11 rounded-xl flex items-center justify-center font-black text-sm select-none transition-all
+                        {% if student.is_absent %}bg-error/10 text-error/40
+                        {% elif student.is_in_building %}bg-success/15 text-success
+                        {% else %}bg-border/50 text-mutedText{% endif %}">
+                    {{ student.initials }}
+                </div>
+                {% if student.is_in_building %}
+                <span class="absolute -top-1 -right-1 w-4 h-4 bg-success border-2 border-surface rounded-full flex items-center justify-center" title="Пікнувся">
+                    <svg class="w-2.5 h-2.5 text-white fill-current" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </span>
+                {% endif %}
             </div>
 
-            <div class="flex flex-col items-center">
-                <!-- Avatar -->
-                <div class="relative mb-4">
-                    <div class="w-20 h-20 rounded-2xl bg-background border border-border flex items-center justify-center text-xl font-black text-mutedText/40 group-hover:scale-105 transition-transform duration-300">
-                        {{ student.initials }}
-                    </div>
-                    <!-- Grade badge -->
-                    <div id="badge-{{ student.user.id }}"
-                        class="{% if student.grade %}scale-100 opacity-100{% else %}scale-0 opacity-0{% endif %} absolute -top-2 -right-2 w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-black text-base shadow-lg shadow-primary/30 transition-all duration-400">
-                        {{ student.grade }}
-                    </div>
-                </div>
-
-                <h3 class="font-bold text-mainText text-center text-sm leading-snug mb-3 truncate w-full">
+            <!-- Name + status -->
+            <div class="flex-1 min-w-0">
+                <div id="name-{{ student.user.id }}"
+                    class="font-bold text-sm truncate transition-all
+                        {% if student.is_absent %}text-mainText/35 line-through decoration-error/50{% else %}text-mainText{% endif %}">
                     {{ student.user.full_name }}
-                </h3>
-
-                <div class="pt-3 border-t border-border w-full flex items-center justify-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
-                    <span class="text-[10px] font-bold text-mutedText uppercase tracking-tight">На зв'язку</span>
+                </div>
+                <div id="status-{{ student.user.id }}"
+                    class="text-[10px] font-semibold mt-0.5 transition-all
+                        {% if student.is_absent %}text-error{% elif student.is_in_building %}text-success{% else %}text-mutedText{% endif %}">
+                    {% if student.is_absent %}Відсутній
+                    {% elif student.is_in_building %}Пікнувся ✓
+                    {% else %}На зв'язку{% endif %}
                 </div>
             </div>
 
-            <!-- Fast absence toggle -->
-            <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onclick="event.stopPropagation(); toggleAbsence('{{ student.user.id }}')"
-                    class="w-7 h-7 rounded-xl bg-background border border-border hover:bg-error/10 hover:border-error/30 text-mutedText hover:text-error flex items-center justify-center transition-all"
-                    title="Відмітити відсутність">
-                    <span class="font-black text-xs">Н</span>
-                </button>
+            <!-- Grade badge -->
+            <div id="badge-{{ student.user.id }}"
+                class="{% if student.grade %}opacity-100 scale-100{% else %}opacity-0 scale-0{% endif %} w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white transition-all duration-300 shadow-lg bg-primary shrink-0">
+                {{ student.grade|default:"" }}
             </div>
+
+            <!-- Absence toggle -->
+            <button id="btn-absent-{{ student.user.id }}"
+                onclick="event.stopPropagation(); toggleAbsence('{{ student.user.id }}')"
+                class="flex-shrink-0 w-8 h-8 rounded-xl border font-black text-xs transition-all
+                    {% if student.is_absent %}bg-error text-white border-error hover:bg-error/80
+                    {% else %}bg-background border-border text-mutedText hover:bg-error/10 hover:border-error/30 hover:text-error{% endif %}"
+                title="Відмітити відсутність">Н</button>
         </div>
         {% endfor %}
     </div>
@@ -311,6 +333,7 @@
             badge.classList.replace('opacity-100', 'opacity-0');
         }
         submitGrading();
+        recalcStats();
     }
 
     function submitGrading() {
@@ -322,17 +345,58 @@
     }
 
     function toggleAbsence(id) {
-        const overlay = document.getElementById(`overlay-${id}`);
-        const hidden = overlay.classList.contains('hidden');
-        if (hidden) {
-            overlay.classList.remove('hidden');
-            setTimeout(() => { overlay.classList.remove('opacity-0', 'scale-95'); overlay.classList.add('opacity-100', 'scale-100'); }, 10);
-            saveGrade(id, 'H', '');
+        const card = document.getElementById(`student-card-${id}`);
+        const isAbsent = card.dataset.absent === 'true';
+        setCardAbsent(id, !isAbsent);
+        saveGrade(id, !isAbsent ? 'H' : null, '');
+        recalcStats();
+    }
+
+    function setCardAbsent(id, absent) {
+        const card   = document.getElementById(`student-card-${id}`);
+        const avatar = document.getElementById(`avatar-${id}`);
+        const name   = document.getElementById(`name-${id}`);
+        const status = document.getElementById(`status-${id}`);
+        const btn    = document.getElementById(`btn-absent-${id}`);
+
+        card.dataset.absent = absent ? 'true' : 'false';
+
+        if (absent) {
+            card.classList.add('bg-error/5', 'border-error/25');
+            card.classList.remove('bg-surface', 'border-border', 'hover:border-primary/30');
+            avatar.classList.add('bg-error/10', 'text-error/40');
+            avatar.classList.remove('bg-border/50', 'text-mutedText', 'bg-success/15', 'text-success');
+            name.classList.add('text-mainText/35', 'line-through', 'decoration-error/50');
+            name.classList.remove('text-mainText');
+            status.textContent = 'Відсутній';
+            status.className = status.className.replace(/text-\S+/g, '') + ' text-error';
+            btn.classList.add('bg-error', 'text-white', 'border-error', 'hover:bg-error/80');
+            btn.classList.remove('bg-background', 'text-mutedText', 'hover:bg-error/10', 'hover:border-error/30', 'hover:text-error');
         } else {
-            overlay.classList.add('opacity-0', 'scale-95');
-            setTimeout(() => overlay.classList.add('hidden'), 400);
-            saveGrade(id, null, '');
+            card.classList.remove('bg-error/5', 'border-error/25');
+            card.classList.add('bg-surface', 'border-border', 'hover:border-primary/30');
+            avatar.classList.remove('bg-error/10', 'text-error/40');
+            avatar.classList.add('bg-border/50', 'text-mutedText');
+            name.classList.remove('text-mainText/35', 'line-through', 'decoration-error/50');
+            name.classList.add('text-mainText');
+            status.textContent = 'На зв\'язку';
+            status.className = status.className.replace(/text-\S+/g, '') + ' text-mutedText';
+            btn.classList.remove('bg-error', 'text-white', 'border-error', 'hover:bg-error/80');
+            btn.classList.add('bg-background', 'border-border', 'text-mutedText', 'hover:bg-error/10', 'hover:border-error/30', 'hover:text-error');
         }
+    }
+
+    function recalcStats() {
+        const cards = document.querySelectorAll('#studentsGrid [id^="student-card-"]');
+        let absent = 0, graded = 0;
+        cards.forEach(card => {
+            if (card.dataset.absent === 'true') absent++;
+            const badge = document.getElementById(`badge-${card.id.replace('student-card-', '')}`);
+            if (badge && !badge.classList.contains('opacity-0')) graded++;
+        });
+        document.getElementById('statAbsent').textContent = absent;
+        document.getElementById('statPresent').textContent = cards.length - absent;
+        document.getElementById('statGraded').textContent = graded;
     }
 
     function saveGrade(studentId, value, comment) {
@@ -374,5 +438,6 @@
     }
 
     updateTimerDisplay();
+    recalcStats();
 </script>
 {% endblock %}

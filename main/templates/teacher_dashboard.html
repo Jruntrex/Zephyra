@@ -34,38 +34,50 @@
 
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pb-10">
 
-    <!-- 1. Тижнева сітка розкладу -->
-    <div class="col-span-1 sm:col-span-2 md:col-span-3 card-bento flex flex-col reveal reveal-delay-1">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-mutedText font-semibold tracking-wide uppercase text-sm">Розклад тижня</h3>
-            <span class="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold border border-primary/20">{% now "W" %} тиждень</span>
+    <!-- 1. Тижень — компактний огляд -->
+    <div class="col-span-1 sm:col-span-2 md:col-span-3 card-bento reveal reveal-delay-1">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-mutedText font-semibold tracking-wide uppercase text-sm">Тижень</h3>
+            <a href="{% url 'timeline_schedule' %}" class="text-primary text-xs font-bold hover:underline">Повний розклад →</a>
         </div>
-        <div class="grid grid-cols-5 gap-2 flex-1 min-h-0">
+
+        <!-- 5-day strip: pill per day with lesson count -->
+        <div class="flex gap-2 mb-4">
             {% for day in week_days %}
-            <div class="flex flex-col gap-1.5">
-                <div class="text-center py-1.5 rounded-xl {% if day.is_today %}bg-primary text-white{% else %}bg-border/40 text-mutedText{% endif %} text-[11px] font-bold">
-                    <div>{{ day.name }}</div>
-                    <div class="{% if day.is_today %}text-white/70{% else %}text-mutedText/50{% endif %} font-normal text-[10px]">{{ day.date|date:"d.m" }}</div>
+            <div class="flex-1 text-center">
+                <div class="py-1.5 rounded-xl {% if day.is_today %}bg-primary text-white{% else %}bg-border/30 text-mutedText{% endif %} text-[10px] font-black leading-tight mb-1.5">
+                    {{ day.name }}<br>
+                    <span class="font-normal opacity-70 text-[9px]">{{ day.date|date:"d" }}</span>
                 </div>
-                {% for lesson in day.lessons %}
-                <div class="p-1.5 rounded-lg bg-primary/8 border border-primary/15 hover:bg-primary/15 transition-colors">
-                    <div class="text-[10px] text-primary font-bold leading-none mb-0.5">{{ lesson.start_time|time:"H:i" }}</div>
-                    <div class="text-[10px] text-mainText font-semibold leading-tight truncate" title="{{ lesson.subject.name }}">{{ lesson.subject.name }}</div>
-                    <div class="text-[9px] text-mutedText font-medium">{{ lesson.group.name }}</div>
-                </div>
-                {% empty %}
-                <div class="flex-1 rounded-lg border border-dashed border-border/40 flex items-center justify-center" style="min-height:52px">
-                    <span class="text-[11px] text-mutedText/25 select-none">—</span>
-                </div>
-                {% endfor %}
+                {% with cnt=day.lessons|length %}
+                <span class="inline-block text-[10px] font-black px-1.5 py-0.5 rounded-lg
+                    {% if cnt == 0 %}text-mutedText/30
+                    {% elif day.is_today %}bg-primary/15 text-primary
+                    {% else %}bg-border/40 text-mutedText{% endif %}">
+                    {% if cnt == 0 %}—{% else %}{{ cnt }}{% endif %}
+                </span>
+                {% endwith %}
             </div>
             {% empty %}
-            <div class="col-span-5 flex items-center justify-center py-8 text-mutedText text-sm">Розклад на тиждень відсутній</div>
+            <div class="flex-1 text-center text-mutedText text-xs py-2">Немає даних</div>
             {% endfor %}
         </div>
-        <div class="mt-3 pt-3 border-t border-border flex justify-between items-center text-xs text-mutedText">
-            <span>Всього пар: <span class="font-bold text-mainText">{{ weekly_load }}</span></span>
-            <a href="{% url 'timeline_schedule' %}" class="text-primary font-bold hover:underline">Повний розклад →</a>
+
+        <!-- Today's agenda as compact list -->
+        <div class="text-[10px] text-mutedText/60 font-bold uppercase tracking-widest mb-2">Сьогодні</div>
+        {% for lesson in today_lessons %}
+        <div class="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-xl hover:bg-border/15 transition-colors">
+            <span class="text-[11px] font-black text-primary w-9 shrink-0 tabular-nums">{{ lesson.start_time|time:"H:i" }}</span>
+            <span class="h-3 w-px bg-border shrink-0"></span>
+            <span class="text-[12px] text-mainText font-semibold flex-1 truncate">{{ lesson.subject.name }}</span>
+            <span class="text-[10px] text-mutedText shrink-0">{{ lesson.group.name }}</span>
+        </div>
+        {% empty %}
+        <div class="text-[12px] text-mutedText py-2 text-center">Пар на сьогодні немає</div>
+        {% endfor %}
+
+        <div class="mt-3 pt-3 border-t border-border text-xs text-mutedText">
+            Пар за тиждень: <span class="font-bold text-mainText">{{ weekly_load }}</span>
         </div>
     </div>
 

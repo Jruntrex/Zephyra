@@ -2172,14 +2172,14 @@ def teacher_live_mode_view(request, lesson_id):
             is_absent = True if perf.absence else False
             comment = perf.comment or ""
         else:
-            # Дефолтна логіка: якщо не "пікнувся" — відсутній
-            is_absent = not is_in_building
+            is_absent = False
 
         student_list.append(
             {
                 "user": s,
                 "grade": grade_value,
                 "is_absent": is_absent,
+                "is_in_building": is_in_building,
                 "comment": comment,
                 "initials": "".join([name[0] for name in s.full_name.split()[:2]]),
             }
