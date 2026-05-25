@@ -14,6 +14,7 @@ Usage:
     python manage.py seed_kn41_schedule --dry-run   # preview without saving
 """
 
+from collections import defaultdict, namedtuple
 from datetime import date, timedelta
 
 from django.core.management.base import BaseCommand
@@ -26,9 +27,13 @@ from main.models import (
     ScheduleTemplate,
     StudyGroup,
     TeachingAssignment,
+    User,
 )
 
 DAYS = [1, 2, 3, 4, 5]  # Monday = 1 … Friday = 5
+DAY_NAMES = {1: "Пн", 2: "Вт", 3: "Ср", 4: "Чт", 5: "Пт"}
+
+SlotEntry = namedtuple("SlotEntry", ["day", "lesson_num", "assignment", "classroom"])
 
 
 class Command(BaseCommand):
@@ -79,176 +84,156 @@ class Command(BaseCommand):
             return
         self.stdout.write(f"Classrooms available: {len(classrooms)}")
 
-        # ── 4. Delete existing templates for КН-41 ───────────────────────────
+        # ── 4. Pre-cache EvaluationTypes (one query, not N) ──────────────────
+        eval_type_cache: dict = {}
+        for et in EvaluationType.objects.filter(assignment__in=assignments):
+            eval_type_cache.setdefault(et.assignment_id, et)
+
+        # ── 5. Delete existing templates for КН-41 ───────────────────────────
         if not dry:
             deleted_t, _ = ScheduleTemplate.objects.filter(group=group).delete()
             self.stdout.write(f"Deleted {deleted_t} old ScheduleTemplate rows")
 
-        # ── 5. Build templates day by day ────────────────────────────────────
-        templates_to_create = []  # list of (day, lesson_num, assignment, classroom)
+        # ── 6. Build slot plan day by day ─────────────────────────────────────
+        slot_plan: list[SlotEntry] = []
 
         for day in DAYS:
-            # Collect what other groups already occupy at each slot
-            occupied_teachers_by_slot = {}
-            occupied_classrooms_by_slot = {}
-            for lesson_num in range(1, 8):
-                occupied_teachers_by_slot[lesson_num] = set(
-                    ScheduleTemplate.objects.filter(
-                        day_of_week=day,
-                        lesson_number=lesson_num,
-                        is_active=True,
-                    )
-                    .exclude(group=group)
-                    .values_list("teacher_id", flat=True)
-                )
-                occupied_classrooms_by_slot[lesson_num] = set(
-                    ScheduleTemplate.objects.filter(
-                        day_of_week=day,
-                        lesson_number=lesson_num,
-                        is_active=True,
-                    )
-                    .exclude(group=group)
-                    .values_list("classroom_id", flat=True)
-                )
+            # One query per day instead of 14 (7 slots × 2 queries)
+            other_slots = list(
+                ScheduleTemplate.objects.filter(day_of_week=day, is_active=True)
+                .exclude(group=group)
+                .values("lesson_number", "teacher_id", "classroom_id")
+            )
+            occupied_teachers: dict[int, set] = defaultdict(set)
+            occupied_classrooms: dict[int, set] = defaultdict(set)
+            for s in other_slots:
+                occupied_teachers[s["lesson_number"]].add(s["teacher_id"])
+                occupied_classrooms[s["lesson_number"]].add(s["classroom_id"])
 
-            # Rotate assignment pool per day so weekdays don't all start with
-            # the same subject.
+            # Rotate pool per day for subject variety across weekdays
             day_offset = day - 1
-            pool = assignments[day_offset % len(assignments):] + assignments[:day_offset % len(assignments)]
+            pool = (
+                assignments[day_offset % len(assignments) :]
+                + assignments[: day_offset % len(assignments)]
+            )
 
-            used_subjects_today = set()
-            pool_idx = 0
+            used_subjects_today: set = set()
+            used_classrooms_today: set = set()  # maintained incrementally
 
             for lesson_num in range(1, 8):
-                free_teachers = occupied_teachers_by_slot[lesson_num]
+                busy_teachers = occupied_teachers[lesson_num]
 
-                # Pick assignment: prefer unique subject today AND free teacher
-                chosen = None
-                for a in pool:
-                    if a.teacher_id not in free_teachers and a.subject_id not in used_subjects_today:
-                        chosen = a
-                        break
-                if chosen is None:
-                    # Relax unique-subject constraint
-                    for a in pool:
-                        if a.teacher_id not in free_teachers:
-                            chosen = a
-                            break
-                if chosen is None:
-                    # All teachers occupied by other groups — just round-robin
-                    chosen = pool[pool_idx % len(pool)]
+                # Pick assignment: prefer unique subject + free teacher
+                chosen = next(
+                    (
+                        a
+                        for a in pool
+                        if a.teacher_id not in busy_teachers
+                        and a.subject_id not in used_subjects_today
+                    ),
+                    None,
+                ) or next(
+                    (a for a in pool if a.teacher_id not in busy_teachers),
+                    None,
+                ) or pool[lesson_num % len(pool)]
 
                 used_subjects_today.add(chosen.subject_id)
-                # Rotate pool so next slot doesn't always grab the same item
+
+                # Rotate pool so the chosen item goes to the back
                 chosen_idx = pool.index(chosen)
-                pool = pool[chosen_idx + 1:] + pool[:chosen_idx + 1]
-                pool_idx += 1
+                pool = pool[chosen_idx + 1 :] + pool[: chosen_idx + 1]
 
-                # Pick classroom
-                busy_cls = occupied_classrooms_by_slot[lesson_num]
-                # Also avoid reusing the same classroom twice on the same day in
-                # КН-41's own schedule
-                already_used_today = {r[3].id for r in templates_to_create if r[0] == day and r[3]}
-                free_cls = [c for c in classrooms if c.id not in busy_cls and c.id not in already_used_today]
+                # Pick classroom (avoid conflicts + reuse within same day)
+                busy_cls = occupied_classrooms[lesson_num] | used_classrooms_today
+                free_cls = [c for c in classrooms if c.id not in busy_cls]
                 if not free_cls:
-                    free_cls = [c for c in classrooms if c.id not in busy_cls]
+                    free_cls = [c for c in classrooms if c.id not in occupied_classrooms[lesson_num]]
                 classroom = free_cls[0] if free_cls else classrooms[0]
+                used_classrooms_today.add(classroom.id)
 
-                templates_to_create.append((day, lesson_num, chosen, classroom))
+                slot_plan.append(SlotEntry(day, lesson_num, chosen, classroom))
 
-        # ── 6. Persist templates ──────────────────────────────────────────────
+        # ── 7. Print plan ─────────────────────────────────────────────────────
         self.stdout.write("\n── Schedule plan ──────────────────────────────────────")
-        day_names = {1: "Пн", 2: "Вт", 3: "Ср", 4: "Чт", 5: "Пт"}
-        created_templates = []
-
-        for day, lesson_num, assignment, classroom in templates_to_create:
-            start_time, _ = DEFAULT_TIME_SLOTS[lesson_num]
-            line = (
-                f"  {day_names[day]} пара {lesson_num}  {start_time}  "
-                f"{assignment.subject.name[:30]:<30}  {assignment.teacher.full_name:<25}  {classroom.name}"
+        for entry in slot_plan:
+            start_time, _ = DEFAULT_TIME_SLOTS[entry.lesson_num]
+            self.stdout.write(
+                f"  {DAY_NAMES[entry.day]} пара {entry.lesson_num}  {start_time}  "
+                f"{entry.assignment.subject.name[:30]:<30}  "
+                f"{entry.assignment.teacher.full_name:<25}  {entry.classroom.name}"
             )
-            self.stdout.write(line)
 
-            if not dry:
-                tmpl = ScheduleTemplate.objects.create(
+        if dry:
+            self.stdout.write(self.style.SUCCESS(f"\n✓ Dry run complete — {len(slot_plan)} slots planned"))
+            return
+
+        # ── 8. Bulk-create ScheduleTemplate rows (1 INSERT instead of 35) ────
+        template_objs = []
+        for entry in slot_plan:
+            start_time, _ = DEFAULT_TIME_SLOTS[entry.lesson_num]
+            template_objs.append(
+                ScheduleTemplate(
                     group=group,
-                    subject=assignment.subject,
-                    teacher=assignment.teacher,
-                    teaching_assignment=assignment,
-                    day_of_week=day,
-                    lesson_number=lesson_num,
+                    subject=entry.assignment.subject,
+                    teacher=entry.assignment.teacher,
+                    teaching_assignment=entry.assignment,
+                    day_of_week=entry.day,
+                    lesson_number=entry.lesson_num,
                     start_time=start_time,
                     duration_minutes=50,
-                    classroom=classroom,
+                    classroom=entry.classroom,
                     is_active=True,
                 )
-                created_templates.append(tmpl)
+            )
+        created_templates = ScheduleTemplate.objects.bulk_create(template_objs)
+        self.stdout.write(self.style.SUCCESS(f"Created {len(created_templates)} ScheduleTemplate rows"))
 
-        if not dry:
-            self.stdout.write(self.style.SUCCESS(f"\nCreated {len(created_templates)} ScheduleTemplate rows"))
+        # Index templates by (day, lesson_num) for O(1) lookup below
+        template_map = {(t.day_of_week, t.lesson_number): t for t in created_templates}
 
-        # ── 7. Delete this week's lessons for КН-41 ──────────────────────────
-        if not dry:
-            deleted_l, _ = Lesson.objects.filter(
-                group=group, date__gte=monday, date__lte=friday
-            ).delete()
-            self.stdout.write(f"Deleted {deleted_l} old Lesson rows for this week")
+        # ── 9. Delete + recreate this week's Lesson rows ─────────────────────
+        deleted_l, _ = Lesson.objects.filter(
+            group=group, date__gte=monday, date__lte=friday
+        ).delete()
+        self.stdout.write(f"Deleted {deleted_l} old Lesson rows for this week")
 
-        # ── 8. Create Lesson rows ─────────────────────────────────────────────
-        lessons_created = 0
-
+        lesson_objs = []
         for day_idx, day_num in enumerate(DAYS):
             lesson_date = monday + timedelta(days=day_idx)
-
-            for day, lesson_num, assignment, classroom in templates_to_create:
-                if day != day_num:
+            for entry in slot_plan:
+                if entry.day != day_num:
                     continue
 
-                start_time, end_time = DEFAULT_TIME_SLOTS[lesson_num]
+                start_time, end_time = DEFAULT_TIME_SLOTS[entry.lesson_num]
 
-                if dry:
-                    self.stdout.write(
-                        f"  [dry] Lesson {lesson_date} пара {lesson_num}  "
-                        f"{assignment.subject.name}  {assignment.teacher.full_name}"
-                    )
-                    lessons_created += 1
-                    continue
-
-                # Ensure EvaluationType exists for this assignment
-                eval_type = EvaluationType.objects.filter(
-                    assignment=assignment
-                ).first()
-                if not eval_type:
-                    eval_type = EvaluationType.objects.create(
-                        assignment=assignment,
+                # Ensure EvaluationType exists (cache hit avoids extra queries)
+                if entry.assignment.id not in eval_type_cache:
+                    et = EvaluationType.objects.create(
+                        assignment=entry.assignment,
                         name="Заняття",
                         weight_percent=0,
                     )
+                    eval_type_cache[entry.assignment.id] = et
+                eval_type = eval_type_cache[entry.assignment.id]
 
-                # Find the just-created template for this (day, lesson_num)
-                tmpl = next(
-                    (t for t in created_templates if t.day_of_week == day and t.lesson_number == lesson_num),
-                    None,
+                tmpl = template_map.get((entry.day, entry.lesson_num))
+
+                lesson_objs.append(
+                    Lesson(
+                        group=group,
+                        date=lesson_date,
+                        start_time=start_time,
+                        end_time=end_time,
+                        subject=entry.assignment.subject,
+                        teacher=entry.assignment.teacher,
+                        classroom=entry.classroom,
+                        template_source=tmpl,
+                        evaluation_type=eval_type,
+                    )
                 )
 
-                Lesson.objects.update_or_create(
-                    group=group,
-                    date=lesson_date,
-                    start_time=start_time,
-                    defaults={
-                        "subject": assignment.subject,
-                        "teacher": assignment.teacher,
-                        "end_time": end_time,
-                        "classroom": classroom,
-                        "template_source": tmpl,
-                        "evaluation_type": eval_type,
-                    },
-                )
-                lessons_created += 1
-
-        if not dry:
-            self.stdout.write(
-                self.style.SUCCESS(f"Created {lessons_created} Lesson rows  ({monday} – {friday})")
-            )
-
+        Lesson.objects.bulk_create(lesson_objs)
+        self.stdout.write(
+            self.style.SUCCESS(f"Created {len(lesson_objs)} Lesson rows  ({monday} – {friday})")
+        )
         self.stdout.write(self.style.SUCCESS("\n✓ Done!"))

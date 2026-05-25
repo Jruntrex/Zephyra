@@ -1987,9 +1987,7 @@ def teacher_dashboard_view(request):
     Командний центр викладача.
     Показує: розклад на сьогодні, проблемних студентів, статистику.
     """
-    import json
     from datetime import datetime
-    from datetime import time as dtime
 
     teacher = request.user
     today = date.today()
@@ -2011,7 +2009,7 @@ def teacher_dashboard_view(request):
         ).order_by("start_time")
     )
 
-    # Поточна або наступна пара
+    # Поточна або наступна пара (сьогодні)
     current_lesson = None
     next_lesson = None
     for lesson in today_lessons:
@@ -2021,6 +2019,15 @@ def teacher_dashboard_view(request):
         elif lesson.start_time > now and next_lesson is None:
             next_lesson = lesson
 
+    # Якщо сьогодні пар більше немає — шукаємо найближчу в наступних днях
+    if not current_lesson and not next_lesson:
+        next_lesson = (
+            Lesson.objects.filter(teacher=teacher, date__gt=today)
+            .select_related("group", "subject", "classroom")
+            .order_by("date", "start_time")
+            .first()
+        )
+
     # 2. "Радар Ризику"
     my_groups_qs = TeachingAssignment.objects.filter(teacher=teacher)
     if course_ctx:
@@ -2028,7 +2035,7 @@ def teacher_dashboard_view(request):
     if specialty_ctx:
         my_groups_qs = my_groups_qs.filter(group__specialty_id=specialty_ctx)
 
-    my_groups = my_groups_qs.values_list("group", flat=True)
+    my_groups = list(my_groups_qs.values_list("group", flat=True))
 
     risk_students = []
     students_in_danger = (
@@ -2053,16 +2060,41 @@ def teacher_dashboard_view(request):
             }
         )
 
-    # 3. Навантаження по днях тижня (для графіку)
+    # 3. Тижнева сітка розкладу (Пн–Пт)
     start_week = today - timedelta(days=today.weekday())
-    day_names = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"]
-    weekly_by_day = []
-    for i in range(7):
-        day = start_week + timedelta(days=i)
-        count = Lesson.objects.filter(teacher=teacher, date=day).count()
-        weekly_by_day.append(count)
+    day_short = ["Пн", "Вт", "Ср", "Чт", "Пт"]
 
-    weekly_load = sum(weekly_by_day)
+    all_week_lessons = list(
+        Lesson.objects.filter(
+            teacher=teacher,
+            date__range=(start_week, start_week + timedelta(days=4)),
+        )
+        .select_related("subject", "group")
+        .order_by("date", "start_time")
+    )
+
+    week_days = []
+    for i in range(5):
+        day_date = start_week + timedelta(days=i)
+        week_days.append(
+            {
+                "date": day_date,
+                "name": day_short[i],
+                "is_today": day_date == today,
+                "lessons": [l for l in all_week_lessons if l.date == day_date],
+            }
+        )
+
+    weekly_load = len(all_week_lessons)
+
+    # Студенти охоплені цього тижня
+    week_group_ids = list({l.group_id for l in all_week_lessons})
+    students_count = (
+        User.objects.filter(group_id__in=week_group_ids, role="student").count()
+        if week_group_ids
+        else 0
+    )
+    groups_count = len(week_group_ids)
 
     context = {
         "today_lessons": today_lessons,
@@ -2070,8 +2102,9 @@ def teacher_dashboard_view(request):
         "next_lesson": next_lesson,
         "risk_students": risk_students,
         "weekly_load": weekly_load,
-        "weekly_labels_json": json.dumps(day_names),
-        "weekly_data_json": json.dumps(weekly_by_day),
+        "week_days": week_days,
+        "students_count": students_count,
+        "groups_count": groups_count,
         "active_page": "teacher_dashboard",
     }
     return render(request, "teacher_dashboard.html", context)
