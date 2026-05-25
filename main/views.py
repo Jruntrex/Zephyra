@@ -1800,7 +1800,7 @@ def api_save_grade(request: HttpRequest) -> JsonResponse:
     """
     from main.services.grading_service import save_grade as _save_grade
 
-    if not request.user.is_authenticated or request.user.role != "teacher":
+    if not request.user.is_authenticated or request.user.role not in ("teacher", "admin"):
         return JsonResponse({"status": "error", "message": "Forbidden"}, status=403)
 
     try:
