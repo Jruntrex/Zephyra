@@ -2186,7 +2186,7 @@
                         Оновлення та підтримка включені
                     </li>
                 </ul>
-                <button class="btn-pricing btn-pricing-outline" onclick="openLogin()">Дізнатись більше</button>
+                <button class="btn-pricing btn-pricing-outline" onclick="openDemo()">Спробувати демо</button>
             </div>
 
             <!-- Card 2: 60 днів trial (featured) -->
@@ -2252,7 +2252,7 @@
                         Гарантія 12 місяців
                     </li>
                 </ul>
-                <button class="btn-pricing btn-pricing-outline" onclick="openLogin()">Замовити датчик</button>
+                <button class="btn-pricing btn-pricing-outline" onclick="openDemo()">Спробувати демо</button>
             </div>
 
         </div>
@@ -2355,12 +2355,33 @@
             <div class="cta-tag">Готові почати?</div>
             <h2 class="cta-title">Приєднуйтесь до<br>цифрового кампусу</h2>
             <p class="cta-desc">Увійдіть до системи та відчуйте, як навчальний процес стає простішим, ефективнішим та сучаснішим.</p>
-            <button class="btn-cta" id="openLogin3">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
-                </svg>
-                Увійти до системи
-            </button>
+            <div style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;">
+                <button class="btn-cta" id="openLogin3">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                    </svg>
+                    Увійти до системи
+                </button>
+                <button onclick="openDemo()" style="
+                    background: rgba(255,255,255,0.15);
+                    backdrop-filter: blur(10px);
+                    border: 1.5px solid rgba(255,255,255,0.35);
+                    color: #fff; cursor: pointer;
+                    padding: 18px 36px; border-radius: 18px;
+                    font-size: 15px; font-weight: 800;
+                    letter-spacing: 0.3px;
+                    display: inline-flex; align-items: center; gap: 10px;
+                    transition: all 0.3s ease;
+                    font-family: inherit;"
+                    onmouseenter="this.style.background='rgba(255,255,255,0.25)';this.style.transform='translateY(-2px)'"
+                    onmouseleave="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(0)'">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Спробувати демо
+                </button>
+            </div>
         </div>
     </div>
 </section>

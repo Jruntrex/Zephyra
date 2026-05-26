@@ -62,6 +62,8 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Забороняє кешування сторінок для авторизованих користувачів
     "main.middleware.NoCacheAuthMiddleware",
+    # Блокує write-операції для демо-сесій
+    "main.middleware.DemoModeMiddleware",
 ]
 
 ROOT_URLCONF = "mybosco_project.urls"
@@ -101,8 +103,16 @@ DATABASES = {
         "OPTIONS": {
             "charset": "utf8mb4",
         },
-    }
+    },
+    # Isolated SQLite database for guest demo mode.
+    # Real data is never touched. Run: python manage.py setup_demo
+    "demo": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "demo.db",
+    },
 }
+
+DATABASE_ROUTERS = ["main.demo_router.DemoDatabaseRouter"]
 
 # Hardware integration
 CARD_SCAN_API_KEY = os.getenv("CARD_SCAN_API_KEY", "")

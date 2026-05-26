@@ -4,12 +4,14 @@ from .models import InstitutionSettings, Specialty, TeachingAssignment
 def institution_settings(request):
     """
     Inject InstitutionSettings singleton into every template context.
-    Falls back gracefully if no record exists or table is missing.
+    In demo mode the router transparently reads from demo.db, so the correct
+    demo institution name is returned automatically.
     """
     try:
         institution = InstitutionSettings.get_instance()
     except Exception:
         institution = None
+
     return {
         "institution": institution,
         "is_demo": bool(request.session.get("is_demo")),

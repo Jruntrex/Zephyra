@@ -191,16 +191,17 @@ _DEMO_EMAIL = "demo_admin@mentorly.app"
 
 
 def demo_login_view(request: HttpRequest) -> HttpResponse:
-    """Logs in as the shared read-only demo admin. Sets is_demo=True in session."""
+    """Logs in as the demo admin from the isolated demo.db. Sets is_demo=True."""
     if request.user.is_authenticated:
         logout(request)
 
+    # Must use .using('demo') explicitly — router not active yet at this point
     try:
-        demo_user = User.objects.get(email=_DEMO_EMAIL)
+        demo_user = User.objects.using("demo").get(email=_DEMO_EMAIL)
     except User.DoesNotExist:
         messages.error(
             request,
-            "Демо-режим ще не налаштований. Будь ласка, зверніться до адміністратора.",
+            "Демо-режим ще не налаштований. Запустіть: python manage.py setup_demo",
         )
         return redirect("landing")
 

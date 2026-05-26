@@ -40,6 +40,10 @@ package-lock.json
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+demo.db
+demo.db-journal
+demo.db-shm
+demo.db-wal
 /media
 /staticfiles
 

@@ -908,7 +908,8 @@ class InstitutionSettings(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        if not self.pk and InstitutionSettings.objects.exists():
+        using = kwargs.get("using", self._state.db or "default")
+        if not self.pk and InstitutionSettings.objects.using(using).exists():
             raise ValidationError("Може існувати лише один запис налаштувань закладу.")
         super().save(*args, **kwargs)
 
