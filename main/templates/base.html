@@ -171,7 +171,7 @@
     <div class="flex min-h-screen" style="position: relative; z-index: 1;">
 
         <!-- Sidebar -->
-        <div class="glass-sidebar w-64 flex-shrink-0 fixed h-full z-50 flex flex-col px-6 pb-6 transition-transform duration-300 transform -translate-x-full lg:translate-x-0" style="padding-top: 48px;"
+        <div class="glass-sidebar w-64 flex-shrink-0 fixed h-full z-50 flex flex-col px-6 pb-6 transition-transform duration-300 transform -translate-x-full lg:translate-x-0" style="padding-top: {% if is_demo %}86{% else %}48{% endif %}px;"
             id="sidebar" role="navigation" aria-label="Головне меню">
             
             <!-- Branding Section -->
@@ -473,7 +473,7 @@
             <header role="banner">
 
                 <!-- ── Mobile: Left glass panel (hamburger + optional context switcher) ── -->
-                <div class="lg:hidden fixed top-3 left-4 z-[60] mobile-hide-on-menu">
+                <div class="lg:hidden fixed {% if is_demo %}top-[50px]{% else %}top-3{% endif %} left-4 z-[60] mobile-hide-on-menu">
                     <div class="glass-panel rounded-2xl p-2 flex items-center gap-1 shadow-xl">
                         <!-- Hamburger (завжди ☰, X — всередині сайдбару) -->
                         <button id="menu-toggle"
@@ -553,7 +553,7 @@
                 </div>
 
                 <!-- ── Desktop: Back/Forward + Context Switcher ── -->
-                <div class="hidden lg:flex fixed top-6 left-72 z-40 items-center gap-2">
+                <div class="hidden lg:flex fixed {% if is_demo %}top-[50px]{% else %}top-6{% endif %} left-72 z-40 items-center gap-2">
                     <button onclick="safeNavigateBack()"
                         class="p-2.5 bg-surface/60 backdrop-blur-md border border-border/40 rounded-xl text-mutedText hover:text-primary hover:bg-surface hover:shadow-lg transition-all duration-300"
                         title="Назад">
@@ -675,7 +675,7 @@
                 </div>
 
                 <!-- Fixed bar: user panel -->
-                <div class="fixed top-3 lg:top-6 right-4 lg:right-6 z-40 mobile-hide-on-menu">
+                <div class="fixed {% if is_demo %}top-[50px] lg:top-[50px]{% else %}top-3 lg:top-6{% endif %} right-4 lg:right-6 z-40 mobile-hide-on-menu">
 
                     <!-- Right Side: Floating Glass Panel Header -->
                     <div
