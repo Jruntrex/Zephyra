@@ -1,0 +1,44 @@
+                    GNU AFFERO GENERAL PUBLIC LICENSE
+                       Version 3, 19 November 2007
+
+ Copyright (C) 2026 Mentorly Contributors
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+---
+
+## Additional Terms — Commercial License
+
+The GNU Affero General Public License (AGPL v3) covers all open-source use
+of this software. If you wish to use, distribute, or deploy Mentorly in a
+commercial context **without** complying with the AGPL v3 (i.e., without
+open-sourcing your modifications and derivative works), you must obtain a
+separate **Commercial License** from the author.
+
+**Commercial License is required if you:**
+- Deploy Mentorly as a paid service or SaaS offering
+- Integrate Mentorly into a proprietary product you sell or license
+- Distribute Mentorly to third parties under a non-open-source arrangement
+- Use Mentorly internally in a for-profit organization and do not wish to
+  comply with the AGPL source disclosure requirements
+
+**Commercial License is NOT required if you:**
+- Self-host Mentorly for a single non-profit educational institution under AGPL
+- Study, fork, or contribute to the project under AGPL terms
+
+To inquire about a Commercial License, contact: serhodg12@gmail.com
+
+---
+
+Full AGPL v3 license text: https://www.gnu.org/licenses/agpl-3.0.txt
