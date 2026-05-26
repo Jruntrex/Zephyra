@@ -218,7 +218,7 @@ def demo_login_view(request: HttpRequest) -> HttpResponse:
         )
         return redirect("landing")
 
-    demo_user.backend = "django.contrib.auth.backends.ModelBackend"
+    demo_user.backend = "main.backends.DemoBackend"
     login(request, demo_user)
     request.session["is_demo"] = True
     request.session.set_expiry(24 * 3600)

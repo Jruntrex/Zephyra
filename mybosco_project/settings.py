@@ -57,13 +57,19 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    # Must run before AuthenticationMiddleware so the demo DB router is active
+    # when Django reloads request.user from session (otherwise it hits MySQL).
+    "main.middleware.DemoModeMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Забороняє кешування сторінок для авторизованих користувачів
     "main.middleware.NoCacheAuthMiddleware",
-    # Блокує write-операції для демо-сесій
-    "main.middleware.DemoModeMiddleware",
+]
+
+AUTHENTICATION_BACKENDS = [
+    "main.backends.DemoBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 ROOT_URLCONF = "mybosco_project.urls"
