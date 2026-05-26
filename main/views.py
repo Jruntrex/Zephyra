@@ -187,6 +187,30 @@ def logout_view(request: HttpRequest) -> HttpResponse:
     return response
 
 
+_DEMO_EMAIL = "demo_admin@mentorly.app"
+
+
+def demo_login_view(request: HttpRequest) -> HttpResponse:
+    """Logs in as the shared read-only demo admin. Sets is_demo=True in session."""
+    if request.user.is_authenticated:
+        logout(request)
+
+    try:
+        demo_user = User.objects.get(email=_DEMO_EMAIL)
+    except User.DoesNotExist:
+        messages.error(
+            request,
+            "Демо-режим ще не налаштований. Будь ласка, зверніться до адміністратора.",
+        )
+        return redirect("landing")
+
+    demo_user.backend = "django.contrib.auth.backends.ModelBackend"
+    login(request, demo_user)
+    request.session["is_demo"] = True
+    request.session.set_expiry(24 * 3600)
+    return redirect("admin_panel")
+
+
 def csrf_debug_view(request: HttpRequest) -> JsonResponse:
     """Debug endpoint: returns the current CSRF token and request cookies.
 

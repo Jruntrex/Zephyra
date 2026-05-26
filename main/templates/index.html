@@ -163,6 +163,21 @@
             padding: 2px 8px; background: rgba(91,132,255,0.1);
             border-radius: 6px; margin-left: 4px;
         }
+        .btn-nav-demo {
+            background: transparent;
+            color: #5B84FF; border: 1.5px solid rgba(91,132,255,0.45); cursor: pointer;
+            padding: 9px 18px; border-radius: 14px;
+            font-size: 13px; font-weight: 700;
+            text-decoration: none; display: inline-flex; align-items: center;
+            letter-spacing: 0.3px;
+            transition: all 0.25s ease;
+        }
+        .btn-nav-demo:hover {
+            background: rgba(91,132,255,0.10);
+            border-color: rgba(91,132,255,0.75);
+        }
+        html.dark .btn-nav-demo { color: #818cf8; border-color: rgba(129,140,248,0.4); }
+        html.dark .btn-nav-demo:hover { background: rgba(129,140,248,0.12); }
         .btn-nav-login {
             background: linear-gradient(135deg, #5B84FF 0%, #4a70e8 100%);
             color: #fff; border: none; cursor: pointer;
@@ -1640,6 +1655,7 @@
                     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
             </button>
+            <button onclick="openDemo()" class="btn-nav-demo">Демо</button>
             <button class="btn-nav-login" id="openLogin">Увійти</button>
         </div>
     </div>
@@ -1669,12 +1685,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
                     </svg>
                 </button>
-                <a href="#features" class="btn-hero-ghost">
-                    Дізнатись більше
+                <button onclick="openDemo()" class="btn-hero-ghost">
+                    Спробувати демо
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
-                </a>
+                </button>
             </div>
 
             <div class="hero-trust animate-fade-in delay-400">
@@ -2203,7 +2219,7 @@
                         Без зобов'язань та автосписань
                     </li>
                 </ul>
-                <button class="btn-pricing btn-pricing-white" onclick="openLogin()">Почати безкоштовно</button>
+                <button onclick="openDemo()" class="btn-pricing btn-pricing-white">Спробувати демо →</button>
             </div>
 
             <!-- Card 3: Датчики -->
@@ -2487,6 +2503,57 @@
 
     function openLogin()  { panel.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow='hidden'; }
     function closeLogin() { panel.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow=''; }
+
+    function openDemo() {
+        openLogin();
+        const emailField = document.querySelector('#loginForm [name="username"]');
+        const passField  = document.querySelector('#loginForm [name="password"]');
+        const submitBtn  = document.getElementById('submitBtn');
+
+        emailField.value = '';
+        passField.value  = '';
+        emailField.readOnly = true;
+        passField.readOnly  = true;
+
+        const DEMO_EMAIL = 'demo_admin@mentorly.app';
+        const DEMO_PASS  = 'demo1234';
+
+        function typeText(field, text, speed, onDone) {
+            field.style.borderColor = '#5B84FF';
+            field.style.boxShadow   = '0 0 0 4px rgba(91,132,255,0.08)';
+            let i = 0;
+            const t = setInterval(() => {
+                if (i < text.length) {
+                    field.value += text[i++];
+                } else {
+                    clearInterval(t);
+                    field.style.borderColor = 'rgba(226,232,240,1)';
+                    field.style.boxShadow   = 'none';
+                    onDone();
+                }
+            }, speed);
+        }
+
+        setTimeout(() => {
+            typeText(emailField, DEMO_EMAIL, 38, () => {
+                setTimeout(() => {
+                    typeText(passField, DEMO_PASS, 80, () => {
+                        setTimeout(() => {
+                            submitBtn.innerHTML = `<span style="display:flex;align-items:center;justify-content:center;gap:10px;">
+                                <svg class="animate-spin" style="width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Входимо...
+                            </span>`;
+                            submitBtn.disabled = true;
+                            window.location.href = '/demo/';
+                        }, 350);
+                    });
+                }, 180);
+            });
+        }, 300);
+    }
 
     document.getElementById('openLogin').addEventListener('click', openLogin);
     document.getElementById('openLogin2').addEventListener('click', openLogin);

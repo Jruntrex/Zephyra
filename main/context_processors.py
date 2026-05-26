@@ -10,7 +10,10 @@ def institution_settings(request):
         institution = InstitutionSettings.get_instance()
     except Exception:
         institution = None
-    return {"institution": institution}
+    return {
+        "institution": institution,
+        "is_demo": bool(request.session.get("is_demo")),
+    }
 
 
 def global_context(request):
