@@ -187,17 +187,30 @@ def logout_view(request: HttpRequest) -> HttpResponse:
     return response
 
 
-_DEMO_EMAIL = "demo_admin@mentorly.app"
+_DEMO_USERS = {
+    "admin":   "demo_admin@mentorly.app",
+    "teacher": "ivan.demo@teacher.app",
+    "student": "anna.demo@student.app",
+}
+_DEMO_REDIRECTS = {
+    "admin":   "admin_panel",
+    "teacher": "teacher_dashboard",
+    "student": "student_dashboard",
+}
 
 
 def demo_login_view(request: HttpRequest) -> HttpResponse:
-    """Logs in as the demo admin from the isolated demo.db. Sets is_demo=True."""
+    """Logs in as a demo user from the isolated demo.db. Supports ?role=admin|teacher|student."""
     if request.user.is_authenticated:
         logout(request)
 
-    # Must use .using('demo') explicitly — router not active yet at this point
+    role = request.GET.get("role", "admin")
+    if role not in _DEMO_USERS:
+        role = "admin"
+    email = _DEMO_USERS[role]
+
     try:
-        demo_user = User.objects.using("demo").get(email=_DEMO_EMAIL)
+        demo_user = User.objects.using("demo").get(email=email)
     except User.DoesNotExist:
         messages.error(
             request,
@@ -209,7 +222,7 @@ def demo_login_view(request: HttpRequest) -> HttpResponse:
     login(request, demo_user)
     request.session["is_demo"] = True
     request.session.set_expiry(24 * 3600)
-    return redirect("admin_panel")
+    return redirect(_DEMO_REDIRECTS[role])
 
 
 def csrf_debug_view(request: HttpRequest) -> JsonResponse:
