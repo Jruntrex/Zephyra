@@ -137,41 +137,10 @@
         <div class="blob blob-3"></div>
     </div>
 
-    {% if is_demo %}
-    <div id="demo-banner" style="
-        position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-        background: linear-gradient(90deg, #f97316, #fb923c);
-        color: #fff;
-        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-        font-size: 13px; font-weight: 700;
-        text-align: center;
-        padding: 8px 16px;
-        display: flex; align-items: center; justify-content: center; gap: 12px;
-        box-shadow: 0 2px 12px rgba(249,115,22,0.35);
-        letter-spacing: 0.01em;">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" style="flex-shrink:0;opacity:0.9"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-        Демо-режим — зміни не зберігаються
-        <a href="{% url 'logout' %}" style="
-            background: rgba(255,255,255,0.22);
-            color: #fff; text-decoration: none;
-            border-radius: 8px; padding: 3px 10px;
-            font-size: 12px; font-weight: 700;
-            transition: background 0.2s;"
-            onmouseenter="this.style.background='rgba(255,255,255,0.35)'"
-            onmouseleave="this.style.background='rgba(255,255,255,0.22)'">
-            Вийти з демо
-        </a>
-    </div>
-    <style>
-        /* Push page content down when demo banner is shown */
-        body { padding-top: 38px !important; }
-    </style>
-    {% endif %}
-
     <div class="flex min-h-screen" style="position: relative; z-index: 1;">
 
         <!-- Sidebar -->
-        <div class="glass-sidebar w-64 flex-shrink-0 fixed h-full z-50 flex flex-col px-6 pb-6 transition-transform duration-300 transform -translate-x-full lg:translate-x-0" style="padding-top: {% if is_demo %}86{% else %}48{% endif %}px;"
+        <div class="glass-sidebar w-64 flex-shrink-0 fixed h-full z-50 flex flex-col px-6 pb-6 transition-transform duration-300 transform -translate-x-full lg:translate-x-0" style="padding-top: 48px;"
             id="sidebar" role="navigation" aria-label="Головне меню">
             
             <!-- Branding Section -->
@@ -464,7 +433,7 @@
             </div>
         </div>
 
-        <div class="flex-grow w-full lg:ml-64 p-4 pt-20 lg:p-6 transition-all duration-300 relative"{% if is_demo %} style="padding-top:112px;"{% endif %}>
+        <div class="flex-grow w-full lg:ml-64 p-4 pt-20 lg:p-6 transition-all duration-300 relative">
 
             <!-- Mobile sidebar overlay -->
             <div id="sidebar-overlay" class="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-[2px] z-40 hidden" aria-hidden="true"></div>
@@ -473,7 +442,7 @@
             <header role="banner">
 
                 <!-- ── Mobile: Left glass panel (hamburger + optional context switcher) ── -->
-                <div class="lg:hidden fixed {% if is_demo %}top-[50px]{% else %}top-3{% endif %} left-4 z-[60] mobile-hide-on-menu">
+                <div class="lg:hidden fixed top-3 left-4 z-[60] mobile-hide-on-menu">
                     <div class="glass-panel rounded-2xl p-2 flex items-center gap-1 shadow-xl">
                         <!-- Hamburger (завжди ☰, X — всередині сайдбару) -->
                         <button id="menu-toggle"
@@ -553,7 +522,7 @@
                 </div>
 
                 <!-- ── Desktop: Back/Forward + Context Switcher ── -->
-                <div class="hidden lg:flex fixed {% if is_demo %}top-[50px]{% else %}top-6{% endif %} left-72 z-40 items-center gap-2">
+                <div class="hidden lg:flex fixed top-6 left-72 z-40 items-center gap-2">
                     <button onclick="safeNavigateBack()"
                         class="p-2.5 bg-surface/60 backdrop-blur-md border border-border/40 rounded-xl text-mutedText hover:text-primary hover:bg-surface hover:shadow-lg transition-all duration-300"
                         title="Назад">
@@ -675,7 +644,7 @@
                 </div>
 
                 <!-- Fixed bar: user panel -->
-                <div class="fixed {% if is_demo %}top-[50px] lg:top-[50px]{% else %}top-3 lg:top-6{% endif %} right-4 lg:right-6 z-40 mobile-hide-on-menu">
+                <div class="fixed top-3 lg:top-6 right-4 lg:right-6 z-40 mobile-hide-on-menu">
 
                     <!-- Right Side: Floating Glass Panel Header -->
                     <div

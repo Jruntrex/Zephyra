@@ -17,8 +17,6 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),         # Логін переїхав на /login/
     path("login/process/", views.login_process, name="login_process"),
     path("logout/", views.logout_view, name="logout"),
-    path("demo/", views.demo_login_view, name="demo_login"),
-
     # =========================
     # 2. АДМІНІСТРУВАННЯ ТА ДАШБОРДИ
     # =========================
