@@ -7,28 +7,30 @@ from django.db import migrations, models
 
 def migrate_specialties_forward(apps, schema_editor):
     """Convert existing text specialty values into Specialty FK records."""
+    db = schema_editor.connection.alias
     StudyGroup = apps.get_model("main", "StudyGroup")
     Specialty = apps.get_model("main", "Specialty")
 
     seen = {}
-    for group in StudyGroup.objects.all():
+    for group in StudyGroup.objects.using(db).all():
         text = (group.specialty_text or "").strip()
         if not text:
             continue
         if text not in seen:
-            spec, _ = Specialty.objects.get_or_create(name=text)
+            spec, _ = Specialty.objects.using(db).get_or_create(name=text)
             seen[text] = spec
         group.specialty_new = seen[text]
-        group.save(update_fields=["specialty_new"])
+        group.save(using=db, update_fields=["specialty_new"])
 
 
 def migrate_specialties_backward(apps, schema_editor):
     """Convert Specialty FK back to text field."""
+    db = schema_editor.connection.alias
     StudyGroup = apps.get_model("main", "StudyGroup")
-    for group in StudyGroup.objects.select_related("specialty_new"):
+    for group in StudyGroup.objects.using(db).select_related("specialty_new"):
         if group.specialty_new:
             group.specialty_text = group.specialty_new.name
-            group.save(update_fields=["specialty_text"])
+            group.save(using=db, update_fields=["specialty_text"])
 
 
 class Migration(migrations.Migration):

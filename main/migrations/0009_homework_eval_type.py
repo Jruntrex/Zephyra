@@ -3,16 +3,17 @@ from django.db import migrations, models
 
 def create_homework_eval_types(apps, schema_editor):
     """Для кожного TeachingAssignment створити ДЗ-тип якщо немає."""
+    db = schema_editor.connection.alias
     TeachingAssignment = apps.get_model('main', 'TeachingAssignment')
     EvaluationType = apps.get_model('main', 'EvaluationType')
 
-    for assignment in TeachingAssignment.objects.all():
-        exists = EvaluationType.objects.filter(
+    for assignment in TeachingAssignment.objects.using(db).all():
+        exists = EvaluationType.objects.using(db).filter(
             assignment=assignment,
             is_homework_type=True
         ).exists()
         if not exists:
-            EvaluationType.objects.create(
+            EvaluationType.objects.using(db).create(
                 assignment=assignment,
                 name='Домашнє Завдання',
                 weight_percent=30,

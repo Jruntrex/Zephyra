@@ -214,13 +214,13 @@ class Command(BaseCommand):
         tas = []
         for teacher, subj, group, room in ASSIGNMENTS:
             ta = _create(TeachingAssignment,
-                         subject_fk=subj, teacher_fk=teacher,
-                         group_fk=group, academic_year="2024-2025",
+                         subject=subj, teacher=teacher,
+                         group=group, academic_year="2024-2025",
                          semester=3, start_date=date(2025, 2, 1),
                          end_date=date(2025, 6, 30))
-            ev_lec = _create(EvaluationType, assignment_fk=ta,
+            ev_lec = _create(EvaluationType, assignment=ta,
                              name="Лекція", weight_percent=30, order=1)
-            ev_prc = _create(EvaluationType, assignment_fk=ta,
+            ev_prc = _create(EvaluationType, assignment=ta,
                              name="Практична", weight_percent=70, order=2)
             tas.append((ta, ev_lec, ev_prc, group, room))
 
@@ -240,15 +240,15 @@ class Command(BaseCommand):
                     si = slot_idx % 3
                     ev = ev_lec if slot_idx % 2 == 0 else ev_prc
                     l = _create(Lesson,
-                                group_fk=group,
-                                subject_fk=ta.subject_fk,
-                                teacher_fk=ta.teacher_fk,
+                                group=group,
+                                subject=ta.subject,
+                                teacher=ta.teacher,
                                 date=lesson_date,
                                 start_time=LESSON_SLOTS[si],
                                 end_time=LESSON_ENDS[si],
-                                topic=random.choice(TOPICS) + f" ({ta.subject_fk.code})",
+                                topic=random.choice(TOPICS) + f" ({ta.subject.code})",
                                 max_points=12,
-                                evaluation_type_fk=ev,
+                                evaluation_type=ev,
                                 is_cancelled=False)
                     lessons.append((l, group))
 
@@ -261,12 +261,12 @@ class Command(BaseCommand):
                 absence_roll = random.random()
                 if absence_roll < 0.08:
                     _create(StudentPerformance,
-                            lesson_fk=lesson, student_fk=stu,
-                            earned_points=None, absence_fk=ar_n)
+                            lesson=lesson, student=stu,
+                            earned_points=None, absence=ar_n)
                 else:
                     pts = random.randint(5, 12)
                     _create(StudentPerformance,
-                            lesson_fk=lesson, student_fk=stu,
+                            lesson=lesson, student=stu,
                             earned_points=pts)
 
         self.stdout.write(

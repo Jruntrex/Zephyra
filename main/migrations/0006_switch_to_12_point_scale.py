@@ -9,19 +9,20 @@ from django.db import migrations
 
 
 def switch_to_12_point_scale(apps, schema_editor):
+    db = schema_editor.connection.alias
     StudentPerformance = apps.get_model('main', 'StudentPerformance')
     GradingScale = apps.get_model('main', 'GradingScale')
     GradeRule = apps.get_model('main', 'GradeRule')
 
     # 1. Видалити всі оцінки
-    StudentPerformance.objects.all().delete()
+    StudentPerformance.objects.using(db).all().delete()
 
     # 2. Очистити старі шкали та правила
-    GradeRule.objects.all().delete()
-    GradingScale.objects.all().delete()
+    GradeRule.objects.using(db).all().delete()
+    GradingScale.objects.using(db).all().delete()
 
     # 3. Створити нову 12-бальну шкалу
-    scale = GradingScale.objects.create(
+    scale = GradingScale.objects.using(db).create(
         name='12-бальна',
         description='Стандартна 12-бальна шкала оцінювання',
         is_default=True,
@@ -38,13 +39,13 @@ def switch_to_12_point_scale(apps, schema_editor):
     ]
 
     for r in rules:
-        GradeRule.objects.create(scale=scale, **r)
+        GradeRule.objects.using(db).create(scale=scale, **r)
 
 
 def reverse_switch(apps, schema_editor):
-    """Зворотна міграція: видалити 12-бальну шкалу (дані не відновлюються)."""
+    db = schema_editor.connection.alias
     GradingScale = apps.get_model('main', 'GradingScale')
-    GradingScale.objects.filter(name='12-бальна').delete()
+    GradingScale.objects.using(db).filter(name='12-бальна').delete()
 
 
 class Migration(migrations.Migration):
